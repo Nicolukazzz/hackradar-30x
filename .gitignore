@@ -1,0 +1,28 @@
+# Secretos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Claude Code personal
+.claude/settings.local.json
+CLAUDE.local.md
+
+# Dependencias / builds
+node_modules/
+.next/
+dist/
+build/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Playwright MCP
+.playwright-mcp/
+
+# SO / editores
+.DS_Store
+.vscode/
+.idea/
