@@ -24,6 +24,10 @@
       "Bash(git fetch*)",
       "Bash(gh pr *)",
       "Bash(gh issue *)",
+      "Bash(gh api user*)",
+      "Bash(gh label list*)",
+      "Bash(git push -u origin *)",
+      "Bash(git pull --rebase*)",
       "Bash(npm run *)",
       "Bash(npm test*)",
       "Bash(npm install*)",
@@ -51,6 +55,18 @@
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/estado-equipo.sh\"",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",

@@ -1,8 +1,10 @@
 # HackRadar 30X
 
-Proyecto del equipo para el hackathon HackRadar 30X. Reto candidato: **Blinka — Agentes que pagan por la empresa** ([brief](docs/retos/blinka.md)).
+Proyecto del equipo para el hackathon HackRadar 30X. Reto elegido: **Blinka — Agentes que pagan por la empresa** ([brief](docs/retos/blinka.md)).
 
-Estado: investigación. Stack por definir.
+Estado: investigación y diseño. Stack por definir.
+
+Requisitos: Claude Code, Node 18+, [`gh`](https://cli.github.com/) con `gh auth login` hecho.
 
 ## Arranque (cada integrante)
 
@@ -34,8 +36,20 @@ Verificar: `/mcp` muestra `playwright` conectado; `/` lista las skills del proye
 | `.claude/skills/` | Skills del proyecto |
 | `.mcp.json` | Servidores MCP compartidos |
 
+## Cómo nos coordinamos
+
+GitHub Issues = quién hace qué. Al abrir `claude`, un hook le muestra a tu agente los issues abiertos con dueño y los PRs, así no duplica trabajo.
+
+1. `/estado` — ver qué está libre.
+2. `/tomar-tarea #n` — te asigna, crea rama, avisa en el issue.
+3. Trabajar. Avisos para otros = comentario en el issue.
+4. `/entregar` — PR que cierra el issue.
+
+Detalle y alternativas evaluadas: [docs/research/coordinacion-equipo.md](docs/research/coordinacion-equipo.md).
+
 ## Skills del proyecto
 
+- `/estado`, `/tomar-tarea`, `/entregar` — coordinación.
 - `/investigar <tema>` — investiga y guarda en `docs/research/`.
 - `/registrar-decision <decisión>` — agrega a `docs/decisiones.md`.
 - `/generar-facturas [n] [trampa]` — facturas simuladas + respuesta esperada.

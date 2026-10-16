@@ -5,9 +5,9 @@ Plataforma: https://hackradar.30x.com/recursos
 
 ## Estado actual
 
-- Fase: **investigación / definición de reto**. Stack aún NO decidido.
-- Reto candidato principal: **Blinka — Agentes que pagan por la empresa** (pago automático de facturas). Brief completo: @docs/retos/blinka.md
-- Otros retos (por si se cambia): `docs/retos/jev.md`, `docs/retos/radar-de-contenido.md`, `docs/retos/dapta.md`
+- **Reto elegido: Blinka — Agentes que pagan por la empresa** (pago automático de facturas). Todo el trabajo va a este reto. Brief completo: @docs/retos/blinka.md
+- Fase: investigación y diseño. Stack aún NO decidido.
+- Otros retos quedan solo como referencia (`docs/retos/jev.md`, `radar-de-contenido.md`, `dapta.md`). No proponer trabajo para ellos salvo que el equipo lo pida. Excepción útil: JEV podría servir como clasificador rápido dentro del agente de facturas.
 - Decisiones del equipo: @docs/decisiones.md — leer antes de proponer algo que ya se decidió o descartó.
 - Hallazgos de investigación: `docs/research/` (un archivo por tema).
 
@@ -43,9 +43,15 @@ Dataset vive en `data/` (ver `data/README.md`). Generar con skill `/generar-fact
 
 _Pendiente de decidir._ Libertad total de modelo, lenguaje y framework. Si se usa Claude API, modelo por defecto: `claude-opus-5-5` (o `claude-haiku-5-5` para extracción barata); consultar skill `claude-api` antes de escribir código de LLM.
 
-## Cómo trabajamos (3 personas)
+## Cómo trabajamos (3 personas, cada una con su Claude)
 
-- `main` protegida por convención: trabajo en ramas `feat/<tema>`, `fix/<tema>`, `docs/<tema>`; PR corto y merge rápido. Pull antes de empezar.
+Equipo GitHub: `Nicolukazzz`, `juandatiner`, `Siftings`. Los agentes de distintas personas no se hablan directo: **GitHub Issues es el canal común**. Detalle: `docs/research/coordinacion-equipo.md`.
+
+- Al iniciar sesión, hook muestra issues abiertos con dueño y PRs. Respetarlo: **nunca trabajar en issue asignado a otra persona** ni editar archivos que su issue declara.
+- Todo trabajo tiene issue. Flujo: `/estado` → `/tomar-tarea #n` (se asigna, rama `<tipo>/<n>-slug`, comenta) → trabajar → `/entregar` (PR con `Closes #n`).
+- Mensaje para otra persona o su agente = `gh issue comment <n>` en el issue afectado. No asumir que lo leyó en chat.
+- Cambio a contrato compartido (formato de `data/`, esquema de reglas, API entre módulos) = PR que también actualiza `docs/decisiones.md`. Avisar en issues afectados.
+- Un issue = una rama = un PR chico. Merge rápido para no divergir. `git pull --rebase origin main` seguido.
 - Commits: Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `test:`), en español o inglés, cortos.
 - No commitear `.env` ni llaves. Usar `.env.example` para documentar variables.
 - Config compartida de Claude Code en `.claude/settings.json` y `.mcp.json` (versionadas). Preferencias personales en `.claude/settings.local.json` (ignorado por git).
@@ -53,6 +59,9 @@ _Pendiente de decidir._ Libertad total de modelo, lenguaje y framework. Si se us
 
 ## Skills del proyecto
 
+- `/estado` — quién está en qué, issues libres, PRs por revisar.
+- `/tomar-tarea <#n | descripción>` — reclamar issue sin chocar con nadie.
+- `/entregar` — commit, PR que cierra issue, aviso al equipo.
 - `/investigar <tema>` — investigar un tema y guardar hallazgo en `docs/research/`.
 - `/registrar-decision <decisión>` — agregar entrada a `docs/decisiones.md`.
 - `/generar-facturas` — crear facturas simuladas + reglas de empresa ficticia en `data/`.
