@@ -6,7 +6,8 @@ Plataforma: https://hackradar.30x.com/recursos
 ## Estado actual
 
 - **Reto elegido: Blinka — Agentes que pagan por la empresa** (pago automático de facturas). Todo el trabajo va a este reto. Brief completo: @docs/retos/blinka.md
-- Fase: investigación y diseño. Stack aún NO decidido.
+- Fase: **definir producto** (qué y cómo). Propuesta viva: @docs/producto.md — web app, entrada por subida + correo, motor de reglas en código, API/MCP para otros agentes. Stack aún NO decidido.
+- `contexto-privado/` (ignorado por git) tiene documentos **reales** de una empresa de referencia. Leerlos para entender el problema, pero **nunca** copiar su contenido, nombres, montos ni formatos identificables al repo (es público) ni al dataset. Resumir hallazgos anonimizados en `docs/research/contexto-empresa-real.md`.
 - Otros retos quedan solo como referencia (`docs/retos/jev.md`, `radar-de-contenido.md`, `dapta.md`). No proponer trabajo para ellos salvo que el equipo lo pida. Excepción útil: JEV podría servir como clasificador rápido dentro del agente de facturas.
 - Decisiones del equipo: @docs/decisiones.md — leer antes de proponer algo que ya se decidió o descartó.
 - Hallazgos de investigación: `docs/research/` (un archivo por tema).
