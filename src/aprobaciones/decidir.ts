@@ -13,10 +13,11 @@ export type EntradaDecision = {
   /** quién decide: sale de la sesión, nunca del body (#25) */
   aprobador_id: string;
   /**
-   * #49 (sin roles): la cuenta que decide, cuando no es uno de data/aprobadores.json. Si viene, se usa en vez
-   * de buscar `aprobador_id` en la lista de la empresa (y cuenta como firma para la doble aprobación).
+   * #51: cuentas de la empresa que hoy pueden aprobar (rol con permiso, cuenta activa), con su límite. Se suman a
+   * data/aprobadores.json. Quien decide (`aprobador_id`) y quien dio la primera firma se buscan en esta lista:
+   * una cuenta a la que le quitaron el rol ya no firma, ni cuenta su firma anterior para cubrir el monto.
    */
-  aprobador?: Aprobador;
+  cuentas?: readonly Aprobador[];
   agregar_a_lista?: boolean;
 };
 
@@ -172,7 +173,7 @@ async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Reposito
     repo.reglasVigentes(),
     repo.documento(input.ref),
   ]);
-  const aprobadores = input.aprobador ? [...datos.aprobadores, input.aprobador] : datos.aprobadores;
+  const aprobadores = [...datos.aprobadores, ...(input.cuentas ?? [])];
   const v = validar(input, registro, aprobadores);
   const base = entradaBase(v, reglas.version, ahora);
   const anio = Number(ahora.slice(0, 4));
