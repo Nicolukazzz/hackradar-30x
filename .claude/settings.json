@@ -12,7 +12,9 @@
   "enabledMcpjsonServers": [
     "playwright",
     "shadcn",
-    "next-devtools"
+    "next-devtools",
+    "21st",
+    "supabase"
   ],
   "permissions": {
     "allow": [
@@ -58,7 +60,16 @@
       "mcp__railway__list-projects",
       "mcp__railway__whoami",
       "mcp__next-devtools__*",
-      "mcp__shadcn__*"
+      "mcp__shadcn__*",
+      "mcp__21st__*",
+      "mcp__supabase__search_docs",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__list_extensions",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__get_logs",
+      "mcp__supabase__get_advisors",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__get_project"
     ],
     "deny": [
       "Read(./.env)",

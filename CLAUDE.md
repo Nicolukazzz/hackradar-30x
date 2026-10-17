@@ -57,6 +57,18 @@ _Pendiente de aceptar en #1._ Propuesta (especificación §2): Next.js App Route
 
 Comandos propuestos (confirmar cuando exista el esqueleto): `npm run dev` · `npm test` · `npm run evaluar -- --escenario lote-demo-oct --extraccion golden|real` · `npm run dataset`.
 
+Infra: deploy en **Railway** (plan Hobby USD 5, proyecto `hackradar-30x`, dueño N). Persistencia en deploy: **Supabase** en cuenta del equipo, nunca cuentas personales.
+
+## Reglas de UI (obligatorias)
+
+- **Componentes antes que código a mano.** Antes de escribir un componente, buscarlo con MCP `shadcn` (registros `@shadcn`, `@react-bits`, `@skiper-ui`, `@magicui`, `@aceternity`, `@kibo-ui`; ya están en el índice oficial, no requieren config) o MCP `21st`. Solo generar desde cero si no hay nada que sirva, y decir por qué. Solo componentes gratis (Skiper UI tiene "pro": no usarlos).
+- **Estilo profesional premium, tipo Apple**: mucho espacio en blanco, jerarquía clara, bordes suaves, sombras sutiles, animaciones cortas y con propósito (no decorativas). Sobrio: es un producto de pagos, la confianza vende más que los efectos.
+- **Tipografía**: Geist / Geist Mono (spec §15, cercana a SF Pro). **Nada de cursiva** en ningún lado. Montos e ids en Geist Mono con cifras tabulares.
+- **Intuitivo**: cada pantalla responde una pregunta; la acción principal es obvia; estados vacíos, de carga y de error siempre diseñados.
+- **Interacción por pasos, no formularios largos.** Máximo 3–5 campos visibles a la vez; dividir en pasos/wizard, edición en línea, valores por defecto inteligentes, confirmaciones claras. Prohibido un formulario de 20 campos.
+- Mucho feedback al usuario: hover, foco visible, toasts al guardar, confirmación antes de acciones irreversibles, explicación al lado de cada decisión.
+- Tokens de color y radios: especificación §15. Revisar con skill `web-design-guidelines` y capturas con MCP `playwright` (1440 px y 390 px) antes de entregar UI.
+
 **Presupuesto LLM: $0.** El equipo tiene Claude Pro (sirve para construir con Claude Code, NO incluye API; nunca usar su token en el backend). En runtime: parsear XML/PDF sin IA primero; LLM solo para fotos/escaneados/texto desordenado, detrás de interfaz intercambiable (`LLM_PROVIDER`): Gemini Flash free tier → Groq free tier como respaldo → Claude Haiku 5.5 (`claude-haiku-5-5`) solo si aparece presupuesto. Explicaciones con plantillas desde las reglas evaluadas. Detalle: `docs/producto.md` §4. Si se usa Claude API, consultar skill `claude-api` antes de escribir código.
 
 ## Cómo trabajamos (3 personas, cada una con su Claude)
@@ -83,6 +95,6 @@ Equipo GitHub: `Nicolukazzz`, `juandatiner`, `Siftings`. Los agentes de distinta
 - `/generar-facturas` — crear facturas simuladas + reglas de empresa ficticia en `data/`.
 - `/evaluar-agente` — correr agente sobre dataset y medir autonomía / seguridad / explicabilidad.
 
-Externas (instaladas con `npx skills`, lock en `skills-lock.json`): `shadcn`, `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines`, `use-railway`, `test-driven-development` (usar en motor de reglas), `systematic-debugging`, `verification-before-completion` (correr `npm test` + `typecheck` antes de decir "listo").
+Externas (instaladas con `npx skills`, lock en `skills-lock.json`): `shadcn`, `supabase`, `supabase-postgres-best-practices`, `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines`, `use-railway`, `test-driven-development` (usar en motor de reglas), `systematic-debugging`, `verification-before-completion` (correr `npm test` + `typecheck` antes de decir "listo").
 
-MCPs: `playwright` (probar UI), `shadcn` (componentes; preferir antes que escribir UI a mano), `next-devtools` (errores del `next dev`). Railway MCP va por persona, no en repo. Detalle: `docs/research/herramientas-claude-code.md`.
+MCPs: `playwright` (probar UI), `shadcn` (componentes + registros gratis), `21st` (buscar componentes; necesita `API_KEY_21ST` en la shell), `next-devtools` (errores del `next dev`), `supabase` (OAuth con la cuenta del equipo, nunca personal). Railway MCP va por persona, no en repo. Versiones de MCP fijadas: subirlas a propósito, no con `@latest`. Detalle: `docs/research/herramientas-claude-code.md`.

@@ -18,7 +18,9 @@ Al abrir Claude Code en la carpeta por primera vez:
 
 1. Aceptar "trust this folder".
 2. Aceptar instalar los plugins del proyecto (vienen en `.claude/settings.json`, marketplace oficial `claude-plugins-official`). Si no aparece el aviso: `/plugin` y habilitarlos.
-3. Aprobar los MCP `playwright`, `shadcn` y `next-devtools` (`.mcp.json`). Requieren Node 20.19+ (`npx`).
+3. Aprobar los MCP `playwright`, `shadcn`, `next-devtools`, `21st` y `supabase` (`.mcp.json`). Requieren Node 20.19+ (`npx`).
+   - `21st`: llave gratis en https://21st.dev/mcp y `set -Ux API_KEY_21ST <llave>` (fish) o `export API_KEY_21ST=<llave>` antes de abrir `claude`.
+   - `supabase`: `/mcp` → `supabase` → Authenticate **con la cuenta del equipo** (ventana privada si tu navegador tiene otra sesión).
 4. `cp .env.example .env` y llenar llaves (nunca commitear `.env`).
 5. (Opcional, para desplegar) Railway: pedir invitación al proyecto y correr `railway setup agent` (o `--oauth`). Ver [herramientas](docs/research/herramientas-claude-code.md).
 
@@ -58,7 +60,7 @@ Detalle y alternativas evaluadas: [docs/research/coordinacion-equipo.md](docs/re
 - `/registrar-decision <decisión>` — agrega a `docs/decisiones.md`.
 - `/generar-facturas [n] [trampa]` — facturas simuladas + respuesta esperada.
 - `/evaluar-agente` — mide autonomía, seguridad y explicabilidad.
-- Externas: `shadcn`, `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines`, `use-railway`, `test-driven-development`, `systematic-debugging`, `verification-before-completion` (lock en `skills-lock.json`, actualizar con `npx skills update -p`).
+- Externas: `shadcn`, `supabase`, `supabase-postgres-best-practices`, `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines`, `use-railway`, `test-driven-development`, `systematic-debugging`, `verification-before-completion` (lock en `skills-lock.json`, actualizar con `npx skills update -p`).
 
 ## Plugins del proyecto
 

@@ -12,6 +12,18 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-16 — Reglas de UI: componentes primero, estilo premium
+- Estado: aceptada
+- Decisión: antes de escribir UI se busca el componente (MCP `shadcn` con registros gratis `@react-bits`, `@skiper-ui`, `@magicui`, `@aceternity`, `@kibo-ui`; MCP `21st`). Estilo profesional premium tipo Apple, Geist sin cursiva, interacción por pasos (máx. 3–5 campos visibles), nada de formularios largos. Reglas completas en `CLAUDE.md` "Reglas de UI".
+- Por qué: menos tiempo en UI, aspecto consistente y una demo que transmita confianza en un producto de pagos.
+- Quién: N
+
+## 2026-10-16 — Infra: Railway Hobby + Supabase en cuenta del equipo
+- Estado: aceptada
+- Decisión: deploy en Railway plan Hobby (USD 5/mes, proyecto `hackradar-30x`, dueño N; el resto se invita). Persistencia de deploy en Supabase free, en una cuenta creada para el equipo con un correo dedicado, nunca en cuentas personales. MCP `supabase` del repo se autentica por OAuth con esa cuenta.
+- Por qué: Railway da URL pública estable para webhooks de Telegram y correo sin apagarse en la demo. Supabase aporta auth por enlace mágico y storage para el portal de proveedores, que Postgres solo de Railway no da. Cuenta separada para no mezclar con proyectos personales.
+- Quién: N
+
 ## 2026-10-16 — Especificación v1 como contrato técnico
 - Estado: propuesta
 - Decisión: `docs/especificacion.md` es la fuente de verdad para escribir código: tipos compartidos (§3), reglas R1–R11 con lógica exacta (§4), combinación e invariantes (§5), presupuesto (§6), plantillas de explicación (§7), registro (§9), aprobaciones (§10), dataset (§11), API (§12), pantallas (§13) y evaluación (§14). Base visual: prototipo `docs/diseno/prototipo-ui.html`. Los issues #1–#14 citan sus secciones y traen un prompt listo.
