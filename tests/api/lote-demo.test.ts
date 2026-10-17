@@ -45,12 +45,26 @@ describe("lote demo de punta a punta (§11.4)", () => {
     expect(b.procesado_en).toBe("2026-10-16T09:24:00-05:00");
   });
 
-  it("filtros de la bandeja: decisión y búsqueda", async () => {
+  it("filtros de la bandeja: decisión y búsqueda; los conteos de las pestañas siguen a la búsqueda", async () => {
     const repo = await repoProcesado();
+    const diego = await obtenerBandeja(repo, { q: "diego" });
+    expect(diego.conteos).toEqual({ todas: 2, pagar: 1, frenar: 0, escalar: 1 });
     expect((await obtenerBandeja(repo, { decision: "frenar" })).filas.map((f) => f.factura_numero)).toEqual(["INV-2210", "PX-77", "ES-4410"]);
     expect((await obtenerBandeja(repo, { q: "omicron" })).filas.map((f) => f.factura_numero)).toEqual(["OMI-3381"]);
     const res = await getBandeja(new Request("http://x/api/bandeja?decision=raro"));
     expect(res.status).toBe(400);
+  });
+
+  it("presupuesto quincenal: el periodo sale de las reglas (no se cae a cero)", async () => {
+    const repo = await repoProcesado();
+    const v7 = await repo.reglasVigentes();
+    await repo.guardarReglas({ ...v7, presupuesto: { ...v7.presupuesto, periodo: "quincenal" } });
+    const b = await obtenerBandeja(repo);
+    expect(b.periodo).toBe("2026-10-Q2");
+    expect(b.mes).toBe("2026-10");
+    // 16-oct cae en la segunda quincena: todo el lote y el reservado cuentan; lo de la primera quincena no.
+    expect(b.presupuesto.pagado_en_lote).toBe(744405);
+    expect(b.presupuesto.reservado).toBe(927865);
   });
 
   it("traza de OMI-3381: asignada a Laura, plazo 17-oct 12:00, R10 detectada, resumen de reglas", async () => {

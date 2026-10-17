@@ -16,7 +16,8 @@ export function BotonProcesar({ pendientes }: { pendientes: number }) {
     iniciar(async () => {
       try {
         const res = await fetch("/api/procesar", { method: "POST" });
-        const datos = (await res.json()) as { procesadas?: number; resumen?: Record<string, number>; error?: string };
+        // Un 502 del proxy o una página de error de Next no traen JSON: no mostrar "Unexpected token <".
+        const datos = (await res.json().catch(() => ({}))) as { procesadas?: number; resumen?: Record<string, number>; error?: string };
         if (!res.ok) throw new Error(datos.error ?? "No se pudo procesar el lote.");
         if (!datos.procesadas) {
           toast.info("No hay facturas nuevas", { description: "Todo lo recibido ya tiene una decisión." });

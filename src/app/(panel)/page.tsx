@@ -22,17 +22,10 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
 
   const acciones = (
     <div className="flex flex-wrap items-end gap-2.5">
+      {/* Un solo periodo cargado: etiqueta fija, no un selector que no hace nada. */}
       <div className="flex flex-col gap-1">
-        <label htmlFor="periodo" className="text-xs text-muted-foreground">
-          Periodo
-        </label>
-        <select
-          id="periodo"
-          defaultValue={b.periodo}
-          className="min-h-11 rounded-[10px] border border-borde-fuerte bg-card px-3 text-sm text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <option value={b.periodo}>{mesAnio(b.periodo)}</option>
-        </select>
+        <span className="text-xs text-muted-foreground">Periodo</span>
+        <span className="flex min-h-11 items-center rounded-[10px] border border-border bg-superficie-2 px-3 text-sm">{mesAnio(b.mes)}</span>
       </div>
       <Boton variante="secundaria" nativeButton={false} render={<a href="/api/registro/export.csv" download />}>
         <DownloadIcon aria-hidden />
@@ -47,7 +40,7 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
       <>
         <header className="flex flex-wrap items-end justify-between gap-5">
           <div className="flex max-w-[560px] flex-col gap-1.5">
-            <span className="text-[13px] text-muted-foreground">{mesAnio(b.periodo)}</span>
+            <span className="text-[13px] text-muted-foreground">{mesAnio(b.mes)}</span>
             <h1 className="text-[32px] leading-tight font-semibold tracking-tight text-balance">Bandeja de decisiones</h1>
           </div>
           {acciones}
@@ -79,7 +72,7 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div className="flex max-w-[560px] flex-col gap-1.5">
           <span className="text-[13px] text-muted-foreground">
-            {mesAnio(b.periodo)}
+            {mesAnio(b.mes)}
             {b.procesado_en ? ` · Lote del ${diaMes(b.procesado_en)}` : ""}
           </span>
           <h1 className="text-[32px] leading-tight font-semibold tracking-tight text-balance">Bandeja de decisiones</h1>
@@ -120,12 +113,18 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
           tono="escalada"
           etiqueta="Escaladas · esperan a una persona"
           valor={kpis.escaladas_pendientes}
-          detalle={kpis.escaladas_pendientes > 0 ? "Revisar aprobaciones →" : `Las ${kpis.escaladas.n} ya tienen decisión humana`}
-          href="/aprobaciones"
+          detalle={
+            kpis.escaladas_pendientes > 0
+              ? "Revisar aprobaciones →"
+              : kpis.escaladas.n > 0
+                ? `Las ${kpis.escaladas.n} ya tienen decisión humana`
+                : "Ninguna escalada en este lote"
+          }
+          href={kpis.escaladas_pendientes > 0 ? "/aprobaciones" : undefined}
         />
       </section>
 
-      <Presupuesto datos={b.presupuesto} periodo={b.periodo} />
+      <Presupuesto datos={b.presupuesto} mes={b.mes} />
 
       <TablaDecisiones datos={b} decision={decision} q={q} />
     </>

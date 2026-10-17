@@ -1,7 +1,18 @@
-// Textos de fecha, hora y canal para las pantallas. Se leen del texto ISO (2026-10-16T09:24:00-05:00)
-// sin pasar por Date: la hora que se muestra es la de la empresa (Bogotá), no la del servidor ni del navegador.
+// Textos de fecha, hora y canal para las pantallas. Todo se muestra en hora de la empresa (Bogotá, UTC−5
+// todo el año), sin depender de la zona del servidor ni del navegador.
 
+import { porcentaje } from "@/dominio/dinero";
 import type { Canal, Formato } from "@/dominio/tipos";
+
+const DESFASE_BOGOTA_MS = 5 * 60 * 60 * 1000;
+
+/** Cualquier momento ISO (con Z u otra zona) → "2026-10-16T09:14:02-05:00" en hora de Bogotá. */
+export function enBogota(iso: string): string {
+  if (iso.length === 10 || iso.endsWith("-05:00")) return iso;
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return iso;
+  return new Date(ms - DESFASE_BOGOTA_MS).toISOString().slice(0, 19) + "-05:00";
+}
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
@@ -15,17 +26,18 @@ export function mesAnio(periodo: string): string {
 
 /** "2026-10-16…" → "16 oct" */
 export function diaMes(iso: string): string {
-  return `${Number(iso.slice(8, 10))} ${mes(iso).slice(0, 3)}`;
+  const b = enBogota(iso);
+  return `${Number(b.slice(8, 10))} ${mes(b).slice(0, 3)}`;
 }
 
 /** "2026-10-16…" → "16 oct 2026" */
 export function fechaCorta(iso: string): string {
-  return `${diaMes(iso)} ${iso.slice(0, 4)}`;
+  return `${diaMes(iso)} ${enBogota(iso).slice(0, 4)}`;
 }
 
 /** "…T09:24:00-05:00" → "09:24" (con segundos: "09:24:00") */
 export function hora(iso: string, segundos = false): string {
-  return iso.slice(11, segundos ? 19 : 16);
+  return enBogota(iso).slice(11, segundos ? 19 : 16);
 }
 
 /** "17 oct, 12:00" (plazos de aprobación) */
@@ -46,7 +58,7 @@ export function etiquetaCanal(c: Canal): string {
   return CANALES[c];
 }
 
-/** 0.6667 → "66,7%" */
+/** 0.6667 → "66,7%" (mismo redondeo que porcentaje() de dinero.ts, sin signo) */
 export function porcentajeUi(fraccion: number, decimales = 1): string {
-  return `${(fraccion * 100).toFixed(decimales).replace(".", ",")}%`;
+  return porcentaje(fraccion * 100, decimales).replace(/^\+/, "");
 }

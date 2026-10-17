@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 const pct = (parte: number, total: number) => (total <= 0 ? 0 : Math.max(0, (parte / total) * 100));
 
 /** Tarjeta "Presupuesto de {mes}" con barra apilada (§13.1, §6). */
-export function Presupuesto({ datos, periodo }: { datos: RespuestaBandeja["presupuesto"]; periodo: string }) {
+export function Presupuesto({ datos, mes: mesLote }: { datos: RespuestaBandeja["presupuesto"]; mes: string }) {
   const { monto_usd, pagado_antes, pagado_en_lote, reservado, disponible } = datos;
   const tramos = [
     { etiqueta: "Pagado antes del lote", valor: pagado_antes, barra: "bg-[#a7b1ac]", muestra: "bg-[#a7b1ac]" },
@@ -18,8 +18,11 @@ export function Presupuesto({ datos, periodo }: { datos: RespuestaBandeja["presu
     },
     { etiqueta: "Disponible para nuevos pagos", valor: Math.max(disponible, 0), barra: "bg-muted", muestra: "bg-muted ring-1 ring-[#c9cfc8]" },
   ];
-  const resumen = tramos.map((t) => `${Math.round(pct(t.valor, monto_usd))}% ${t.etiqueta.toLowerCase()}`).join(", ");
-  const mes = mesAnio(periodo).split(" ")[0]?.toLowerCase();
+  // Si lo pagado + reservado supera el presupuesto, la barra se escala al total para no recortarse.
+  const base = Math.max(monto_usd, pagado_antes + pagado_en_lote + reservado);
+  const sobregiro = disponible < 0;
+  const resumen = tramos.map((t) => `${Math.round(pct(t.valor, base))}% ${t.etiqueta.toLowerCase()}`).join(", ");
+  const mes = mesAnio(mesLote).split(" ")[0]?.toLowerCase();
 
   return (
     <Tarjeta as="section" aria-labelledby="ppto" className="gap-4 px-6 py-[22px]">
@@ -33,13 +36,16 @@ export function Presupuesto({ datos, periodo }: { datos: RespuestaBandeja["presu
           </p>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-[13px] text-muted-foreground">Disponible</span>
-          <Monto usd={disponible < 0 ? 0 : disponible} className={cn("text-[22px] font-semibold", disponible <= 0 && "text-frenada-foreground")} />
+          <span className="text-[13px] text-muted-foreground">{sobregiro ? "Sobre el presupuesto" : "Disponible"}</span>
+          <span className={cn("text-[22px] font-semibold", disponible <= 0 && "text-frenada-foreground")}>
+            {sobregiro ? "−" : ""}
+            <Monto usd={Math.abs(disponible)} />
+          </span>
         </div>
       </div>
       <div role="img" aria-label={`Presupuesto: ${resumen}`} className="flex h-3.5 overflow-hidden rounded-full bg-muted">
         {tramos.map((t, i) => (
-          <div key={t.etiqueta} className={cn(t.barra, i > 0 && "border-l-2 border-card")} style={{ width: `${pct(t.valor, monto_usd).toFixed(2)}%` }} />
+          <div key={t.etiqueta} className={cn(t.barra, i > 0 && "border-l-2 border-card")} style={{ width: `${pct(t.valor, base).toFixed(2)}%` }} />
         ))}
       </div>
       <dl className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
