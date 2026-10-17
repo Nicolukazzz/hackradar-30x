@@ -21,7 +21,7 @@ export type EstadoInvitacionProveedor = "activa" | "vencida" | "revocada" | "ago
 
 export type NuevaInvitacionProveedor = Omit<InvitacionProveedor, "id" | "usos" | "revocada_en"> & { token_hash: string };
 
-/** Mismos códigos que `public.usar_invitacion_proveedor` (migración 20261017100000). */
+/** Mismos códigos que `public.usar_invitacion_proveedor` (migración 20261017154504). */
 export type ResultadoUso = "ok" | "invalida" | "otro_correo";
 
 export class ErrorInvitacion extends Error {
