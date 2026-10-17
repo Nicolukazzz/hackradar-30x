@@ -11,6 +11,16 @@
   --color-brand-foreground: var(--brand-foreground);
   --color-link: var(--link);
   --color-subtle: var(--subtle);
+  --color-superficie-2: var(--superficie-2);
+  --color-borde-fuerte: var(--borde-fuerte);
+  --color-texto-3: var(--texto-3);
+  --color-chip: var(--chip);
+  --color-aviso: var(--aviso);
+  --color-aviso-foreground: var(--aviso-foreground);
+  --color-escalada-borde: var(--escalada-borde);
+  --color-escalada-suave: var(--escalada-suave);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-card: var(--sidebar-card);
   --color-pagada: var(--pagada);
   --color-pagada-foreground: var(--pagada-foreground);
   --color-pagada-punto: var(--pagada-punto);
@@ -83,6 +93,15 @@
   --input: #d5d9d3;
   --ring: #101614;
   --subtle: #eceeea;
+  /* Complementos del prototipo (no están en la tabla §15, salen de su HTML). */
+  --superficie-2: var(--background); /* cabecera de tablas, pies de tarjeta */
+  --borde-fuerte: var(--input);
+  --texto-3: #33403a; /* texto de tablas: entre tinta y secundario */
+  --chip: #f1f2ee; /* fondo de chips de comparación R9 · … */
+  --aviso: #f2b544; /* badge de pendientes en la barra lateral */
+  --aviso-foreground: #1a1206;
+  --escalada-borde: #f1d9a6;
+  --escalada-suave: #fff8ea; /* KPI de escaladas */
   --brand: #c8f169;
   --brand-foreground: #101614;
   --link: #1f4fd1;
@@ -109,6 +128,8 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgb(255 255 255 / 10%);
   --sidebar-ring: #c8f169;
+  --sidebar-muted: #93a39b; /* texto secundario en la barra lateral */
+  --sidebar-card: #16211c; /* caja "Agente activo" */
 }
 
 
@@ -122,6 +143,21 @@
   html {
     @apply font-sans;
     font-synthesis: none;
+  }
+  /* En móvil la cabecera es fija (64 px): que no tape lo que recibe foco o un ancla. */
+  @media (max-width: 767px) {
+    html {
+      scroll-padding-top: 4.5rem;
+    }
+  }
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
   }
   /* Reglas de UI (CLAUDE.md): nada de cursiva en ningún lado. */
   em, i, cite, dfn, var, address {
