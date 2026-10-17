@@ -30,7 +30,8 @@ export type PropsPanelDecision = {
   montoUsd: number | null;
   puedeAgregarALista: boolean;
   requiereDobleAprobacion: boolean;
-  firmas: { aprobador_id: string; nombre: string }[];
+  /** `cubre`: el límite de quien firmó primero alcanza el monto (§10) */
+  firmas: { aprobador_id: string; nombre: string; cubre: boolean }[];
   actual: AprobadorCorto | null;
   /** id del textarea, para enlazar "Decidir ahora" */
   idComentario?: string;
@@ -53,8 +54,12 @@ export function PanelDecision(p: PropsPanelDecision) {
   const firmaPropia = p.firmas.some((f) => f.aprobador_id === p.actual?.id);
   const superaLimite =
     p.actual !== null && p.actual.limite_usd !== null && p.montoUsd !== null && p.montoUsd > p.actual.limite_usd;
-  // Con doble aprobación, una firma sin límite suficiente vale como firma de control (§10) si la otra sí lo tiene.
-  const bloqueoLimite = superaLimite && (!p.requiereDobleAprobacion || p.firmas.length > 0);
+  // Con doble aprobación, una firma sin límite suficiente vale como firma de control (§10) si la otra sí lo tiene:
+  // la primera puede ser de control, y la segunda también si la primera ya cubre el monto (igual que decidir()).
+  const primeraCubre = p.firmas.some((f) => f.cubre);
+  const bloqueoLimite = superaLimite && (!p.requiereDobleAprobacion || (p.firmas.length > 0 && !primeraCubre));
+  // El servidor agrega a la lista con la firma que cierra la aprobación, nunca con la primera de dos.
+  const puedeAgregar = p.puedeAgregarALista && !(p.requiereDobleAprobacion && p.firmas.length === 0);
 
   let textoAprobar = usd ? `Aprobar ${usd}` : "Aprobar";
   if (p.requiereDobleAprobacion) textoAprobar = p.firmas.length === 0 ? "Aprobar (1.ª de 2 firmas)" : "Aprobar (2.ª firma)";
@@ -69,11 +74,19 @@ export function PanelDecision(p: PropsPanelDecision) {
   function confirmar() {
     if (!accion) return;
     iniciar(async () => {
-      const res = await fetch(`/api/aprobaciones/${encodeURIComponent(p.refInterna)}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ accion, comentario: comentario.trim(), ...(agregar && accion === "aprobar" ? { agregar_a_lista: true } : {}) }),
-      });
+      let res: Response;
+      try {
+        res = await fetch(`/api/aprobaciones/${encodeURIComponent(p.refInterna)}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ accion, comentario: comentario.trim(), ...(agregar && puedeAgregar && accion === "aprobar" ? { agregar_a_lista: true } : {}) }),
+        });
+      } catch {
+        // Sin red o servidor reiniciando: no se registró nada; el comentario se conserva para reintentar.
+        setError("No hubo conexión con el servidor y no se registró nada. Revisa tu conexión e intenta de nuevo.");
+        setAccion(null);
+        return;
+      }
       const datos = (await res.json().catch(() => ({}))) as { error?: string; decision?: string | null };
       if (!res.ok) {
         setError(datos.error ?? "No se pudo registrar la decisión. Intenta de nuevo.");
@@ -110,7 +123,7 @@ export function PanelDecision(p: PropsPanelDecision) {
               Vas a <strong className="font-semibold">aprobar</strong> el pago de <span className="font-mono">{usd ?? "esta factura"}</span>
               {p.beneficiario ? ` a ${sinPuntoFinal(p.beneficiario)}` : ""}
               {p.requiereDobleAprobacion && p.firmas.length === 0 ? " como primera de dos firmas" : ""}
-              {agregar ? `, y agregar a ${sinPuntoFinal(p.beneficiario ?? "este beneficiario")} a la lista permitida` : ""}.
+              {agregar && puedeAgregar ? `, y agregar a ${sinPuntoFinal(p.beneficiario ?? "este beneficiario")} a la lista permitida` : ""}.
             </>
           ) : (
             <>
@@ -165,7 +178,7 @@ export function PanelDecision(p: PropsPanelDecision) {
           </span>
         ) : null}
       </div>
-      {p.puedeAgregarALista ? (
+      {puedeAgregar ? (
         <label className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm">
           <input type="checkbox" checked={agregar} onChange={(e) => setAgregar(e.target.checked)} className="size-[18px] accent-primary" />
           Agregar a {p.beneficiario ?? "este beneficiario"} a la lista permitida para pagos futuros

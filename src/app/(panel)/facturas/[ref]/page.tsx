@@ -92,7 +92,8 @@ function PorQue({ f }: { f: RespuestaFactura }) {
 async function DecisionHumana({ f }: { f: RespuestaFactura }) {
   const e = f.entrada;
   const pendiente = f.estado === "ESCALAR";
-  const resueltas = f.decisiones_humanas.filter((h) => h.decision !== null);
+  // Todas las decisiones humanas, también la primera de dos firmas (decision null): su comentario es parte de la traza.
+  const humanas = f.decisiones_humanas;
   // #49: toda cuenta decide como aprobador principal con su propio nombre. Con roles (#51) sale de `puede(sesion, 'aprobar')`.
   const sesion = pendiente ? await obtenerSesion() : null;
   const cuenta = sesion ? aprobadorDeLaCuenta(sesion) : null;
@@ -106,10 +107,14 @@ async function DecisionHumana({ f }: { f: RespuestaFactura }) {
         </h2>
         <p className="text-[13px] text-muted-foreground">Tu decisión y tu comentario quedan en el registro junto con la traza del agente.</p>
       </div>
-      {resueltas.map((h) => (
+      {humanas.map((h) => (
         <div key={h.id} className="flex flex-col gap-1.5 rounded-xl bg-superficie-2 px-4 py-3 ring-1 ring-border">
           <span className="flex flex-wrap items-center gap-2">
-            {h.decision ? <PildoraDecision decision={h.decision} /> : null}
+            {h.decision ? (
+              <PildoraDecision decision={h.decision} />
+            ) : (
+              <span className="rounded-full bg-escalada px-2.5 py-1 text-xs font-semibold text-escalada-foreground">Primera firma · 1 de 2</span>
+            )}
             <span className="text-xs text-muted-foreground">
               {fechaCorta(h.momento)}, {hora(h.momento)}
             </span>
@@ -132,7 +137,7 @@ async function DecisionHumana({ f }: { f: RespuestaFactura }) {
           />
         </>
       ) : null}
-      {!pendiente && resueltas.length === 0 ? (
+      {!pendiente && humanas.length === 0 ? (
         <p className="text-sm text-texto-3">
           {SIN_DECISION[e.decision ?? ""] ?? "No requiere decisión."}
         </p>
