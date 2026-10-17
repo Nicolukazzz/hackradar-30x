@@ -9,6 +9,7 @@ import { Boton, Tarjeta, TarjetaEncabezado, TarjetaPie, fechaCorta, porcentajeUi
 import type { ReporteEvaluacion, UsoTasa } from "@/app/_datos/reglas";
 import { formatearTasa } from "@/dominio/dinero";
 import { REGLAS_EDITABLES, type Aprobador, type IdRegla, type Reglas } from "@/dominio/tipos";
+import type { PermisoUI } from "@/lib/auth/permisos";
 import { cn } from "@/lib/utils";
 
 import { escribirDecimal, escribirUsd, leerDecimal, leerUsd } from "./numeros";
@@ -123,7 +124,7 @@ const iguales = (a: Reglas, b: Reglas) => mismoValor({ ...a, version: 0, editada
 /** Huella estable (claves ordenadas) para saber qué valores se simularon. */
 function huellaDe(r: Reglas): string {
   const ordenar = (v: unknown): unknown =>
-    v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, ordenar((v as Record<string, unknown>)[k])])) : v;
+    v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort((a, b) => a.localeCompare(b)).map((k) => [k, ordenar((v as Record<string, unknown>)[k])])) : v;
   return JSON.stringify(ordenar(r));
 }
 
@@ -151,7 +152,10 @@ export function EditorReglas({
   usoTasas,
   aprobadores,
   beneficiarios,
+  permisoGuardar,
 }: {
+  /** guardar una versión nueva: solo `editar_reglas` (#51). Sin permiso se puede simular igual. */
+  permisoGuardar: PermisoUI;
   vigente: Reglas;
   historial: { version: number; editada_por: string; editada_en: string }[];
   simulacionInicial: ReporteEvaluacion | null;
@@ -208,7 +212,9 @@ export function EditorReglas({
 
   const r = sim.r;
   const inseguro = r !== null && r.pagos_indebidos > 0;
-  const motivoBloqueo = !reglas
+  const motivoBloqueo = !permisoGuardar.ok
+    ? `${permisoGuardar.motivo} Puedes simular sin guardar.`
+    : !reglas
     ? "Corrige los campos marcados para poder guardar."
     : sim.estado === "cargando" || (sim.estado === "lista" && simulada !== huella)
       ? "Esperando la simulación…"

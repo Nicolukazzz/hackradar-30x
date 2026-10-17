@@ -1,13 +1,15 @@
 import { obtenerReglasConSimulacion } from "@/app/_datos/reglas";
 import { formatear, formatearUsd } from "@/dominio/dinero";
 import type { Beneficiario } from "@/dominio/tipos";
+import { permisoPara } from "@/lib/auth/permisos";
+import { obtenerSesion } from "@/lib/auth/sesion";
 import { descripcionBeneficiario } from "@/servicios/comun";
 
 import { EditorReglas, type FilaBeneficiario } from "../_reglas/editor";
 
 // Reglas de pago (especificación §13.4, prototipo pantalla 4). Lee en el servidor (reglas vigentes +
-// simulación inicial) y edita en el cliente. #49: sin roles, cualquier cuenta puede guardar; cuando
-// vuelvan (#51) "Guardar como v{n}" queda solo para `puede(sesion, 'editar_reglas')`.
+// simulación inicial) y edita en el cliente. Roles (#51): cualquiera puede simular, pero "Guardar como v{n}"
+// queda solo para `puede(sesion, 'editar_reglas')` (POST /api/reglas lo exige igual en el servidor).
 
 function fila(b: Beneficiario, limiteDefault: number): FilaBeneficiario {
   const lineas = b.acuerdo?.lineas ?? [];
@@ -24,11 +26,12 @@ function fila(b: Beneficiario, limiteDefault: number): FilaBeneficiario {
 }
 
 export default async function ReglasPage() {
-  const r = await obtenerReglasConSimulacion();
+  const [r, sesion] = await Promise.all([obtenerReglasConSimulacion(), obtenerSesion()]);
   return (
     <EditorReglas
       // key: tras guardar, el editor arranca de cero con la versión nueva.
       key={r.vigente.version}
+      permisoGuardar={permisoPara(sesion, "editar_reglas")}
       vigente={r.vigente}
       historial={r.historial}
       simulacionInicial={r.simulacion}
