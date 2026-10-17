@@ -31,11 +31,13 @@ export function r02Duplicado(ctx: ContextoRegla) {
     ext.fecha_emision.valor && !afectado(ctx, "fecha_emision") && esFechaValida(ext.fecha_emision.valor) ? ext.fecha_emision.valor : null;
   const usd = montoUsd(ctx);
   const hito = ext.hito_numero?.valor ?? null;
+  const registradaHace = (f: FacturaVigente) => diasEntre(fechaDe(f.momento), fechaDe(ahora));
   const dias = (f: FacturaVigente) => (emision && f.fecha_emision && esFechaValida(f.fecha_emision) ? diasEntre(f.fecha_emision, emision) : null);
 
   const criterios: [Criterio, (f: FacturaVigente) => boolean][] = [
     ["archivo", (f) => doc.sha256 !== "" && f.sha256 === doc.sha256],
-    ["numero", (f) => numero !== null && f.numero_normalizado === numero && (dias(f) ?? 0) <= dup.ventana_dias],
+    // La fecha de emisión la escribe quien cobra: también cuenta cuándo se registró la previa, que no controla.
+    ["numero", (f) => numero !== null && f.numero_normalizado === numero && ((dias(f) ?? 0) <= dup.ventana_dias || registradaHace(f) <= dup.ventana_dias)],
     ["hito", (f) => hito !== null && f.hito === hito && f.estado === "pagada"],
     [
       "parecida",

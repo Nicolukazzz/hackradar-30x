@@ -70,8 +70,8 @@ describe("R2 No es duplicada", () => {
     expect(r02Duplicado(ctx(d, { historial: [esc, rechazo] })).resultado).toBe("CUMPLE");
   });
 
-  it("mismo número fuera de la ventana de 45 días no es duplicado", () => {
-    const h = previa({ ext: { fecha_emision: campo("2026-08-01") }, monto_usd_centavos: 1 });
+  it("mismo número emitido y registrado hace más de 45 días no es duplicado", () => {
+    const h = previa({ momento: "2026-08-03T10:00:00-05:00", ext: { fecha_emision: campo("2026-08-01") }, monto_usd_centavos: 1 });
     expect(r02Duplicado(ctx(d, { historial: [h] })).resultado).toBe("CUMPLE");
   });
 
@@ -90,5 +90,14 @@ describe("R2 No es duplicada", () => {
 
   it("lote demo: el recordatorio INV-2210 ve el pago de las 09:14:10", async () => {
     expect((await delLote("INV-2210", "R2", 1)).comparacion).toBe("mismo emisor + número INV-2210 (pagada 09:14:10, REG-2026-000002)");
+  });
+});
+
+describe("R2 no se evade cambiando la fecha de emisión", () => {
+  it("mismo número registrado hace poco, con fecha de emisión vieja, sigue siendo duplicado", async () => {
+    const d = await datosComunes();
+    const h = previa({ momento: "2026-10-16T09:00:00-05:00" });
+    const e = r02Duplicado(ctx(d, { historial: [h], ext: { fecha_emision: campo("2026-06-01"), fecha_vencimiento: campo("2026-06-30") } }));
+    expect(e.resultado).toBe("FALLA");
   });
 });
