@@ -6,6 +6,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { cargarEscenario, type DatosComunes, reglasVersion } from "@/dominio/cargar";
 import { aUsd } from "@/dominio/dinero";
+import { remitenteInvitacion } from "@/dominio/remitente";
 import type { DocumentoRecibido, EntradaRegistro, Extraccion, Moneda, Reglas } from "@/dominio/tipos";
 import { CAMPOS_OBLIGATORIOS } from "@/reglas/contexto";
 import { sumarDias } from "@/reglas/fechas";
@@ -171,6 +172,16 @@ describe("invariantes de seguridad (§5)", () => {
             const sinCampo = { ...input, ext: { ...input.ext, [c]: campo(null) } };
             expect(evaluarFactura(sinCampo).decision).not.toBe("PAGAR");
           }
+          // 6. (#28) La misma factura enviada por enlace de invitación nunca produce PAGAR, ni aunque alguien
+          //    registre ese remitente como canal del beneficiario.
+          const valor = remitenteInvitacion("00000000-0000-4000-8000-000000000000", "quien@cobra.example");
+          const porInvitacion = { ...input, doc: { ...input.doc, canal: "portal" as const, remitente: { tipo: "portal" as const, valor } } };
+          expect(evaluarFactura(porInvitacion).decision).not.toBe("PAGAR");
+          const datosTrucados = {
+            ...input.datos,
+            beneficiarios: input.datos.beneficiarios.map((b) => ({ ...b, canales: { ...b.canales, portal_usuario: valor, correos: [...b.canales.correos, valor] } })),
+          };
+          expect(evaluarFactura({ ...porInvitacion, datos: datosTrucados }).decision).not.toBe("PAGAR");
         }
       }),
       { numRuns: CORRIDAS, seed: 20261016 },

@@ -23,11 +23,11 @@ type Estado =
   | { tipo: "listo"; nombre: string; resultado: ResultadoSubida }
   | { tipo: "error"; mensaje: string };
 
-function enviar(archivo: File, alAvanzar: (pct: number) => void): Promise<ResultadoSubida> {
+function enviar(url: string, archivo: File, alAvanzar: (pct: number) => void): Promise<ResultadoSubida> {
   return new Promise((resolver, rechazar) => {
     // XMLHttpRequest y no fetch: fetch no informa el progreso de subida.
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/documentos");
+    xhr.open("POST", url);
     xhr.upload.onprogress = (e) => e.lengthComputable && alAvanzar(Math.round((e.loaded / e.total) * 100));
     xhr.onerror = () => rechazar(new Error("No hay conexión con el servidor. Intenta de nuevo."));
     xhr.onload = () => {
@@ -46,7 +46,16 @@ function enviar(archivo: File, alAvanzar: (pct: number) => void): Promise<Result
   });
 }
 
-export function SubirDocumento({ alTerminar, className }: { alTerminar?: (r: ResultadoSubida) => void; className?: string }) {
+export function SubirDocumento({
+  alTerminar,
+  className,
+  url = "/api/documentos",
+}: {
+  alTerminar?: (r: ResultadoSubida) => void;
+  className?: string;
+  /** a dónde se sube: el panel (por defecto) o el enlace de invitación de un proveedor (`/api/enviar/<token>`, #28) */
+  url?: string;
+}) {
   const entrada = useRef<HTMLInputElement>(null);
   const [estado, setEstado] = useState<Estado>({ tipo: "inicial" });
   const [encima, setEncima] = useState(false);
@@ -58,7 +67,7 @@ export function SubirDocumento({ alTerminar, className }: { alTerminar?: (r: Res
     if (archivo.size > MAX_BYTES) return setEstado({ tipo: "error", mensaje: "El archivo supera los 10 MB." });
     setEstado({ tipo: "subiendo", nombre: archivo.name, progreso: 0 });
     try {
-      const resultado = await enviar(archivo, (progreso) => setEstado({ tipo: "subiendo", nombre: archivo.name, progreso }));
+      const resultado = await enviar(url, archivo, (progreso) => setEstado({ tipo: "subiendo", nombre: archivo.name, progreso }));
       setEstado({ tipo: "listo", nombre: archivo.name, resultado });
       alTerminar?.(resultado);
     } catch (e) {

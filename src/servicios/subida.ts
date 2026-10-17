@@ -63,15 +63,20 @@ async function decidirConReintento(ref: string, deps: DependenciasSubida) {
   }
 }
 
+/**
+ * `origen` lo usan otros caminos de subida del servidor (enlace de invitación, #28) para fijar canal y remitente;
+ * nunca sale de la petición.
+ */
 export async function subirDocumento(
   archivo: { bytes: Uint8Array; nombre: string },
   sesion: Sesion,
   deps: DependenciasSubida,
+  origen: { canal: Canal; remitente: Remitente } = remitenteDe(sesion),
 ): Promise<ResultadoSubida> {
   const v = validarArchivo(archivo.bytes);
   if (!v.ok) throw new ErrorSubida(v.estado, v.mensaje);
 
-  const { canal, remitente } = remitenteDe(sesion);
+  const { canal, remitente } = origen;
   const bytes = Buffer.from(archivo.bytes.buffer, archivo.bytes.byteOffset, archivo.bytes.byteLength); // sin copiar
   const entrada: DocumentoEntrante = {
     canal,
