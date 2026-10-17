@@ -245,7 +245,8 @@ otp_expiry = 600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Códigos de 6 dígitos (#49): confirmar la cuenta al crearla y cambiar la contraseña olvidada.
+# Códigos de 6 dígitos. «confirmation» ya no se usa desde #81 (no hay registro público: las cuentas las crea un admin
+# con la admin API, ya confirmadas, #80); queda para cuentas viejas. «recovery»: cambiar la contraseña olvidada.
 [auth.email.template.confirmation]
 subject = "Confirma tu correo: {{ .Token }}"
 content_path = "./supabase/templates/confirmar-cuenta.html"

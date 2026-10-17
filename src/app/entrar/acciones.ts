@@ -53,7 +53,8 @@ async function iniciarSesion(formulario: FormData): Promise<EstadoEntrar> {
   const supabase = await crearClienteServidor();
   const { error } = await supabase.auth.signInWithPassword({ email: correo, password: contrasena });
   // Solo cuentas creadas antes de #80 por el registro abierto, que nunca confirmaron su correo.
-  if (error?.code === "email_not_confirmed") return { vista: "entrar", correo, error: "Tu correo no está confirmado. Pide a tu administrador que te cree la cuenta de nuevo." };
+  // «¿Olvidaste tu contraseña?» manda un código al correo y, al usarlo, también lo confirma.
+  if (error?.code === "email_not_confirmed") return { vista: "entrar", correo, error: "Tu correo no está confirmado. Usa «¿Olvidaste tu contraseña?»: el código que te llega lo confirma." };
   if (error) return { vista: "entrar", correo, error: mensajeDeError(error) };
   return terminarEntrada(texto(formulario, "siguiente"), "entrar");
 }
@@ -63,7 +64,12 @@ async function pedirCambioDeContrasena(formulario: FormData): Promise<EstadoEntr
   if (!correo) return { vista: "olvide", error: "Escribe un correo válido." };
   const supabase = await crearClienteServidor();
   const { error } = await supabase.auth.resetPasswordForEmail(correo);
-  return respuestaEnvio(error, { vista: "recuperar", correo }, "olvide");
+  const respuesta = respuestaEnvio(error, { vista: "recuperar", correo }, "olvide");
+  // Una falla del envío (no un correo inexistente, que responde igual) se audita: si el SMTP cae, alguien se entera.
+  if (respuesta.error && error?.status !== 429) {
+    auditar({ tipo: "error_envio", usuario_id: null, ruta: "/entrar", motivo: `${error?.status ?? "sin status"} ${error?.code ?? ""}`.trim() });
+  }
+  return respuesta;
 }
 
 async function cambiarContrasena(formulario: FormData): Promise<EstadoEntrar> {

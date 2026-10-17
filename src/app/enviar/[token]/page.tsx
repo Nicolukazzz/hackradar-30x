@@ -18,8 +18,9 @@ import { SubirPorEnlace } from "./subir";
 
 export const metadata: Metadata = { title: "Enviar factura · Nébula Studio Inc.", referrer: "no-referrer" };
 
-// Enlace para proveedores nuevos (#28). Sin sesión, el proxy manda a /entrar (crear cuenta y confirmar el correo con
-// código) y vuelve aquí. Un enlace inexistente, vencido, revocado o agotado muestra la misma página.
+// Enlace para proveedores nuevos (#28). Desde #81 un proveedor no puede crear cuenta en /entrar: este flujo lo
+// reemplaza #85 (llave por proveedor, sin cuenta). Mientras tanto solo sirve a cuentas que ya existen.
+// Un enlace inexistente, vencido, revocado o agotado muestra la misma página.
 
 const ESTADO: Record<EstadoEnvio, { texto: string; clase: string }> = {
   en_revision: { texto: "En revisión", clase: "bg-escalada text-escalada-foreground" },

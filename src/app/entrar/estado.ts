@@ -9,8 +9,6 @@ export type EstadoEntrar = {
   /** correo escrito (se conserva tras un error) o al que se mandó el código (recuperar) */
   correo?: string;
   error?: string;
-  /** aviso no bloqueante, p. ej. "te reenviamos el código" */
-  aviso?: string;
 };
 
 type ErrorSupabase = { status?: number; code?: string } | null;
