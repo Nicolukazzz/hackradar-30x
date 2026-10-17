@@ -2,9 +2,14 @@
 
 import { formatearNumero } from "@/dominio/dinero";
 
-/** "3.000,00" · "3000" · "3000,5" → centavos. null si no es un monto válido (vacío, letras, negativo). */
+/**
+ * "3.000,00" · "3000" · "3000,5" · "3000.50" → centavos. null si no es un monto válido (vacío, letras, negativo).
+ * Con coma, los puntos son de miles. Sin coma, un punto seguido de 1–2 dígitos al final es decimal ("3000.50", "1.5");
+ * cualquier otro punto es de miles ("3.000").
+ */
 export function leerUsd(texto: string): number | null {
-  const t = texto.trim().replace(/^usd\s*/i, "").replaceAll(".", "").replace(",", ".");
+  const limpio = texto.trim().replace(/^usd\s*/i, "");
+  const t = !limpio.includes(",") && /^\d+\.\d{1,2}$/.test(limpio) ? limpio : limpio.replaceAll(".", "").replace(",", ".");
   if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
   const centavos = Math.round(Number(t) * 100);
   return Number.isSafeInteger(centavos) ? centavos : null;

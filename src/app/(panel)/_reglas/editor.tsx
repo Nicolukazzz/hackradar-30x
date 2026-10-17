@@ -2,12 +2,13 @@
 
 import { AlertTriangleIcon, CheckCircle2Icon, HistoryIcon, Loader2Icon, RotateCcwIcon, SaveIcon, ShieldIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Boton, Tarjeta, TarjetaEncabezado, TarjetaPie, fechaCorta, porcentajeUi } from "@/app/_componentes";
 import type { ReporteEvaluacion, UsoTasa } from "@/app/_datos/reglas";
-import type { Aprobador, IdRegla, Reglas } from "@/dominio/tipos";
+import { formatearTasa } from "@/dominio/dinero";
+import { REGLAS_EDITABLES, type Aprobador, type IdRegla, type Reglas } from "@/dominio/tipos";
 import { cn } from "@/lib/utils";
 
 import { escribirDecimal, escribirUsd, leerDecimal, leerUsd } from "./numeros";
@@ -33,7 +34,6 @@ const REGLAS: Record<IdRegla, string> = {
 };
 const ESCALAN: IdRegla[] = ["R1", "R3", "R4", "R8", "R9", "R10", "R11"];
 const FRENAN: IdRegla[] = ["R2", "R5", "R6", "R7"];
-const EDITABLES: IdRegla[] = ["R5", "R8"];
 const ORDEN = Object.keys(REGLAS) as IdRegla[];
 
 const MONEDAS: Record<string, string> = {
@@ -109,8 +109,23 @@ function aReglas(f: Formulario, base: Reglas): { reglas: Reglas | null; errores:
   };
 }
 
-const iguales = (a: Reglas, b: Reglas) =>
-  JSON.stringify({ ...a, version: 0, editada_por: "", editada_en: "" }) === JSON.stringify({ ...b, version: 0, editada_por: "", editada_en: "" });
+/** Igualdad de valores sin importar el orden de las claves (Supabase guarda las reglas en jsonb, que lo cambia). */
+function mismoValor(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  return ka.length === kb.length && ka.every((k) => mismoValor((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
+}
+
+const iguales = (a: Reglas, b: Reglas) => mismoValor({ ...a, version: 0, editada_por: "", editada_en: "" }, { ...b, version: 0, editada_por: "", editada_en: "" });
+
+/** Huella estable (claves ordenadas) para saber qué valores se simularon. */
+function huellaDe(r: Reglas): string {
+  const ordenar = (v: unknown): unknown =>
+    v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, ordenar((v as Record<string, unknown>)[k])])) : v;
+  return JSON.stringify(ordenar(r));
+}
 
 export type FilaBeneficiario = {
   id: string;
@@ -123,7 +138,11 @@ export type FilaBeneficiario = {
   activo: boolean;
 };
 
-type Simulacion = { estado: "lista"; r: ReporteEvaluacion } | { estado: "cargando"; r: ReporteEvaluacion | null } | { estado: "error"; mensaje: string; r: ReporteEvaluacion | null };
+/** `huella`: qué valores se simularon. Guardar solo vale si coinciden con los del formulario. */
+type Simulacion =
+  | { estado: "lista"; r: ReporteEvaluacion; huella: string }
+  | { estado: "cargando"; r: ReporteEvaluacion | null }
+  | { estado: "error"; mensaje: string; r: ReporteEvaluacion | null };
 
 export function EditorReglas({
   vigente,
@@ -145,48 +164,53 @@ export function EditorReglas({
   const tasas = usoTasas.some((u) => u.facturas > 0) ? usoTasas.filter((u) => u.facturas > 0) : usoTasas;
   const [f, setF] = useState(() => desdeReglas(vigente));
   const [sim, setSim] = useState<Simulacion>(() =>
-    simulacionInicial ? { estado: "lista", r: simulacionInicial } : { estado: "error", mensaje: "No hay un set de prueba cargado para simular.", r: null },
+    simulacionInicial
+      ? { estado: "lista", r: simulacionInicial, huella: huellaDe(vigente) }
+      : { estado: "error", mensaje: "No hay un set de prueba cargado para simular.", r: null },
   );
   const [confirmando, setConfirmando] = useState(false);
   const [guardando, setGuardando] = useState(false);
-  const pedido = useRef(0);
-  const huellaInicial = useRef<string | null>(simulacionInicial ? JSON.stringify(vigente) : null);
 
   const { reglas, errores } = useMemo(() => aReglas(f, vigente), [f, vigente]);
   const cambiado = reglas !== null ? !iguales(reglas, vigente) : true;
   const siguiente = vigente.version + 1;
-  const huella = reglas ? JSON.stringify(reglas) : null;
+  const huella = reglas ? huellaDe(reglas) : null;
+  const simulada = sim.estado === "lista" ? sim.huella : null;
 
-  // Simulación en vivo: 400 ms después del último cambio válido. Solo vale la respuesta más reciente.
+  // Simulación en vivo: 400 ms después del último cambio válido. Un cambio nuevo cancela la petición anterior.
   useEffect(() => {
-    if (!huella) return;
-    // Las reglas vigentes ya llegaron simuladas del servidor: no repetir al abrir la pantalla.
-    if (huella === huellaInicial.current) {
-      huellaInicial.current = null;
-      return;
-    }
-    const n = ++pedido.current;
+    if (!huella || !reglas || huella === simulada) return;
+    const control = new AbortController();
     const t = setTimeout(async () => {
       setSim((s) => ({ estado: "cargando", r: s.r }));
       try {
-        const res = await fetch("/api/reglas/simular", { method: "POST", headers: { "Content-Type": "application/json" }, body: huella });
+        const res = await fetch("/api/reglas/simular", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(reglas),
+          signal: control.signal,
+        });
         const datos = (await res.json().catch(() => ({}))) as ReporteEvaluacion & { error?: string };
-        if (n !== pedido.current) return;
         if (!res.ok) throw new Error(datos.error ?? "No se pudo simular.");
-        setSim({ estado: "lista", r: datos });
+        setSim({ estado: "lista", r: datos, huella });
       } catch (e) {
-        if (n !== pedido.current) return;
+        if (control.signal.aborted) return;
         setSim((s) => ({ estado: "error", mensaje: e instanceof Error ? e.message : "No se pudo simular.", r: s.r }));
       }
     }, 400);
-    return () => clearTimeout(t);
-  }, [huella]);
+    return () => {
+      clearTimeout(t);
+      control.abort();
+    };
+    // `reglas` cambia de identidad en cada render; `huella` resume su valor.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [huella, simulada]);
 
   const r = sim.r;
   const inseguro = r !== null && r.pagos_indebidos > 0;
   const motivoBloqueo = !reglas
     ? "Corrige los campos marcados para poder guardar."
-    : sim.estado === "cargando"
+    : sim.estado === "cargando" || (sim.estado === "lista" && simulada !== huella)
       ? "Esperando la simulación…"
       : sim.estado === "error"
         ? "No se pudo simular: no se puede guardar sin probar las reglas."
@@ -243,7 +267,7 @@ export function EditorReglas({
             Historial de versiones
           </summary>
           <ol className="absolute right-0 z-10 mt-2 flex w-72 flex-col overflow-hidden rounded-2xl bg-card text-sm shadow-lg ring-1 ring-border">
-            {[...historial].reverse().map((h) => (
+            {historial.map((h) => (
               <li key={h.version} className="flex items-baseline justify-between gap-3 border-subtle px-4 py-3 not-first:border-t">
                 <span className="font-mono font-semibold">v{h.version}</span>
                 <span className="text-right text-xs text-muted-foreground">
@@ -311,7 +335,7 @@ export function EditorReglas({
                         <span className="font-mono">{u.moneda}</span>
                         {MONEDAS[u.moneda] ? <span className="text-muted-foreground"> · {MONEDAS[u.moneda]}</span> : null}
                       </td>
-                      <td className="py-1.5 text-right font-mono tabular-nums">{escribirTasa(u.tasa)}</td>
+                      <td className="py-1.5 text-right font-mono tabular-nums">{formatearTasa(u.moneda, { periodo: "", base: "USD", tasas: { [u.moneda]: u.tasa } })?.slice(u.moneda.length + 1)}</td>
                       <td className="py-1.5 text-right text-muted-foreground">{u.facturas === 1 ? "1 factura" : `${u.facturas} facturas`}</td>
                     </tr>
                   ))}
@@ -443,11 +467,6 @@ export function EditorReglas({
 const CONTROL =
   "min-h-11 w-full rounded-[10px] border border-borde-fuerte bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-frenada-punto";
 
-/** "4200.00" → "4.200,00" */
-function escribirTasa(t: string): string {
-  const [e = "0", d = ""] = t.split(".");
-  return `${e.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}${d ? `,${d}` : ""}`;
-}
 
 function Campo({
   id,
@@ -527,7 +546,7 @@ function ListaReglas({
       <TarjetaEncabezado id={id} titulo={titulo} descripcion={descripcion} />
       <ul className="flex flex-col pb-2">
         {ids.map((r) => {
-          const editable = EDITABLES.includes(r);
+          const editable = REGLAS_EDITABLES.includes(r);
           return (
             <li key={r} className="border-t border-subtle">
               <label className={cn("flex min-h-12 items-center gap-3 px-6 py-2.5", editable && "cursor-pointer hover:bg-superficie-2/60")}>
