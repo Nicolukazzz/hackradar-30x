@@ -63,9 +63,10 @@ export function r02Duplicado(ctx: ContextoRegla) {
   }
 
   const recientes = emision ? previas.filter((f) => (dias(f) ?? 0) <= dup.ventana_dias).length : previas.length;
+  const palabra = recientes === 1 ? "factura" : "facturas";
   const texto =
     recientes === 0
       ? `sin facturas de este emisor en ${dup.ventana_dias} días`
-      : `${recientes} ${recientes === 1 ? "factura" : "facturas"} de este emisor en ${dup.ventana_dias} días, ninguna coincide`;
+      : `${recientes} ${palabra} de este emisor en ${dup.ventana_dias} días, ninguna coincide`;
   return evaluacion("R2", "CUMPLE", texto, { previas_en_ventana: recientes });
 }

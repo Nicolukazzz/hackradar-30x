@@ -23,8 +23,10 @@ export function r10Instrucciones(ctx: ContextoRegla) {
   const donde = lugares.join(" y ").replace(" y en ", " y ");
   const fragmentos = [...new Set(hallazgos.map((h) => h.fragmento.toLowerCase()))].slice(0, 3);
   const partes: string[] = [];
-  if (fragmentos.length > 0) partes.push(`detectado: ${fragmentos.map((f) => `«${f}»`).join(", ")} ${donde}`);
-  if (llm.length > 0) partes.push(`el extractor reportó ${llm.length === 1 ? "una instrucción" : `${llm.length} instrucciones`}`);
+  const citados = fragmentos.map((f) => "«" + f + "»").join(", ");
+  if (fragmentos.length > 0) partes.push(`detectado: ${citados} ${donde}`);
+  const cuantas = llm.length === 1 ? "una instrucción" : String(llm.length) + " instrucciones";
+  if (llm.length > 0) partes.push(`el extractor reportó ${cuantas}`);
   const linea = hallazgos[0]?.linea ?? llm[0] ?? "";
   return evaluacion("R10", "FALLA", partes.join(" · "), {
     fragmento: linea.length > 160 ? `${linea.slice(0, 159)}…` : linea,

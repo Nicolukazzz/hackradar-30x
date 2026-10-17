@@ -91,60 +91,76 @@ export function afectaciones(ctx: ContextoRegla): Afectacion[] {
 
 const cache = new WeakMap<ContextoRegla, Afectacion[]>();
 
-function calcularAfectaciones(ctx: ContextoRegla): Afectacion[] {
-  const { ext, reglas, tasas } = ctx;
-  const minima = reglas.extraccion.confianza_minima;
-  const lista: Afectacion[] = [];
-  const marcar = (campo: CampoObligatorio, motivo: string) => lista.push({ campo, motivo });
+/** NaN también cuenta como baja confianza. */
+export function bajaConfianza(confianza: number, minima: number): boolean {
+  return Number.isNaN(confianza) || confianza < minima;
+}
 
-  for (const campo of CAMPOS_OBLIGATORIOS) {
-    const c = ext[campo];
-    if (c.valor === null || (typeof c.valor === "string" && c.valor.trim() === "")) {
-      marcar(campo, `falta ${ETIQUETA_CAMPO[campo]}`);
-    } else if (!(c.confianza >= minima)) {
-      marcar(campo, `confianza de ${ETIQUETA_CAMPO[campo]} ${pctEntero(c.confianza)} < ${pctEntero(minima)}`);
-    }
-  }
-  const ya = (campo: CampoObligatorio) => lista.some((a) => a.campo === campo);
+function motivoCampo(ctx: ContextoRegla, campo: CampoObligatorio): string | null {
+  const c = ctx.ext[campo];
+  const minima = ctx.reglas.extraccion.confianza_minima;
+  if (c.valor === null || (typeof c.valor === "string" && c.valor.trim() === "")) return `falta ${ETIQUETA_CAMPO[campo]}`;
+  if (bajaConfianza(c.confianza, minima)) return `confianza de ${ETIQUETA_CAMPO[campo]} ${pctEntero(c.confianza)} < ${pctEntero(minima)}`;
+  return null;
+}
 
+function motivoMonto(ctx: ContextoRegla): string | null {
+  const { ext, tasas } = ctx;
   const total = ext.monto_total.valor;
-  if (total && !ya("monto_total")) {
-    if (!Number.isInteger(total.centavos) || total.centavos <= 0) marcar("monto_total", "el monto total no es mayor que 0");
-    else if (total.moneda !== "USD" && tasas.tasas[total.moneda] === undefined)
-      marcar("monto_total", `no hay tasa para ${total.moneda} en ${tasas.periodo}`);
-    else if (aUsd(total, tasas).usd_centavos <= 0)
-      // Encontrado por fast-check: COP 1 redondea a USD 0,00 y pasaría todos los límites.
-      marcar("monto_total", `${numeroEn(total)} ${total.moneda} equivale a USD 0,00`);
-    else {
-      const sub = ext.subtotal?.valor;
-      const imp = ext.impuestos?.valor;
-      if (sub && imp) {
-        const mismaMoneda = sub.moneda === total.moneda && imp.moneda === total.moneda;
-        if (!mismaMoneda || sub.centavos + imp.centavos !== total.centavos) {
-          marcar(
-            "monto_total",
-            `subtotal ${numeroEn(sub)} + impuestos ${numeroEn(imp)} ≠ total ${numeroEn(total)} ${total.moneda}`,
-          );
-        }
-      }
-    }
-  }
+  if (!total) return null;
+  if (!Number.isInteger(total.centavos) || total.centavos <= 0) return "el monto total no es mayor que 0";
+  if (total.moneda !== "USD" && tasas.tasas[total.moneda] === undefined) return `no hay tasa para ${total.moneda} en ${tasas.periodo}`;
+  // Encontrado por fast-check: COP 1 redondea a USD 0,00 y pasaría todos los límites.
+  if (aUsd(total, tasas).usd_centavos <= 0) return `${numeroEn(total)} ${total.moneda} equivale a USD 0,00`;
+  const sub = ext.subtotal?.valor;
+  const imp = ext.impuestos?.valor;
+  if (!sub || !imp) return null;
+  const mismaMoneda = sub.moneda === total.moneda && imp.moneda === total.moneda;
+  if (mismaMoneda && sub.centavos + imp.centavos === total.centavos) return null;
+  return `subtotal ${numeroEn(sub)} + impuestos ${numeroEn(imp)} ≠ total ${numeroEn(total)} ${total.moneda}`;
+}
 
-  const emision = ext.fecha_emision.valor;
-  const vence = ext.fecha_vencimiento.valor;
+function motivoEmision(ctx: ContextoRegla): string | null {
+  const emision = ctx.ext.fecha_emision.valor;
   const hoy = fechaDe(ctx.ahora);
-  if (emision && !ya("fecha_emision")) {
-    if (!esFechaValida(emision)) marcar("fecha_emision", `fecha de emisión inválida (${emision})`);
-    else if (emision > hoy) marcar("fecha_emision", `fecha de emisión ${fechaLegible(emision)} posterior a hoy ${fechaLegible(hoy)}`);
+  if (!emision) return null;
+  if (!esFechaValida(emision)) return `fecha de emisión inválida (${emision})`;
+  if (emision > hoy) return `fecha de emisión ${fechaLegible(emision)} posterior a hoy ${fechaLegible(hoy)}`;
+  return null;
+}
+
+function motivoVencimiento(ctx: ContextoRegla): string | null {
+  const emision = ctx.ext.fecha_emision.valor;
+  const vence = ctx.ext.fecha_vencimiento.valor;
+  if (!vence) return null;
+  if (!esFechaValida(vence)) return `fecha de vencimiento inválida (${vence})`;
+  if (emision && esFechaValida(emision) && vence < emision) return `vence ${fechaLegible(vence)} antes de emitirse ${fechaLegible(emision)}`;
+  return null;
+}
+
+function motivoCuenta(ctx: ContextoRegla): string | null {
+  const cuenta = ctx.ext.cuenta_destino_ultimos4.valor;
+  return cuenta && !/^\d{4}$/.test(cuenta) ? `cuenta destino ilegible (${cuenta})` : null;
+}
+
+/** Validaciones de §4.3 R1 por campo; solo se aplican si el campo no quedó ya marcado por falta o confianza. */
+const VALIDACIONES: readonly [CampoObligatorio, (ctx: ContextoRegla) => string | null][] = [
+  ["monto_total", motivoMonto],
+  ["fecha_emision", motivoEmision],
+  ["fecha_vencimiento", motivoVencimiento],
+  ["cuenta_destino_ultimos4", motivoCuenta],
+];
+
+function calcularAfectaciones(ctx: ContextoRegla): Afectacion[] {
+  const lista: Afectacion[] = [];
+  for (const campo of CAMPOS_OBLIGATORIOS) {
+    const motivo = motivoCampo(ctx, campo);
+    if (motivo) lista.push({ campo, motivo });
   }
-  if (vence && !ya("fecha_vencimiento")) {
-    if (!esFechaValida(vence)) marcar("fecha_vencimiento", `fecha de vencimiento inválida (${vence})`);
-    else if (emision && esFechaValida(emision) && vence < emision)
-      marcar("fecha_vencimiento", `vence ${fechaLegible(vence)} antes de emitirse ${fechaLegible(emision)}`);
-  }
-  const cuenta = ext.cuenta_destino_ultimos4.valor;
-  if (cuenta && !ya("cuenta_destino_ultimos4") && !/^\d{4}$/.test(cuenta)) {
-    marcar("cuenta_destino_ultimos4", `cuenta destino ilegible (${cuenta})`);
+  for (const [campo, validar] of VALIDACIONES) {
+    if (lista.some((a) => a.campo === campo)) continue;
+    const motivo = validar(ctx);
+    if (motivo) lista.push({ campo, motivo });
   }
   return lista;
 }
@@ -162,7 +178,7 @@ export function montoUsd(ctx: ContextoRegla): number | null {
 
 /** R3 falla: el beneficiario no está en la lista o está inactivo. */
 export function r3Falla(ctx: ContextoRegla): boolean {
-  return ctx.beneficiario === null || ctx.beneficiario.estado !== "activo";
+  return ctx.beneficiario?.estado !== "activo";
 }
 
 /** Solo R5 y R8 se pueden desactivar (§4.2): el resto se evalúa siempre aunque `activas` diga false. */

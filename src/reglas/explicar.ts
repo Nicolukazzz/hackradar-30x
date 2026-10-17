@@ -2,7 +2,7 @@
 // Orden: primero lo que frena, después lo que escala; dentro de cada grupo, R1 → R11. Se unen con "Además,".
 
 import { formatear, formatearUsd, porcentaje } from "@/dominio/dinero";
-import type { Beneficiario, DecisionAgente, DocumentoRecibido, EvaluacionRegla, Extraccion, Reglas } from "@/dominio/tipos";
+import type { Beneficiario, DecisionAgente, DocumentoRecibido, EvaluacionRegla, Extraccion, IdRegla, Reglas } from "@/dominio/tipos";
 
 import { fechaDe, fechaLegible, horaDe } from "./fechas";
 import { tolerancia } from "./r05-acordado";
@@ -19,8 +19,9 @@ export type EntradaExplicacion = {
 };
 
 const usd = (centavos: number) => `USD ${centavos < 0 ? "-" : ""}${formatearUsd(Math.abs(centavos))}`;
-const texto = (v: unknown) => (typeof v === "string" ? v : String(v ?? ""));
-const numero = (v: unknown) => (typeof v === "number" ? v : 0);
+type Dato = EvaluacionRegla["datos"][string] | undefined;
+const texto = (v: Dato) => (v === null || v === undefined ? "" : String(v));
+const numero = (v: Dato) => (typeof v === "number" ? v : 0);
 
 /** Nombres que terminan en punto ("CloudNorte S.A.S.") no deben dejar ".." al cerrar la frase. */
 function sinPuntoDoble(frase: string): string {
@@ -40,55 +41,66 @@ function cuando(momento: string, ahora: string): string {
   return `${dia}a las ${horaDe(momento)}`;
 }
 
+type Frase = {
+  e: EvaluacionRegla;
+  d: EvaluacionRegla["datos"];
+  x: EntradaExplicacion;
+  nombre: string;
+  /** " de {nombre}" si todavía no se nombró; "" si ya */
+  de: string;
+  monto: string;
+  /** "la factura de {nombre} (USD X)" o, si ya se nombró, "USD X" */
+  sujeto: string;
+};
+
+function fraseDuplicado({ d, x, nombre }: Frase): string {
+  const previa = texto(d.factura_previa);
+  const momento = cuando(texto(d.momento_previo), x.ahora);
+  const estado = d.estado_previo === "pagada" ? "pagada" : "escalada";
+  if (d.criterio === "hito") return `${nombre} ya cobró el hito ${texto(d.hito)} con la factura ${previa}. Un hito se paga una sola vez.`;
+  if (d.criterio === "archivo") return `${nombre} ya envió este mismo archivo (${previa}, ${estado} ${momento}). No se paga dos veces.`;
+  if (d.criterio === "parecida")
+    return `${nombre} ya cobró la factura ${previa} por casi el mismo monto y fecha (${estado} ${momento}). Puede ser un cobro repetido.`;
+  if (estado === "pagada") return `${nombre} ya cobró la factura ${previa} y se pagó ${momento}. No se paga dos veces.`;
+  return `${nombre} ya envió la factura ${previa} y quedó escalada ${momento}, pendiente de aprobación. No se paga dos veces.`;
+}
+
+/** Una frase por regla que falla (§7). */
+const FRASES: Record<IdRegla, (f: Frase) => string> = {
+  R1: ({ e, de }) => `el agente no está seguro de lo que leyó en la factura${de} (${e.comparacion}). Una persona debe confirmar los datos.`,
+  R2: fraseDuplicado,
+  R3: ({ nombre }) => `${nombre} no está en la lista de beneficiarios permitidos.`,
+  R4: ({ d, nombre }) =>
+    `la cuenta de la factura (•••• ${texto(d.cuenta_factura)}) no es la registrada para ${nombre} (•••• ${texto(d.cuenta_registrada)}).`,
+  R5: ({ d, nombre }) =>
+    `${nombre} cobra ${texto(d.cobrado)}, pero ${texto(d.referencia)} acordó ${texto(d.acordado)} (${porcentaje(numero(d.diferencia_pct))}; la tolerancia es ${tolerancia(numero(d.tolerancia_pct))}).`,
+  R6: ({ d, sujeto }) => `${sujeto} supera el máximo absoluto por pago de ${usd(numero(d.maximo_usd))}.`,
+  R7: ({ d, monto }) =>
+    `el pago (${monto}) supera el presupuesto disponible de ${usd(numero(d.disponible_usd))}, que ya descuenta lo reservado por escalados.`,
+  R8: ({ d, x, nombre }) => {
+    const periodo = x.reglas.presupuesto.periodo === "mensual" ? "el mes" : "el periodo";
+    return `con este pago ${nombre} llegaría a ${usd(numero(d.total_usd))} en ${periodo}, sobre su límite de ${usd(numero(d.limite_usd))}.`;
+  },
+  R9: ({ d, sujeto }) => `${sujeto} supera el límite de pago automático de ${usd(numero(d.limite_usd))}.`,
+  R10: ({ d, x, de }) =>
+    `el ${CANAL[x.doc.canal]}${de} traía instrucciones para el agente («${texto(d.fragmento)}»); se ignoraron y la factura quedó marcada.`,
+  R11: ({ x, nombre }) => {
+    const a = x.beneficiario ? nombre : "ningún beneficiario de la lista";
+    return `el remitente (${x.doc.remitente.valor}) no está vinculado a ${a}.`;
+  },
+};
+
 /** `nombrado`: si una frase anterior ya nombró al beneficiario, esta no lo repite. */
 function fraseRegla(e: EvaluacionRegla, x: EntradaExplicacion, nombre: string, nombrado: boolean): string {
   const d = e.datos;
-  const de = nombrado ? "" : ` de ${nombre}`;
-  const monto = x.monto_usd_centavos === null ? "el monto" : usd(x.monto_usd_centavos);
-
   if (e.resultado === "INDETERMINADO") {
     if (e.id === "R5") return `no se pudo asociar la factura a lo acordado con ${nombre} (${texto(d.motivo)}).`;
     return `no se pudo evaluar «${e.nombre}» (${e.comparacion}).`;
   }
-  switch (e.id) {
-    case "R1":
-      return `el agente no está seguro de lo que leyó en la factura${de} (${e.comparacion}). Una persona debe confirmar los datos.`;
-    case "R2": {
-      const previa = texto(d.factura_previa);
-      const momento = cuando(texto(d.momento_previo), x.ahora);
-      const pagada = d.estado_previo === "pagada";
-      if (d.criterio === "hito") return `${nombre} ya cobró el hito ${texto(d.hito)} con la factura ${previa}. Un hito se paga una sola vez.`;
-      if (d.criterio === "archivo")
-        return `${nombre} ya envió este mismo archivo (${previa}, ${pagada ? "pagada" : "escalada"} ${momento}). No se paga dos veces.`;
-      if (d.criterio === "parecida")
-        return `${nombre} ya cobró la factura ${previa} por casi el mismo monto y fecha (${pagada ? "pagada" : "escalada"} ${momento}). Puede ser un cobro repetido.`;
-      return pagada
-        ? `${nombre} ya cobró la factura ${previa} y se pagó ${momento}. No se paga dos veces.`
-        : `${nombre} ya envió la factura ${previa} y quedó escalada ${momento}, pendiente de aprobación. No se paga dos veces.`;
-    }
-    case "R3":
-      return `${nombre} no está en la lista de beneficiarios permitidos.`;
-    case "R4":
-      return `la cuenta de la factura (•••• ${texto(d.cuenta_factura)}) no es la registrada para ${nombre} (•••• ${texto(d.cuenta_registrada)}).`;
-    case "R5":
-      return `${nombre} cobra ${texto(d.cobrado)}, pero ${texto(d.referencia)} acordó ${texto(d.acordado)} (${porcentaje(numero(d.diferencia_pct))}; la tolerancia es ${tolerancia(numero(d.tolerancia_pct))}).`;
-    case "R6":
-      return `${nombrado ? monto : `la factura${de} (${monto})`} supera el máximo absoluto por pago de ${usd(numero(d.maximo_usd))}.`;
-    case "R7":
-      return `el pago (${monto}) supera el presupuesto disponible de ${usd(numero(d.disponible_usd))}, que ya descuenta lo reservado por escalados.`;
-    case "R8": {
-      const periodo = x.reglas.presupuesto.periodo === "mensual" ? "el mes" : "el periodo";
-      return `con este pago ${nombre} llegaría a ${usd(numero(d.total_usd))} en ${periodo}, sobre su límite de ${usd(numero(d.limite_usd))}.`;
-    }
-    case "R9":
-      return `${nombrado ? monto : `la factura${de} (${monto})`} supera el límite de pago automático de ${usd(numero(d.limite_usd))}.`;
-    case "R10":
-      return `el ${CANAL[x.doc.canal]}${de} traía instrucciones para el agente («${texto(d.fragmento)}»); se ignoraron y la factura quedó marcada.`;
-    case "R11":
-      return x.beneficiario
-        ? `el remitente (${x.doc.remitente.valor}) no está vinculado a ${nombre}.`
-        : `el remitente (${x.doc.remitente.valor}) no está vinculado a ningún beneficiario de la lista.`;
-  }
+  const de = nombrado ? "" : " de " + nombre;
+  const monto = x.monto_usd_centavos === null ? "el monto" : usd(x.monto_usd_centavos);
+  const sujeto = nombrado ? monto : "la factura" + de + " (" + monto + ")";
+  return FRASES[e.id]({ e, d, x, nombre, de, monto, sujeto });
 }
 
 function explicarPago(x: EntradaExplicacion, nombre: string): string {

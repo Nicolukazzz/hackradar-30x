@@ -9,7 +9,7 @@ export function siguienteIdRegistro(historial: readonly EntradaRegistro[], anio:
   let max = 0;
   for (const e of historial) {
     const m = ID.exec(e.id);
-    if (m && m[1] === anio) max = Math.max(max, Number(m[2]));
+    if (m?.[1] === anio) max = Math.max(max, Number(m[2]));
   }
   return `REG-${anio}-${String(max + 1).padStart(6, "0")}`;
 }

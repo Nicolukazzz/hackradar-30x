@@ -41,9 +41,8 @@ export function estadoInicial(historial: readonly EntradaRegistro[], reglas: Reg
 
 /** PAGAR suma a pagado; ESCALAR suma a reservado al instante. FRENAR y RECHAZADA no cambian nada. */
 export function aplicar(estado: EstadoPresupuesto, decision: DecisionAgente, usd_centavos: number | null): EstadoPresupuesto {
-  const monto = usd_centavos ?? 0;
-  if (decision === "PAGAR") return conDisponible({ ...estado, pagado_en_lote: estado.pagado_en_lote + monto });
-  if (decision === "ESCALAR") return conDisponible({ ...estado, reservado: estado.reservado + monto });
+  if (decision === "PAGAR") return conDisponible({ ...estado, pagado_en_lote: estado.pagado_en_lote + (usd_centavos ?? 0) });
+  if (decision === "ESCALAR") return conDisponible({ ...estado, reservado: estado.reservado + (usd_centavos ?? 0) });
   return estado;
 }
 

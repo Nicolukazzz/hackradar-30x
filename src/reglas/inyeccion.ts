@@ -62,10 +62,9 @@ export function detectarInstrucciones(texto: string): Hallazgo[] {
   const hasta: number[] = [];
   let pos = 0;
   const agregar = (pieza: string, inicio: number, fin: number) => {
-    for (let k = 0; k < pieza.length; k++) {
-      desde.push(inicio);
-      hasta.push(fin);
-    }
+    // Una entrada por unidad UTF-16 de la pieza: los índices de matchAll son en UTF-16.
+    desde.push(...Array.from({ length: pieza.length }, () => inicio));
+    hasta.push(...Array.from({ length: pieza.length }, () => fin));
     plano += pieza;
   };
   for (const c of original) {

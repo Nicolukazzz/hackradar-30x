@@ -28,39 +28,51 @@ export type FacturaVigente = {
  * APROBADA_HUMANO → pagada, RECHAZADA_HUMANO → deja de contar. La primera de dos firmas (decision null) no resuelve.
  */
 export function facturasVigentes(historial: readonly EntradaRegistro[]): FacturaVigente[] {
-  const resolucion = new Map<string, "APROBADA_HUMANO" | "RECHAZADA_HUMANO">();
-  for (const e of historial) {
-    if (e.tipo !== "DECISION_HUMANA" || !e.entrada_origen) continue;
-    if (e.decision === "APROBADA_HUMANO" || e.decision === "RECHAZADA_HUMANO") resolucion.set(e.entrada_origen, e.decision);
-  }
-
+  const resolucion = resoluciones(historial);
   const vigentes: FacturaVigente[] = [];
   for (const e of historial) {
-    if (e.tipo !== "DECISION_AGENTE") continue;
-    let estado: EstadoFactura | null = null;
-    if (e.decision === "PAGAR") estado = "pagada";
-    else if (e.decision === "ESCALAR") {
-      const r = resolucion.get(e.id);
-      if (r === undefined) estado = "reservada";
-      else if (r === "APROBADA_HUMANO") estado = "pagada";
-    }
-    if (estado === null) continue;
-    vigentes.push({
-      id: e.id,
-      momento: e.momento,
-      ref_interna: e.ref_interna,
-      // Sin nombre legible igual cuenta en el presupuesto; no coincide con ningún beneficiario en R2/R8.
-      beneficiario: e.beneficiario ? normalizarNombre(e.beneficiario) : "",
-      numero: e.factura_numero,
-      numero_normalizado: e.factura_numero ? normalizarNumeroFactura(e.factura_numero) : null,
-      fecha_emision: e.extraccion?.fecha_emision.valor ?? null,
-      usd_centavos: e.monto_usd_centavos ?? 0,
-      sha256: e.sha256,
-      hito: e.extraccion?.hito_numero?.valor ?? null,
-      estado,
-    });
+    const estado = estadoDe(e, resolucion);
+    if (estado) vigentes.push(aVigente(e, estado));
   }
   return vigentes;
+}
+
+type Resolucion = "APROBADA_HUMANO" | "RECHAZADA_HUMANO";
+
+/** Decisión humana final de cada DECISION_AGENTE (por id de origen). */
+function resoluciones(historial: readonly EntradaRegistro[]): Map<string, Resolucion> {
+  const mapa = new Map<string, Resolucion>();
+  for (const e of historial) {
+    const final = e.decision === "APROBADA_HUMANO" || e.decision === "RECHAZADA_HUMANO";
+    if (e.tipo === "DECISION_HUMANA" && e.entrada_origen && final) mapa.set(e.entrada_origen, e.decision as Resolucion);
+  }
+  return mapa;
+}
+
+function estadoDe(e: EntradaRegistro, resolucion: Map<string, Resolucion>): EstadoFactura | null {
+  if (e.tipo !== "DECISION_AGENTE") return null;
+  if (e.decision === "PAGAR") return "pagada";
+  if (e.decision !== "ESCALAR") return null;
+  const r = resolucion.get(e.id);
+  if (r === undefined) return "reservada";
+  return r === "APROBADA_HUMANO" ? "pagada" : null;
+}
+
+function aVigente(e: EntradaRegistro, estado: EstadoFactura): FacturaVigente {
+  return {
+    id: e.id,
+    momento: e.momento,
+    ref_interna: e.ref_interna,
+    // Sin nombre legible igual cuenta en el presupuesto; no coincide con ningún beneficiario en R2/R8.
+    beneficiario: e.beneficiario ? normalizarNombre(e.beneficiario) : "",
+    numero: e.factura_numero,
+    numero_normalizado: e.factura_numero ? normalizarNumeroFactura(e.factura_numero) : null,
+    fecha_emision: e.extraccion?.fecha_emision.valor ?? null,
+    usd_centavos: e.monto_usd_centavos ?? 0,
+    sha256: e.sha256,
+    hito: e.extraccion?.hito_numero?.valor ?? null,
+    estado,
+  };
 }
 
 /** Id del periodo de presupuesto de un momento: "2026-10" · "2026-10-Q2" · "2026-T4". */
