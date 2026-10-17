@@ -82,10 +82,9 @@ CLOUDNORTE = correo("billing@cloudnorte.example", "CloudNorte Billing")
 # EntradaRegistro en historial.py. Campos: factura, canal/formato, momento de la
 # decisión del agente, decisión del agente, reglas, resolución humana opcional.
 
-def previa(fac, canal, formato, momento, decision, reglas=(), *, humanas=(), version=7, remitente=None,
-           motivo=""):
+def previa(fac, canal, formato, momento, decision, reglas=(), *, humanas=(), version=7, idioma="es", motivo=""):
     return {"factura": fac, "canal": canal, "formato": formato, "momento": momento, "decision": decision,
-            "reglas": list(reglas), "humanas": list(humanas), "version": version, "remitente": remitente,
+            "reglas": list(reglas), "humanas": list(humanas), "version": version, "idioma": idioma,
             "motivo": motivo}
 
 
@@ -102,7 +101,7 @@ HISTORIAL_OCT = [
            motivo="Contrato mensual de diseño, monto acordado."),
     previa(factura("ben-cloudnorte", "INV-2195", "2026-09-08", "2026-09-22", "USD",
                    "Hosting and CDN — September (PO OC-118)", c("1240.00"), referencia="OC-118"),
-           "correo", "correo", "2026-09-09T09:30:00-05:00", "PAGAR", version=6,
+           "correo", "correo", "2026-09-09T09:30:00-05:00", "PAGAR", version=6, idioma="en",
            motivo="Coincide con la OC-118."),
     previa(factura("ben-juan-pablo-ortiz", "JPO-09", "2026-09-14", "2026-09-30", "USD",
                    "Hito 1 de 3 — tablero de datos", c("900.00"), referencia="CT-JPO", hito=1),
@@ -111,7 +110,7 @@ HISTORIAL_OCT = [
     # Octubre antes del lote: suman USD 41.000,00 pagados.
     previa(factura("ben-rio-verde", "RV-1171", "2026-09-30", "2026-10-15", "BRL",
                    "Tradução e localização — outubro", c("11000.00"), referencia="HON-RV"),
-           "correo", "correo", "2026-10-01T09:10:00-05:00", "PAGAR", version=6,
+           "correo", "correo", "2026-10-01T09:10:00-05:00", "PAGAR", version=6, idioma="pt",
            motivo="Honorario mensual acordado."),
     previa(factura("ben-valeria-ruiz", "VR-10", "2026-09-30", "2026-10-15", "USD",
                    "QA funcional — octubre", c("2500.00"), referencia="VR-QA"),
@@ -146,7 +145,6 @@ HISTORIAL_OCT = [
     previa(factura("nova-prints", "BR-12", "2026-10-12", "2026-10-27", "USD",
                    "Impresión de material POP", c("780.00")),
            "correo", "correo", "2026-10-14T10:00:00-05:00", "ESCALAR", ["R3", "R11"], version=7,
-           remitente="ventas@novaprints.example",
            motivo="Beneficiario fuera de la lista permitida y remitente no vinculado.",
            humanas=[humana("ap", "2026-10-15T11:05:47-05:00", "RECHAZADA_HUMANO", "No reconocemos este proveedor")]),
 ]

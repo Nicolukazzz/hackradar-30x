@@ -69,32 +69,53 @@ def es_cuenta_de_cobro(fac: dict) -> bool:
     return fac["emisor"] in ("ben-ana-maria-gomez", "ben-juan-pablo-ortiz")
 
 
-def lineas_factura(fac: dict, idioma: str, variante: str | None = None) -> list[str]:
-    """Todas las líneas de texto visibles de la factura, en orden de lectura."""
+def bloques_factura(fac: dict, idioma: str, variante: str | None) -> dict:
+    """Contenido visible de la factura por zonas de la página. Única fuente: PDF, foto y texto plano salen de aquí."""
     et = ETIQUETAS[idioma]
     em = emisor(fac)
     titulo = et["cuenta_cobro"] if es_cuenta_de_cobro(fac) else et["titulo"]
-    lineas = [em["nombre"], em["ciudad"], em["id_fiscal"], f"{titulo} {fac['numero']}"]
-    if variante == "recordatorio":
-        lineas.append(et["recordatorio"])
-    lineas += [
-        f"{et['emision']}: {dinero.fecha(fac['fecha_emision'], idioma)}",
-        f"{et['vence']}: {dinero.fecha(fac['fecha_vencimiento'], idioma)}",
-        f"{et['facturar']}: {EMPRESA_FACTURAR_A}",
-        f"{et['concepto']}: {fac['concepto']}",
-    ]
+    totales = []
     if fac["subtotal"] is not None:
-        lineas.extend([f"{et['subtotal']}: {importe(fac, fac['subtotal'], idioma)}",
-                       f"{fac['etiqueta_impuesto']}: {importe(fac, fac['impuestos'], idioma)}"])
-    # Si total_legible es False, render_imagen difumina esta línea en la foto.
-    lineas.append(f"{et['total']}: {importe(fac, fac['total_impreso'], idioma)}")
+        totales.append((et["subtotal"], importe(fac, fac["subtotal"], idioma)))
+        totales.append((fac["etiqueta_impuesto"], importe(fac, fac["impuestos"], idioma)))
+    totales.append((et["total"], importe(fac, fac["total_impreso"], idioma)))
+    referencia = None
     if fac["referencia"]:
-        ref = fac["referencia"] + (f" · hito {fac['hito']}" if fac["hito"] else "")
-        lineas.append(f"{et['referencia']}: {ref}")
-    lineas.append(f"{et['pagar']}: {em['nombre']} · {em['cuenta']['banco']} · {cuenta_texto(fac, idioma)}")
-    if fac["nota"]:
-        lineas.append(f"{et['notas']}: {fac['nota']}")
-    lineas.append(et["pie"])
+        referencia = fac["referencia"] + (f" · hito {fac['hito']}" if fac["hito"] else "")
+    return {
+        "emisor": em["nombre"], "ciudad": em["ciudad"], "id_fiscal": em["id_fiscal"],
+        "titulo": titulo, "numero": fac["numero"],
+        "fechas": [(et["emision"], dinero.fecha(fac["fecha_emision"], idioma)),
+                   (et["vence"], dinero.fecha(fac["fecha_vencimiento"], idioma))],
+        "facturar": (et["facturar"], EMPRESA_FACTURAR_A),
+        "cabecera_tabla": (et["concepto"], et["importe"]),
+        "item": (fac["concepto"], importe(fac, fac["subtotal"] if fac["subtotal"] is not None else fac["total_impreso"], idioma)),
+        "totales": totales,
+        "referencia": (et["referencia"], referencia) if referencia else None,
+        "pagar": (et["pagar"], [em["nombre"], em["cuenta"]["banco"], cuenta_texto(fac, idioma)]),
+        "nota": (et["notas"], fac["nota"]) if fac["nota"] else None,
+        "sello": et["recordatorio"] if variante == "recordatorio" else None,
+        "pie": et["pie"],
+        "acento": idioma,
+    }
+
+
+def lineas_factura(fac: dict, idioma: str, variante: str | None = None) -> list[str]:
+    """Texto plano de la factura en orden de lectura (texto_crudo para R10 y el historial)."""
+    b = bloques_factura(fac, idioma, variante)
+    lineas = [b["emisor"], b["ciudad"], b["id_fiscal"], f"{b['titulo']} {b['numero']}"]
+    if b["sello"]:
+        lineas.append(b["sello"])
+    lineas += [f"{etiqueta}: {valor}" for etiqueta, valor in b["fechas"]]
+    lineas.append(f"{b['facturar'][0]}: {b['facturar'][1]}")
+    lineas.append(f"{b['cabecera_tabla'][0]}: {b['item'][0]} · {b['cabecera_tabla'][1]}: {b['item'][1]}")
+    lineas += [f"{etiqueta}: {valor}" for etiqueta, valor in b["totales"]]
+    if b["referencia"]:
+        lineas.append(f"{b['referencia'][0]}: {b['referencia'][1]}")
+    lineas.append(f"{b['pagar'][0]}: {' · '.join(b['pagar'][1])}")
+    if b["nota"]:
+        lineas.append(f"{b['nota'][0]}: {b['nota'][1]}")
+    lineas.append(b["pie"])
     return lineas
 
 
@@ -111,7 +132,7 @@ def mensaje_chat(d: dict) -> str:
         f"{titulo} {fac['numero']}",
         f"Fecha: {dinero.fecha(fac['fecha_emision'], 'es')} · Vence: {dinero.fecha(fac['fecha_vencimiento'], 'es')}",
         f"Concepto: {fac['concepto']}{ref}",
-        f"Valor: {importe(fac, fac['total'], 'es')}",
+        f"Valor: {importe(fac, fac['total_impreso'], 'es')}",
         f"Pagar a: {em['nombre']} · {em['cuenta']['banco']} · {cuenta_texto(fac, 'es')}",
     ]
     return "\n".join(p for p in partes if p)
