@@ -20,6 +20,25 @@ export type CorreoEntrante = {
   message_id: string | null;
 };
 
+/** Una imagen incrustada más chica que esto es un logo o un icono de la firma, no una foto de factura. */
+const MIN_IMAGEN_INCRUSTADA = 15 * 1024;
+
+type Adjunto = Awaited<ReturnType<typeof simpleParser>>["attachments"][number];
+
+/**
+ * Qué adjuntos del correo pueden ser la factura (#88). Todos pasan los controles de la subida del portal (#26:
+ * tipo real, 10 MB, PDF sin cifrar); lo que no pasa se descarta y, si era la factura, R1 escala por falta de datos.
+ * Las imágenes incrustadas en el cuerpo (inline) se ignoran si hay un adjunto normal (son la firma), pero si no lo
+ * hay cuentan, de la más grande a la más chica: Gmail incrusta así la foto que se arrastra al cuerpo del correo.
+ */
+function adjuntosDeFactura(adjuntos: Adjunto[]): Adjunto[] {
+  const validos = adjuntos.filter((a) => validarArchivo(a.content).ok);
+  const incrustada = (a: Adjunto) => a.contentDisposition === "inline" && a.contentType.startsWith("image/");
+  const normales = validos.filter((a) => !incrustada(a));
+  if (normales.length > 0) return normales;
+  return validos.filter((a) => incrustada(a) && a.content.length >= MIN_IMAGEN_INCRUSTADA).sort((a, b) => b.content.length - a.content.length);
+}
+
 /** Prefijo del remitente cuando no se pudo verificar: no coincide con ningún correo vinculado. */
 export const PREFIJO_NO_VERIFICADO = "no-verificado:";
 
@@ -76,13 +95,11 @@ export async function correoAEntrada(
     canal: "correo",
     remitente: { tipo: "correo", valor: verificado ? de : `${PREFIJO_NO_VERIFICADO}${de}` },
     recibido_en: opciones.recibido_en,
-    adjuntos: correo.attachments
-      // Imágenes incrustadas en la firma (logos) no son la factura.
-      .filter((a) => a.contentDisposition !== "inline" || !a.contentType.startsWith("image/"))
-      // Mismos controles que la subida del portal (#26): tipo real, 10 MB, PDF sin cifrar. Lo que no pasa
-      // se descarta; si era la factura, R1 escala por falta de datos.
-      .filter((a) => validarArchivo(a.content).ok)
-      .map((a, i) => ({ nombre: a.filename ?? `adjunto-${i + 1}`, mime: a.contentType, bytes_base64: a.content.toString("base64") })),
+    adjuntos: adjuntosDeFactura(correo.attachments).map((a, i) => ({
+      nombre: a.filename ?? `adjunto-${i + 1}`,
+      mime: a.contentType,
+      bytes_base64: a.content.toString("base64"),
+    })),
   };
   if (correo.subject) entrada.asunto = correo.subject;
   const cuerpo = (correo.text ?? "").trim();
