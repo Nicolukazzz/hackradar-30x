@@ -67,7 +67,7 @@ Next 16.4 cambia APIs respecto a versiones anteriores: antes de usar una API de 
 
 Node ≥ 22.12 (lo exige Vitest 5). CI (`.github/workflows/ci.yml`): `npm ci --ignore-scripts` → `typecheck` → `lint` → `test` → `build` en cada PR; SonarCloud también revisa. Solo tema claro (sin `.dark`). Pantallas placeholder en `src/app/(panel)/{aprobaciones,reglas,registro}` con `PantallaPendiente`; #6 las reemplaza. Componentes UI en `src/components/ui/` (shadcn, agregar con `npx shadcn@4.22.0 add …`), layout del panel en `src/app/(panel)/`, barra lateral en `src/components/app-sidebar.tsx`. Tokens §15 en `src/app/globals.css` (`bg-pagada`, `text-frenada-foreground`, `bg-brand`, etc.).
 
-Infra: deploy en **Railway** (plan Hobby USD 5, proyecto `hackradar-30x`, dueño N). Persistencia en deploy: **Supabase** en cuenta del equipo, nunca cuentas personales.
+Infra: deploy en **Railway** (plan Hobby USD 5, proyecto `hackradar-30x`, servicio `web`, dueño N). **Producción: https://web-production-6f160.up.railway.app** — cada merge a `main` se despliega solo (Railpack: `npm run build` + `npm start`). Por eso `main` siempre debe pasar CI. Persistencia en deploy: **Supabase** en cuenta del equipo, nunca cuentas personales.
 
 ## Reglas de UI (obligatorias)
 
