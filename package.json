@@ -14,6 +14,7 @@
     "extraer": "tsx --env-file-if-exists=.env scripts/extraer.ts",
     "dataset": "$([ -x .venv/bin/python ] && echo .venv/bin/python || echo python3) scripts/dataset/generar.py",
     "cargar-escenario": "tsx --env-file-if-exists=.env scripts/cargar-escenario.ts",
+    "telegram": "tsx --env-file-if-exists=.env scripts/telegram.ts",
     "test:supabase": "bash scripts/test-supabase.sh"
   },
   "dependencies": {

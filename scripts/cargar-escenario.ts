@@ -31,7 +31,7 @@ async function main() {
     const esperado = esc.esperado.find((x) => x.ref_esperada === e.ref_interna);
     const marca = esperado?.decision === e.decision ? "✓" : "✗";
     console.log(`${marca} ${e.ref_interna} ${(e.factura_numero ?? "—").padEnd(11)} ${String(e.decision).padEnd(8)} ${e.reglas_que_fallaron.join(",") || "—"}`);
-    console.log(`    → ${textoRespuesta(e, e.extraccion?.idioma ?? "es", { urlPortal: "https://…/portal" })}`);
+    console.log(`    → ${textoRespuesta(e, e.extraccion?.idioma ?? "es")}`);
   }
 }
 

@@ -1,0 +1,14 @@
+{
+  "update_id": 900011,
+  "message": {
+    "message_id": 11,
+    "chat": {
+      "id": 700100003,
+      "type": "private"
+    },
+    "from": {
+      "language_code": "es"
+    },
+    "text": "Hola, te mando la factura de soporte on-call de octubre. Cambié de banco, págame a esta CLABE nueva …9083.\nFactura F-0101\nFecha: 15/10/2026 · Vence: 19/10/2026\nConcepto: Soporte on-call — octubre (DH-ONCALL)\nValor: MXN 12,000.00\nPagar a: Diego Herrera · Banco Agave Norte · CLABE 999180000000009083"
+  }
+}

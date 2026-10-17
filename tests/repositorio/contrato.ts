@@ -87,6 +87,19 @@ export function contratoRepositorio(crear: () => Promise<Repositorio>, opciones:
     expect((await repo.datosComunes()).beneficiarios.map((b) => b.id)).toContain("ben-prueba-contrato");
   });
 
+  it("vincular Telegram (#13): un chat, un beneficiario; reemplaza el vínculo anterior de los dos", async () => {
+    await repo.vincularTelegram("ben-diego-herrera", "555");
+    let bs = (await repo.datosComunes()).beneficiarios;
+    expect(bs.find((b) => b.id === "ben-diego-herrera")?.canales.telegram_chat_id).toBe("555");
+    // El chat de Juan Pablo (700100004) pasa a Diego: Juan Pablo queda sin chat.
+    await repo.vincularTelegram("ben-diego-herrera", "700100004");
+    bs = (await repo.datosComunes()).beneficiarios;
+    expect(bs.find((b) => b.id === "ben-diego-herrera")?.canales.telegram_chat_id).toBe("700100004");
+    expect(bs.find((b) => b.id === "ben-juan-pablo-ortiz")?.canales.telegram_chat_id).toBeNull();
+    expect(bs.filter((b) => b.canales.telegram_chat_id === "700100004")).toHaveLength(1);
+    await expect(repo.vincularTelegram("ben-no-existe", "1")).rejects.toThrow(/no existe/);
+  });
+
   if (opciones.persistente) {
     it("después de un reinicio (otra instancia) todo sigue ahí", async () => {
       const otro = await crear();
