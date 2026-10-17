@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-16 — Canales y reparto LLM/código
+- Estado: propuesta
+- Decisión: entrada solo por correo, Telegram y portal web, todos a una ingesta común. Bots = adaptadores de código. El LLM (Claude) clasifica, extrae y explica; el motor de reglas en código decide. Se descarta "un LLM que decide si se paga".
+- Por qué: un pago indebido descalifica, hay riesgo de prompt injection en las facturas y el reto exige explicabilidad. Basado en el proceso real de una empresa de referencia (portal → digitador → registro interno → tesorería). Ver `docs/producto.md`.
+- Quién: N
+
 ## 2026-10-16 — Coordinación vía GitHub Issues
 - Estado: aceptada
 - Decisión: issues de GitHub = fuente de verdad de quién hace qué. Hook SessionStart muestra estado a cada agente; skills `/estado`, `/tomar-tarea`, `/entregar`. Mensajes entre agentes de distintas personas = comentarios en issues.
