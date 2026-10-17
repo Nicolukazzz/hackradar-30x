@@ -4,6 +4,8 @@ Proyecto del equipo para el hackathon HackRadar 30X. Reto elegido: **Blinka — 
 
 Estado: especificación v1 lista ([`docs/especificacion.md`](docs/especificacion.md)); stack aceptado en #1 (Next.js 16 + TS + Vitest + shadcn/ui). Prototipo visual: [`docs/diseno/prototipo-ui.html`](docs/diseno/prototipo-ui.html) (descargar y abrir en el navegador).
 
+Producción: **https://web-production-6f160.up.railway.app** (se despliega sola en cada merge a `main`, Railway).
+
 Requisitos: Claude Code, Node 22.12+, [`gh`](https://cli.github.com/) con `gh auth login` hecho.
 
 ## Arranque (cada integrante)
