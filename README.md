@@ -2,15 +2,16 @@
 
 Proyecto del equipo para el hackathon HackRadar 30X. Reto elegido: **Blinka — Agentes que pagan por la empresa** ([brief](docs/retos/blinka.md)).
 
-Estado: especificación v1 lista ([`docs/especificacion.md`](docs/especificacion.md)); stack propuesto, por aceptar en #1. Prototipo visual: [`docs/diseno/prototipo-ui.html`](docs/diseno/prototipo-ui.html) (descargar y abrir en el navegador).
+Estado: especificación v1 lista ([`docs/especificacion.md`](docs/especificacion.md)); stack aceptado en #1 (Next.js 16 + TS + Vitest + shadcn/ui). Prototipo visual: [`docs/diseno/prototipo-ui.html`](docs/diseno/prototipo-ui.html) (descargar y abrir en el navegador).
 
-Requisitos: Claude Code, Node 18+, [`gh`](https://cli.github.com/) con `gh auth login` hecho.
+Requisitos: Claude Code, Node 20.9+ (recomendado 22), [`gh`](https://cli.github.com/) con `gh auth login` hecho.
 
 ## Arranque (cada integrante)
 
 ```bash
 git clone https://github.com/Nicolukazzz/hackradar-30x.git
 cd hackradar-30x
+npm ci
 claude
 ```
 

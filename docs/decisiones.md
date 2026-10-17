@@ -55,7 +55,7 @@ Una entrada por decisión, la más nueva arriba. Formato:
 - Quién: J
 
 ## 2026-10-16 — Stack propuesto
-- Estado: propuesta (se acepta en #1)
+- Estado: aceptada (#1). Versiones reales: Next.js 16.4.2, React 19.3, Tailwind v4, shadcn/ui `base-nova` (Base UI), Vitest 5, zod 4. `cacheComponents` apagado para mantener el renderizado dinámico clásico.
 - Decisión: Next.js App Router + TypeScript estricto + Vitest + fast-check; persistencia detrás de interfaz `Repositorio` (memoria/JSON para tests y demo local, Supabase free para deploy); generador de dataset en Python (reportlab + Pillow). Carpetas y comandos en especificación §2.
 - Por qué: una sola app para portal, panel y API (como proponía `producto.md` §9); el motor queda como código puro independiente del framework, así la evaluación corre sin base de datos ni LLM.
 - Quién: J

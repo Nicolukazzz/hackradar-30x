@@ -30,3 +30,13 @@ venv/
 
 # Documentos reales de empresas (solo contexto local, NUNCA al repo público)
 contexto-privado/
+
+# Next.js / tests
+/out/
+/coverage/
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+npm-debug.log*
+# caché de extracción LLM (especificación §14)
+.cache/
