@@ -6,7 +6,7 @@ import { instante } from "@/dominio/reloj";
 import { normalizarNombre } from "@/dominio/normalizar";
 import type { Aprobador, Beneficiario, DocumentoRecibido, EntradaRegistro, EvaluacionRegla, Extraccion } from "@/dominio/tipos";
 import { decisionAgente, estadoHumano } from "@/aprobaciones/decidir";
-import { detectarInstrucciones } from "@/extraccion/inyeccion";
+import { detectarInstrucciones } from "@/reglas/inyeccion";
 import { asignarAprobador, responderAntesDe } from "@/reglas/asignacion";
 import { CAMPOS_OBLIGATORIOS } from "@/reglas/contexto";
 import { observaciones } from "@/reglas/explicar";
@@ -44,8 +44,11 @@ export type RespuestaFactura = {
   observaciones: string[];
   /** fragmentos de instrucciones dirigidas al agente (R10), para resaltarlos en el visor */
   instrucciones_detectadas: string[];
+  /** la línea completa de cada hallazgo de R10, para citarla en el aviso "Instrucción embebida" */
+  instrucciones_lineas: string[];
   /** "1 de 2" mientras falte la segunda firma */
-  firmas: { aprobador_id: string; nombre: string; momento: string }[];
+  /** "1 de 2" mientras falte la segunda firma. `cubre`: el límite de quien firmó alcanza el monto (§10). */
+  firmas: { aprobador_id: string; nombre: string; momento: string; cubre: boolean }[];
   requiere_doble_aprobacion: boolean;
   beneficiario_registrado: Pick<Beneficiario, "id" | "nombre" | "pais" | "tipo" | "categoria"> & { pais_nombre: string | null } | null;
   decisiones_humanas: EntradaRegistro[];
@@ -171,23 +174,38 @@ function lineaDeTiempo(x: {
   return linea;
 }
 
-export async function obtenerFactura(repo: Repositorio, ref: string): Promise<RespuestaFactura | null> {
+/**
+ * `cuentas`: carga los miembros del equipo que hoy pueden firmar (#51), los mismos que recibe `decidir()`.
+ * Solo se llama si hay firmas parciales. Sin ella, `firmas[].cubre` solo reconoce a los de data/aprobadores.json.
+ */
+export async function obtenerFactura(
+  repo: Repositorio,
+  ref: string,
+  cuentas: () => Promise<readonly Aprobador[]> = async () => [],
+): Promise<RespuestaFactura | null> {
   const [registro, datos, documento] = await Promise.all([repo.registro(), repo.datosComunes(), repo.documento(ref)]);
   const e = decisionAgente(registro, ref);
   if (!e) return null;
-  const reglas = (await repo.reglasVersion(e.reglas_version)) ?? (await repo.reglasVigentes());
+  const [vigentes, deSuVersion] = await Promise.all([repo.reglasVigentes(), repo.reglasVersion(e.reglas_version)]);
+  const reglas = deSuVersion ?? vigentes;
   const { humanas, final, firmas } = estadoHumano(registro, e);
   const { estado } = estadoActual(registro, e);
   const pendiente = e.decision === "ESCALAR" && !final;
   const cuando = await decididoEn(repo, e);
-  const asignacion = pendiente ? asignacionDe(e, datos.aprobadores, cuando) : null;
+  const asignada = asignacionDe(e, datos.aprobadores, cuando);
+  const asignacion = pendiente ? asignada : null;
   const resumen = resumirReglas(e.evaluaciones, e.reglas_version);
   const ext = e.extraccion;
   const textos = [documento?.asunto, documento?.texto_mensaje, ext?.texto_crudo].filter((t): t is string => Boolean(t));
-  const instrucciones = [...new Set(textos.flatMap((t) => detectarInstrucciones(t)))];
+  // El mismo detector que usa R10 en el motor: la traza resalta exactamente lo que hizo fallar la regla.
+  const hallazgos = textos.flatMap((t) => detectarInstrucciones(t));
+  const instrucciones = [...new Set(hallazgos.map((h) => h.fragmento))];
+  // La línea completa donde apareció cada hallazgo, tal como la devuelve el detector (sin re-dividir ni re-normalizar).
+  const lineas = [...new Set(hallazgos.map((h) => h.linea.trim()).filter(Boolean))];
   const b = e.beneficiario ? datos.beneficiarios.find((x) => normalizarNombre(x.nombre) === normalizarNombre(e.beneficiario ?? "")) : undefined;
 
-  const quien = asignacionDe(e, datos.aprobadores, cuando)?.aprobador.nombre ?? "una persona";
+  const quien = asignada?.aprobador.nombre ?? "una persona";
+  const firmantes = firmas.length > 0 ? [...datos.aprobadores, ...(await cuentas())] : datos.aprobadores;
   const linea = lineaDeTiempo({ e, documento, resumen, instrucciones, humanas, pendiente, quien });
 
   return {
@@ -201,8 +219,14 @@ export async function obtenerFactura(repo: Repositorio, ref: string): Promise<Re
     resumen,
     observaciones: e.decision === "RECHAZADA_NO_FACTURA" ? [] : observaciones(e.monto_usd_centavos, reglas),
     instrucciones_detectadas: instrucciones,
-    firmas,
-    requiere_doble_aprobacion: e.monto_usd_centavos !== null && e.monto_usd_centavos >= reglas.aprobacion.doble_aprobacion_desde_usd,
+    instrucciones_lineas: lineas,
+    firmas: firmas.map((f) => {
+      const a = firmantes.find((x) => x.id === f.aprobador_id);
+      const usd = e.monto_usd_centavos;
+      return { ...f, cubre: a !== undefined && usd !== null && (a.limite_usd === null || usd <= a.limite_usd) };
+    }),
+    // Con las reglas VIGENTES: son las que usa decidir() al aprobar, no las de cuando se escaló.
+    requiere_doble_aprobacion: e.monto_usd_centavos !== null && e.monto_usd_centavos >= vigentes.aprobacion.doble_aprobacion_desde_usd,
     beneficiario_registrado: b ? { id: b.id, nombre: b.nombre, pais: b.pais, tipo: b.tipo, categoria: b.categoria, pais_nombre: nombrePais(b.pais) } : null,
     decisiones_humanas: humanas,
     linea_tiempo: linea,

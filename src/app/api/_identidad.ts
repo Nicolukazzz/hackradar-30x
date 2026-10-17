@@ -1,31 +1,63 @@
 // Quién está decidiendo. Única puerta: NINGUNA ruta lee aprobador_id del body; sale de la sesión de
-// Supabase que `conSesion` ya verificó.
+// Supabase que `conSesion` ya verificó (con el permiso de su rol, #51).
 
 import type { Aprobador } from "@/dominio/tipos";
-import type { Sesion } from "@/lib/auth/permisos";
+import { obtenerAlmacenEquipo } from "@/equipo";
+import { firmantes } from "@/equipo/servicio";
+import { EMPRESA_ID, type Miembro } from "@/equipo/tipos";
+import { NOMBRE_ROL, type Rol, type Sesion } from "@/lib/auth/permisos";
 
 /**
  * Ruta de demo (reiniciar el escenario): siempre en desarrollo; en producción solo con DEMO=1.
- * Igual exige sesión (`conSesion`).
+ * Igual exige sesión de administrador.
  */
 export function demoActiva(): boolean {
   return process.env.NODE_ENV !== "production" || process.env.DEMO === "1";
 }
 
+type Cuenta = { usuario_id: string; nombre: string; correo: string; rol: Rol; limite_aprobacion_usd: number | null };
+
 /**
- * #49: sin roles, toda cuenta decide como aprobador principal sin límite, con su propio nombre en el
- * registro. La doble firma (§10) sigue exigiendo dos cuentas distintas. Los aprobadores de
- * data/aprobadores.json (Laura, Andrés) quedan para la asignación y el historial del dataset.
+ * Una cuenta de la empresa como aprobador de §10. El admin es el aprobador principal sin límite (guarda reglas);
+ * el aprobador firma hasta su límite. Los aprobadores de data/aprobadores.json (Laura, Andrés) quedan para la
+ * asignación y el historial del dataset.
  */
-export function aprobadorDeLaCuenta(sesion: Sesion): Aprobador {
+function comoAprobador(c: Cuenta): Aprobador {
   const iniciales =
-    sesion.nombre
+    c.nombre
       .split(/\s+/)
       .filter(Boolean)
       .slice(0, 2)
       .map((p) => p[0]?.toUpperCase() ?? "")
       .join("") || "?";
   // El nombre lo escribe la persona al registrarse: va con su correo (confirmado) para que nadie pase por otro en el registro.
-  const nombre = `${sesion.nombre} (${sesion.correo})`;
-  return { id: sesion.usuario_id, nombre, rol: "Cuenta", limite_usd: null, principal: true, iniciales };
+  const nombre = c.correo ? `${c.nombre} (${c.correo})` : c.nombre;
+  const admin = c.rol === "admin";
+  return {
+    id: c.usuario_id,
+    nombre,
+    rol: NOMBRE_ROL[c.rol],
+    limite_usd: admin ? null : c.limite_aprobacion_usd,
+    principal: admin,
+    iniciales,
+  };
+}
+
+/** La cuenta de la sesión. Solo para rutas que ya exigieron el permiso (`aprobar` o `editar_reglas`). */
+export function aprobadorDeLaCuenta(sesion: Sesion): Aprobador {
+  if (sesion.rol === null) throw new Error("aprobadorDeLaCuenta sin rol: la ruta debe exigir permiso con conSesion");
+  return comoAprobador({ ...sesion, rol: sesion.rol });
+}
+
+export function aprobadorDeMiembro(m: Miembro): Aprobador {
+  return comoAprobador(m);
+}
+
+/**
+ * Cuentas del equipo que hoy pueden firmar una aprobación (§10, #51), como aprobadores. Una sola fuente para
+ * POST /api/aprobaciones/:ref (decidir) y la Traza (`firmas[].cubre`), así nunca dicen cosas distintas.
+ */
+export async function cuentasFirmantes(): Promise<Aprobador[]> {
+  const almacen = await obtenerAlmacenEquipo();
+  return firmantes(await almacen.miembros(EMPRESA_ID)).map(aprobadorDeMiembro);
 }
