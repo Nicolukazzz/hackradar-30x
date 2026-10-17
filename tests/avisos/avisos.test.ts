@@ -54,11 +54,12 @@ describe("armarAviso", () => {
     const aviso = armarAviso(e, { aprobadores, decidido_en: AHORA_LOTE, enlace: enlace(e.ref_interna) });
     expect(aviso.asunto).toBe("Escalada: OMI-3381 · Servicios Ómicron S.A. · USD 2.980,00");
     expect(aviso.urgente).toBe(false);
-    expect(aviso.texto).toContain(e.explicacion);
+    expect(aviso.texto).toContain(limpiar(e.explicacion, 600));
+    expect(aviso.texto).toContain("omicron-pagos[.]example"); // el remitente que cita R11, sin enlace
     expect(aviso.texto).toContain("Laura Méndez (CFO)");
     expect(aviso.texto).toContain("17/10/2026 12:00");
     expect(aviso.texto).toContain("https://panel.example/facturas/INT-2026-000011");
-    for (const c of e.comparaciones) expect(aviso.texto).toContain(c);
+    for (const c of e.comparaciones) expect(aviso.texto).toContain(limpiar(c, 160));
     expect(aviso.texto).toContain("El agente no pagó esta factura");
   });
 
@@ -87,7 +88,10 @@ describe("texto que escribió quien cobra", () => {
 
   it("sin saltos de línea ni controles, sin URL activas y con largo máximo", () => {
     expect(limpiar("a\nb\u0000c\u200bd")).toBe("a b c d");
-    expect(limpiar("ver https://x.example y www.y.example")).toBe("ver https[:]//x.example y www[.]y.example");
+    expect(limpiar("ver https://x.example y www.y.example")).toBe("ver https[:]//x[.]example y www.y[.]example");
+    expect(limpiar("pagos-malos.example · mailto:a@b.co · javascript:alert(1)")).toBe("pagos-malos[.]example · mailto[:]a@b[.]co · javascript[:]alert(1)");
+    // lo legítimo queda igual
+    expect(limpiar("Servicios Ómicron S.A. · Ltda. · 4.500,00 > 3.000,00 USD · Escalada: hoy 18:00")).toBe("Servicios Ómicron S.A. · Ltda. · 4.500,00 > 3.000,00 USD · Escalada: hoy 18:00");
     expect(limpiar("x".repeat(50), 10)).toBe(`${"x".repeat(9)}…`);
   });
 
@@ -96,6 +100,7 @@ describe("texto que escribió quien cobra", () => {
     const aviso = armarAviso(e, { aprobadores, decidido_en: AHORA_LOTE, enlace: enlace(e.ref_interna) });
     expect(aviso.asunto).not.toMatch(/[\r\n]/);
     expect(aviso.texto).not.toContain("https://pagos-malos");
+    expect(aviso.texto).not.toContain("pagos-malos.example");
     expect(aviso.texto).not.toContain("\nAsignada a: CFO");
     expect(aviso.texto.match(/https:\/\//g)).toHaveLength(1); // solo el enlace a la traza
   });

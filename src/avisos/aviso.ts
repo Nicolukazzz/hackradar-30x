@@ -33,14 +33,16 @@ export type OpcionesAviso = {
 
 /**
  * Beneficiario, número, explicación (cita la frase de R10) y comparaciones salen de la factura: los escribe
- * quien cobra. Sin caracteres de control ni saltos de línea, con las URL desactivadas (`https[:]//…`, para
- * que ningún cliente las vuelva enlace) y cortado a `max`. El único enlace del aviso es el de la traza.
+ * quien cobra. Sin caracteres de control ni saltos de línea, con URL, dominios y correos desactivados
+ * (`https[:]//x[.]example`, para que ningún cliente los vuelva enlace) y cortado a `max`. El único enlace del aviso es el de la traza.
  */
 export function limpiar(texto: string, max = 400): string {
   const plano = texto
     .replace(/[\p{Cc}\p{Cf}\u2028\u2029]+/gu, " ")
-    .replace(/:\/\//g, "[:]//")
-    .replace(/\bwww\./gi, "www[.]")
+    // esquemas pegados (https:, mailto:, javascript:) y puntos de dominio (x.example, a@b.co): nada queda enlazable.
+    // Respeta "S.A.", "Ltda." y montos ("2.980,00"): solo el punto seguido de 2+ letras.
+    .replace(/\b([a-z][a-z0-9+.-]{0,30}):(?=\S)/gi, "$1[:]")
+    .replace(/([\p{L}\p{N}-])\.(?=\p{L}{2,})/gu, "$1[.]")
     .replace(/\s+/g, " ")
     .trim();
   return plano.length > max ? `${plano.slice(0, max - 1)}…` : plano;
