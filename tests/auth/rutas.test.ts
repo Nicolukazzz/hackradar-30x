@@ -3,19 +3,19 @@ import { describe, expect, it } from "vitest";
 import { API_PUBLICAS, clasificarRuta, destinoTrasEntrar } from "@/lib/auth/rutas";
 
 describe("destinoTrasEntrar", () => {
-  it("sin siguiente va al inicio del rol", () => {
-    expect(destinoTrasEntrar(null, "aprobador")).toBe("/");
-    expect(destinoTrasEntrar(undefined, "proveedor")).toBe("/portal");
+  it("sin siguiente va a la bandeja", () => {
+    expect(destinoTrasEntrar(null)).toBe("/");
+    expect(destinoTrasEntrar(undefined)).toBe("/");
   });
 
   it("respeta una ruta interna", () => {
-    expect(destinoTrasEntrar("/aprobaciones?orden=monto", "aprobador")).toBe("/aprobaciones?orden=monto");
+    expect(destinoTrasEntrar("/aprobaciones?orden=monto")).toBe("/aprobaciones?orden=monto");
   });
 
   it.each(["//malo.example", "/\\malo.example", "https://malo.example", "malo", "/entrar", "/entrar?siguiente=/"])(
     "rechaza %s",
     (siguiente) => {
-      expect(destinoTrasEntrar(siguiente, "tesoreria")).toBe("/");
+      expect(destinoTrasEntrar(siguiente)).toBe("/");
     },
   );
 });
@@ -34,7 +34,7 @@ describe("clasificarRuta (proxy, chequeo optimista)", () => {
     expect(clasificarRuta("/api/bandeja", false)).toBe("no_autorizado");
   });
 
-  it("con sesión sigue (el rol se verifica en el servidor, no aquí)", () => {
+  it("con sesión sigue (la sesión se verifica de nuevo en el servidor)", () => {
     expect(clasificarRuta("/", true)).toBe("seguir");
     expect(clasificarRuta("/api/bandeja", true)).toBe("seguir");
   });

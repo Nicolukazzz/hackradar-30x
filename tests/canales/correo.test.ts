@@ -12,7 +12,7 @@ import { extractorGolden } from "@/ingesta/cargar-escenario";
 import { fijarRepositorio } from "@/repositorio";
 import { crearRepositorioMemoria } from "@/repositorio/memoria";
 
-import { comoProveedor, peticion } from "../api/ayuda";
+import { comoSesion, CUENTA, peticion } from "../api/ayuda";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/sesion", async () => (await import("../api/ayuda")).sesionFalsa);
@@ -143,8 +143,7 @@ describe("buzón real: ante la duda, no verificado; automáticos ignorados (revi
 describe("POST /api/canales/correo/simular", () => {
   it("los .eml del lote demo, por el parser sin IA, dan las decisiones esperadas; el cuerpo de OMI-3381 dispara R10", async () => {
     fijarRepositorio(await crearRepositorioMemoria("lote-demo-oct", undefined, { lote: "vacio" }));
-    const { comoSesion, TESORERIA } = await import("../api/ayuda");
-    comoSesion(TESORERIA);
+    comoSesion(CUENTA);
     const esc = await cargarEscenario("lote-demo-oct");
     for (const meta of esc.documentos.filter((d) => d.archivo_original.endsWith(".eml"))) {
       const eml = await readFile(path.join(esc.carpeta, meta.archivo_original));
@@ -157,16 +156,15 @@ describe("POST /api/canales/correo/simular", () => {
   });
 
   it("un cuerpo de más de 10 MB → 413 sin leerlo entero", async () => {
-    const { comoSesion, TESORERIA } = await import("../api/ayuda");
-    comoSesion(TESORERIA);
+    comoSesion(CUENTA);
     const grande = new Uint8Array(10 * 1024 * 1024 + 1);
     const res = await postSimular(peticion("http://x/api/canales/correo/simular", { method: "POST", body: grande }));
     expect(res.status).toBe(413);
   });
 
-  it("solo el panel: un proveedor recibe 403", async () => {
-    comoProveedor("ben-cloudnorte");
+  it("sin sesión → 401", async () => {
+    comoSesion(null);
     const res = await postSimular(peticion("http://x/api/canales/correo/simular", { method: "POST", body: "From: a@b.example\r\n\r\nhola" }));
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
   });
 });

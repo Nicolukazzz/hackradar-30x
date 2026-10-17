@@ -1,7 +1,5 @@
-import type { Rol } from "@/lib/auth/permisos";
-
-// Qué hace el proxy con cada ruta. Chequeo optimista (¿hay sesión válida?); el rol se verifica
-// después en el servidor con `obtenerSesion()` + `exigirRol()`.
+// Qué hace el proxy con cada ruta. Chequeo optimista (¿hay sesión válida?); la sesión se verifica
+// de nuevo en el servidor con `obtenerSesion()` (layout del panel y `conSesion`).
 
 /** Páginas que se ven sin sesión. */
 export const PAGINAS_PUBLICAS = ["/entrar", "/sin-permiso"] as const;
@@ -15,18 +13,13 @@ function coincide(ruta: string, base: string): boolean {
   return ruta === base || ruta.startsWith(`${base}/`);
 }
 
-/** Inicio de cada rol tras entrar. */
-export function inicioDe(rol: Rol): string {
-  return rol === "proveedor" ? "/portal" : "/";
-}
-
 /**
  * Adónde ir tras entrar. `siguiente` viene de la URL: solo se acepta una ruta interna del mismo sitio
  * (evita redirecciones abiertas a `//malo.example` o `/\malo.example`) y que no sea /entrar.
  */
-export function destinoTrasEntrar(siguiente: string | null | undefined, rol: Rol): string {
-  if (!siguiente || !siguiente.startsWith("/") || siguiente.startsWith("//") || siguiente.includes("\\")) return inicioDe(rol);
-  if (coincide(siguiente.split(/[?#]/)[0] ?? "", "/entrar")) return inicioDe(rol);
+export function destinoTrasEntrar(siguiente: string | null | undefined): string {
+  if (!siguiente || !siguiente.startsWith("/") || siguiente.startsWith("//") || siguiente.includes("\\")) return "/";
+  if (coincide(siguiente.split(/[?#]/)[0] ?? "", "/entrar")) return "/";
   return siguiente;
 }
 

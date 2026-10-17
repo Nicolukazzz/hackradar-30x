@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { API_PUBLICAS } from "@/lib/auth/rutas";
 
-// Issue #25 (mínimo privilegio): cada route handler de src/app/api declara su rol con `conRol`,
+// Issue #25 (mínimo privilegio): cada route handler de src/app/api exige sesión con `conSesion`,
 // salvo las rutas públicas declaradas en API_PUBLICAS (webhooks con verificación propia). Migradas en #26.
 const RAIZ_API = "src/app/api";
 
@@ -27,14 +27,14 @@ function urlDe(archivo: string): string {
 }
 
 describe("rutas de API protegidas", () => {
-  it("toda ruta no pública usa conRol", async () => {
+  it("toda ruta no pública usa conSesion", async () => {
     const pendientes: string[] = [];
     for (const archivo of await rutas(RAIZ_API)) {
       const url = urlDe(archivo);
       if (API_PUBLICAS.some((p) => url === p || url.startsWith(`${p}/`))) continue;
       const codigo = await readFile(archivo, "utf8");
-      const usaConRol = /from "@\/lib\/auth\/ruta"/.test(codigo) && /conRol\(/.test(codigo);
-      if (!usaConRol) pendientes.push(archivo);
+      const usaConSesion = /from "@\/lib\/auth\/ruta"/.test(codigo) && /conSesion\(/.test(codigo);
+      if (!usaConSesion) pendientes.push(archivo);
     }
     expect(pendientes).toEqual([]);
   });

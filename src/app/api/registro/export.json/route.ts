@@ -1,11 +1,10 @@
-import { conRol } from "@/lib/auth/ruta";
+import { conSesion } from "@/lib/auth/ruta";
 import { obtenerRepositorio } from "@/repositorio";
 
 import { manejar } from "../../_http";
-import { PANEL } from "../../_identidad";
 
 /** GET /api/registro/export.json (§9): el registro completo, en orden de inserción. */
-export const GET = conRol(PANEL, async () => {
+export const GET = conSesion(async () => {
   try {
     const entradas = await (await obtenerRepositorio()).registro();
     return new Response(JSON.stringify(entradas, null, 2), {

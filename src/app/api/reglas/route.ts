@@ -1,14 +1,14 @@
 import { ReglasSchema } from "@/dominio/esquemas";
-import { conRol } from "@/lib/auth/ruta";
+import { conSesion } from "@/lib/auth/ruta";
 import { obtenerRepositorio } from "@/repositorio";
 import { ahoraHumano } from "@/servicios/comun";
 import { guardarReglas, obtenerReglas, sinVersion } from "@/servicios/reglas";
 
 import { error, json, manejar, ok, validar } from "../_http";
-import { aprobadorDeLaSesion, PANEL } from "../_identidad";
+import { aprobadorDeLaCuenta } from "../_identidad";
 
 /** GET /api/reglas (§12): versión vigente, historial, beneficiarios, aprobadores y tasas. */
-export const GET = conRol(PANEL, async () => {
+export const GET = conSesion(async () => {
   try {
     return ok(await obtenerReglas(await obtenerRepositorio()));
   } catch (e) {
@@ -18,14 +18,13 @@ export const GET = conRol(PANEL, async () => {
 
 /**
  * POST /api/reglas (§12): guarda una versión nueva ("Guardar como v8"). Cuerpo: Reglas sin `version`
- * (editada_por y editada_en los pone el servidor). Solo el aprobador principal; 409 si la simulación
+ * (editada_por y editada_en los pone el servidor). Cualquier cuenta (#49); 409 si la simulación
  * da algún pago fuera de reglas.
  */
-export const POST = conRol(["aprobador"], async (req: Request, _ctx, sesion) => {
+export const POST = conSesion(async (req: Request, _ctx, sesion) => {
   try {
     const repo = await obtenerRepositorio();
-    const autor = await aprobadorDeLaSesion(sesion, repo);
-    if (!autor) return error(403, "Tu usuario no está asociado a un aprobador.");
+    const autor = aprobadorDeLaCuenta(sesion);
     const ahora = await ahoraHumano(repo);
     const actual = await repo.reglasVigentes();
     const crudo = await json(req);

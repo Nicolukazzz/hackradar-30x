@@ -9,7 +9,7 @@ import type { Reglas } from "@/dominio/tipos";
 import { COLUMNAS_CSV, registroACsv } from "@/servicios/registro";
 import { obtenerReglas, simularReglas } from "@/servicios/reglas";
 
-import { comoAprobador, entradaDe, peticion, repoProcesado } from "./ayuda";
+import { entradaDe, peticion, repoProcesado } from "./ayuda";
 
 
 vi.mock("server-only", () => ({}));
@@ -36,7 +36,6 @@ describe("reglas: simular y guardar (§13.4, §14)", () => {
 
   it("subir el límite automático a USD 5.000 paga LF-2026-10 → pagos fuera de reglas → no se guarda (409)", async () => {
     const repo = await repoProcesado();
-    comoAprobador("lm");
     const v7 = await repo.reglasVigentes();
     const res = await postReglas(json("http://x/api/reglas", conAutomatico(v7, 500000)));
     expect(res.status).toBe(409);
@@ -44,18 +43,15 @@ describe("reglas: simular y guardar (§13.4, §14)", () => {
     expect((await repo.reglasVigentes()).version).toBe(7);
   });
 
-  it("guardar como v8: solo el aprobador principal; escribe CAMBIO_REGLAS; R9 > R6 → 400", async () => {
+  it("guardar como v8: cualquier cuenta (#49), con su nombre; escribe CAMBIO_REGLAS; R9 > R6 → 400", async () => {
     const repo = await repoProcesado();
     const v7 = await repo.reglasVigentes();
-    comoAprobador("ap");
-    expect((await postReglas(json("http://x/api/reglas", conAutomatico(v7, 200000)))).status).toBe(403);
-    comoAprobador("lm");
     expect((await postReglas(json("http://x/api/reglas", conAutomatico(v7, 2000000)))).status).toBe(400);
     const res = await postReglas(json("http://x/api/reglas", conAutomatico(v7, 200000)));
     expect(res.status).toBe(201);
     expect((await res.json()).version).toBe(8);
     const v8 = await repo.reglasVigentes();
-    expect(v8).toMatchObject({ version: 8, editada_por: "Laura Méndez", limites: { pago_automatico_usd: 200000 } });
+    expect(v8).toMatchObject({ version: 8, editada_por: "Ana Torres (ana@nebula.example)", limites: { pago_automatico_usd: 200000 } });
     expect((await obtenerReglas(repo)).historial.map((h) => h.version)).toEqual([8, 7, 6]);
     expect(await repo.registro({ tipo: ["CAMBIO_REGLAS"] })).toHaveLength(1);
   });

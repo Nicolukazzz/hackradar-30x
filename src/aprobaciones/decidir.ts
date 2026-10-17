@@ -10,8 +10,13 @@ export type EntradaDecision = {
   ref: string;
   accion: "aprobar" | "rechazar";
   comentario: string;
-  /** quién decide: sale de la sesión (o de la elección demo), nunca del body (#25) */
+  /** quién decide: sale de la sesión, nunca del body (#25) */
   aprobador_id: string;
+  /**
+   * #49 (sin roles): la cuenta que decide, cuando no es uno de data/aprobadores.json. Si viene, se usa en vez
+   * de buscar `aprobador_id` en la lista de la empresa (y cuenta como firma para la doble aprobación).
+   */
+  aprobador?: Aprobador;
   agregar_a_lista?: boolean;
 };
 
@@ -167,7 +172,8 @@ async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Reposito
     repo.reglasVigentes(),
     repo.documento(input.ref),
   ]);
-  const v = validar(input, registro, datos.aprobadores);
+  const aprobadores = input.aprobador ? [...datos.aprobadores, input.aprobador] : datos.aprobadores;
+  const v = validar(input, registro, aprobadores);
   const base = entradaBase(v, reglas.version, ahora);
   const anio = Number(ahora.slice(0, 4));
 
@@ -187,7 +193,7 @@ async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Reposito
   if (usd === null) {
     throw new ErrorDecision(409, "La factura no tiene un monto confiable (R1): corrige los datos y vuelve a enviarla antes de aprobar.");
   }
-  const { parcial, explicacion } = resolverAprobacion(v, usd, reglas.aprobacion.doble_aprobacion_desde_usd, datos.aprobadores);
+  const { parcial, explicacion } = resolverAprobacion(v, usd, reglas.aprobacion.doble_aprobacion_desde_usd, aprobadores);
   const nuevo = beneficiarioAAgregar(v, parcial, documento, datos.beneficiarios);
 
   const entrada: EntradaRegistro = { ...base, id: await repo.siguienteIdRegistro(anio), decision: parcial ? null : "APROBADA_HUMANO", explicacion };

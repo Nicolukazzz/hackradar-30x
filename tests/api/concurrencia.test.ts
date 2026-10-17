@@ -5,7 +5,7 @@ import { decidir, ErrorDecision } from "@/aprobaciones/decidir";
 import { crearRepositorioMemoria } from "@/repositorio/memoria";
 import { procesarPendientes } from "@/servicios/lote";
 
-import { comoProveedor, entradaDe, peticion, repoProcesado } from "./ayuda";
+import { comoSesion, entradaDe, peticion, repoProcesado } from "./ayuda";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/sesion", async () => (await import("./ayuda")).sesionFalsa);
@@ -52,7 +52,7 @@ describe("hallazgos de /code-review en #17", () => {
     expect(await repo.registro()).toHaveLength(largo);
   });
 
-  it("en producción sin DEMO=1, 'reiniciar' no existe (404); con DEMO=1 sí, y siempre exige sesión del panel", async () => {
+  it("en producción sin DEMO=1, 'reiniciar' no existe (404); con DEMO=1 sí, y siempre exige sesión", async () => {
     await repoProcesado();
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("DEMO", "");
@@ -60,7 +60,7 @@ describe("hallazgos de /code-review en #17", () => {
     expect((await reiniciar()).status).toBe(404);
     vi.stubEnv("DEMO", "1");
     expect((await reiniciar()).status).toBe(200);
-    comoProveedor("ben-pixel-co");
-    expect((await reiniciar()).status).toBe(403);
+    comoSesion(null);
+    expect((await reiniciar()).status).toBe(401);
   });
 });

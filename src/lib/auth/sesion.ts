@@ -6,17 +6,11 @@ import { z } from "zod";
 import type { Sesion } from "@/lib/auth/permisos";
 import { crearClienteServidor } from "@/lib/supabase/servidor";
 
-// Única puerta de identidad (issue #25). `getClaims()` verifica la firma del JWT; el rol sale de
-// `public.perfiles` (nunca de user_metadata) y se lee en cada request, así un usuario desactivado
-// pierde acceso aunque su token siga vivo. El resto del código no llama a Supabase Auth directo.
+// Única puerta de identidad (#25, #49). `getClaims()` verifica la firma del JWT; `public.perfiles` (RLS: cada
+// cuenta lee solo su fila) da el nombre visible y `activo`, leído en cada request: una cuenta desactivada pierde
+// el acceso aunque su token siga vivo. El resto del código no llama a Supabase Auth directo.
 
-const esquemaPerfil = z.object({
-  rol: z.enum(["tesoreria", "aprobador", "proveedor"]),
-  aprobador_id: z.string().nullable(),
-  beneficiario_id: z.string().nullable(),
-  nombre: z.string(),
-  activo: z.boolean(),
-});
+const esquemaPerfil = z.object({ nombre: z.string(), activo: z.boolean() });
 
 export const obtenerSesion = cache(async (): Promise<Sesion | null> => {
   const supabase = await crearClienteServidor();
@@ -27,14 +21,13 @@ export const obtenerSesion = cache(async (): Promise<Sesion | null> => {
   // RLS: cada usuario solo puede leer su propia fila.
   const { data: fila, error: errorPerfil } = await supabase
     .from("perfiles")
-    .select("rol, aprobador_id, beneficiario_id, nombre, activo")
+    .select("nombre, activo")
     .eq("id", claims.sub)
     .maybeSingle();
   if (errorPerfil || !fila) return null;
   const perfil = esquemaPerfil.safeParse(fila);
   if (!perfil.success || !perfil.data.activo) return null;
 
-  const { rol, aprobador_id, beneficiario_id, nombre } = perfil.data;
   const correo = typeof claims.email === "string" ? claims.email : "";
-  return { usuario_id: claims.sub, correo, rol, aprobador_id, beneficiario_id, nombre };
+  return { usuario_id: claims.sub, correo, nombre: perfil.data.nombre };
 });
