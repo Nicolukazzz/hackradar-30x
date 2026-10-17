@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { Boton, ChipRegla, Monto, etiquetaCanal, fechaHora, hora } from "@/app/_componentes";
 import type { TarjetaAprobacion as Datos } from "@/app/_datos/aprobaciones";
+import { MINIMO_COMENTARIO } from "@/aprobaciones/decidir";
 import type { EntradaRegistro } from "@/dominio/tipos";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +20,6 @@ type Accion = "aprobar" | "rechazar";
 type Paso = { tipo: "listo" } | { tipo: "escribiendo"; accion: Accion } | { tipo: "esperando"; accion: Accion; quedan: number } | { tipo: "enviando"; accion: Accion };
 
 const SEGUNDOS_DESHACER = 5;
-const COMENTARIO_MINIMO = 5;
 
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -28,34 +28,68 @@ function chips(t: Datos): string[] {
   return t.reglas_que_fallaron.map((id) => t.comparaciones.find((c) => c.startsWith(`${id} `)) ?? id);
 }
 
-export function TarjetaAprobacion({ t, permiso }: { t: Datos; permiso: { ok: true } | { ok: false; motivo: string } }) {
+export function TarjetaAprobacion({
+  t,
+  permiso,
+  cuenta,
+}: {
+  t: Datos;
+  permiso: { ok: true } | { ok: false; motivo: string };
+  /** id de la cuenta que mira la tarjeta: quien dio la primera firma no puede dar la segunda (§10) */
+  cuenta: string;
+}) {
   const router = useRouter();
   const [paso, setPaso] = useState<Paso>({ tipo: "listo" });
   const [comentario, setComentario] = useState("");
   const [agregar, setAgregar] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reloj = useRef<ReturnType<typeof setInterval>>(undefined);
+  // Decisión confirmada que todavía no se envió (los 5 s para deshacer): si la tarjeta se desmonta, se envía igual.
+  const porEnviar = useRef<{ accion: Accion; cuerpo: string } | null>(null);
   const campo = useRef<HTMLTextAreaElement>(null);
   const id = useId();
 
-  useEffect(() => () => clearInterval(reloj.current), []);
+  useEffect(
+    () => () => {
+      clearInterval(reloj.current);
+      const p = porEnviar.current;
+      // keepalive: la petición sigue aunque la persona ya se haya ido a otra pantalla.
+      if (p) void fetch(`/api/aprobaciones/${encodeURIComponent(t.ref_interna)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: p.cuerpo, keepalive: true });
+    },
+    [t.ref_interna],
+  );
   useEffect(() => {
     if (paso.tipo === "escribiendo") campo.current?.focus();
   }, [paso.tipo]);
 
   const numero = t.factura_numero ?? t.ref_interna;
   const a = t.beneficiario ?? "beneficiario sin nombre legible";
-  const comentarioOk = comentario.trim().length >= COMENTARIO_MINIMO;
+  const comentarioOk = comentario.trim().length >= MINIMO_COMENTARIO;
   const segundaFirma = t.requiere_doble_aprobacion && t.firmas.length > 0;
   const urgente = t.asignacion?.urgente ?? false;
+  const yaFirme = t.firmas.some((f) => f.aprobador_id === cuenta);
+  // El beneficiario se agrega a la lista con la última firma (decidir.ts): en la primera de dos no se ofrece.
+  const ofrecerAgregar = t.puede_agregar_a_lista && !(t.requiere_doble_aprobacion && t.firmas.length === 0);
+  const motivoNoAprobar =
+    t.monto_usd_centavos === null
+      ? "Sin un monto confiable (R1) no se puede aprobar: recházala o pide la factura de nuevo."
+      : yaFirme
+        ? "Ya diste la primera firma: la segunda debe ser de otra persona."
+        : null;
+
+  function cuerpoDe(accion: Accion): string {
+    return JSON.stringify({ accion, comentario: comentario.trim(), ...(ofrecerAgregar && accion === "aprobar" ? { agregar_a_lista: agregar } : {}) });
+  }
 
   async function enviar(accion: Accion) {
+    const cuerpo = porEnviar.current?.cuerpo ?? cuerpoDe(accion);
+    porEnviar.current = null;
     setPaso({ tipo: "enviando", accion });
     try {
       const res = await fetch(`/api/aprobaciones/${encodeURIComponent(t.ref_interna)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accion, comentario: comentario.trim(), ...(t.puede_agregar_a_lista && accion === "aprobar" ? { agregar_a_lista: agregar } : {}) }),
+        body: cuerpo,
       });
       const datos = (await res.json().catch(() => ({}))) as Partial<EntradaRegistro> & { error?: string };
       if (!res.ok) throw new Error(datos.error ?? "No se pudo registrar la decisión. Intenta de nuevo.");
@@ -64,10 +98,11 @@ export function TarjetaAprobacion({ t, permiso }: { t: Datos; permiso: { ok: tru
           ? `${numero} aprobada`
           : datos.decision === "RECHAZADA_HUMANO"
             ? `${numero} rechazada`
-            : `${numero}: primera firma registrada`;
+            : datos.decision === null
+              ? `${numero}: primera firma registrada`
+              : `${numero}: decisión registrada`;
       toast.success(titulo, {
-        description:
-          datos.decision === null ? "Falta una segunda aprobación de otra persona." : "Quedó en el registro con tu comentario.",
+        description: datos.decision === null ? "Falta una segunda aprobación de otra persona." : "Quedó en el registro con tu comentario.",
         action: datos.id ? { label: "Ver en el registro", onClick: () => router.push(`/registro?entrada=${datos.id}`) } : undefined,
       });
       // Refresca la lista y el badge de la barra lateral (la tarjeta desaparece si ya no está pendiente).
@@ -85,6 +120,7 @@ export function TarjetaAprobacion({ t, permiso }: { t: Datos; permiso: { ok: tru
   function confirmar(accion: Accion) {
     if (!comentarioOk) return;
     setError(null);
+    porEnviar.current = { accion, cuerpo: cuerpoDe(accion) };
     setPaso({ tipo: "esperando", accion, quedan: SEGUNDOS_DESHACER });
     let quedan = SEGUNDOS_DESHACER;
     clearInterval(reloj.current);
@@ -98,8 +134,16 @@ export function TarjetaAprobacion({ t, permiso }: { t: Datos; permiso: { ok: tru
     }, 1000);
   }
 
+  /** Empezar a escribir: el comentario de una acción no se arrastra a la otra. */
+  function escribir(accion: Accion) {
+    setComentario("");
+    setError(null);
+    setPaso({ tipo: "escribiendo", accion });
+  }
+
   function deshacer() {
     clearInterval(reloj.current);
+    porEnviar.current = null;
     setPaso({ tipo: "escribiendo", accion: paso.tipo === "esperando" ? paso.accion : "aprobar" });
   }
 
@@ -190,21 +234,26 @@ export function TarjetaAprobacion({ t, permiso }: { t: Datos; permiso: { ok: tru
       <div className="flex flex-col gap-3 border-t border-subtle pt-4">
         {paso.tipo === "listo" ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
-            {t.puede_agregar_a_lista ? (
+            {ofrecerAgregar ? (
               <label className="flex min-h-11 items-center gap-2.5 text-sm">
                 <input type="checkbox" checked={agregar} onChange={(e) => setAgregar(e.target.checked)} className="size-[18px] accent-primary" />
                 Agregar a {a} a la lista permitida para pagos futuros
               </label>
             ) : (
               <span className="text-[13px] text-muted-foreground">
-                {permiso.ok ? "Se pedirá un comentario antes de confirmar." : permiso.motivo}
+                {!permiso.ok ? permiso.motivo : (motivoNoAprobar ?? "Se pedirá un comentario antes de confirmar.")}
               </span>
             )}
             <div className="flex flex-wrap gap-2.5">
-              <Boton variante="peligro" disabled={!permiso.ok} onClick={() => setPaso({ tipo: "escribiendo", accion: "rechazar" })}>
+              <Boton variante="peligro" disabled={!permiso.ok} onClick={() => escribir("rechazar")}>
                 Rechazar
               </Boton>
-              <Boton variante="primaria" disabled={!permiso.ok} onClick={() => setPaso({ tipo: "escribiendo", accion: "aprobar" })}>
+              <Boton
+                variante="primaria"
+                disabled={!permiso.ok || motivoNoAprobar !== null}
+                title={motivoNoAprobar ?? undefined}
+                onClick={() => escribir("aprobar")}
+              >
                 {segundaFirma ? "Dar la segunda firma" : "Aprobar pago"}
               </Boton>
             </div>
@@ -234,7 +283,7 @@ export function TarjetaAprobacion({ t, permiso }: { t: Datos; permiso: { ok: tru
               className="min-h-20 w-full resize-y rounded-[10px] border border-borde-fuerte bg-card px-3 py-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             />
             <span id={`${id}-ayuda`} className="text-xs text-muted-foreground">
-              Obligatorio, al menos {COMENTARIO_MINIMO} caracteres. Queda en el registro con tu nombre.
+              Obligatorio, al menos {MINIMO_COMENTARIO} caracteres. Queda en el registro con tu nombre.
               {paso.accion === "aprobar" && agregar ? ` También se agregará a ${a} a la lista permitida.` : ""}
             </span>
             {error ? (
@@ -248,6 +297,7 @@ export function TarjetaAprobacion({ t, permiso }: { t: Datos; permiso: { ok: tru
                 variante="secundaria"
                 onClick={() => {
                   setError(null);
+                  setComentario("");
                   setPaso({ tipo: "listo" });
                 }}
               >

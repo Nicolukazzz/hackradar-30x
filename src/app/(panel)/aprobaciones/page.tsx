@@ -5,6 +5,7 @@ import { Kpi, Monto, hora } from "@/app/_componentes";
 import { obtenerAprobaciones } from "@/app/_datos/aprobaciones";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { formatearUsd } from "@/dominio/dinero";
+import { obtenerSesion } from "@/lib/auth/sesion";
 
 import { OrdenAprobaciones } from "../_aprobaciones/orden";
 import { TarjetaAprobacion } from "../_aprobaciones/tarjeta-aprobacion";
@@ -20,6 +21,7 @@ export default async function AprobacionesPage({ searchParams }: PageProps<"/apr
   const vencenHoy = a.pendientes.filter((t) => t.asignacion?.urgente);
   const primeraHoy = vencenHoy[0];
   const permiso = { ok: true } as const;
+  const sesion = await obtenerSesion();
 
   return (
     <>
@@ -45,7 +47,7 @@ export default async function AprobacionesPage({ searchParams }: PageProps<"/apr
           valor={
             <span className="block font-sans text-base leading-snug font-semibold">
               {primeraHoy
-                ? `${primeraHoy.factura_numero ?? primeraHoy.ref_interna} · ${primeraHoy.beneficiario ?? "sin nombre"}, ${hora(primeraHoy.asignacion?.responder_antes_de ?? "")}`
+                ? `${primeraHoy.factura_numero ?? primeraHoy.ref_interna} · ${primeraHoy.beneficiario ?? "sin nombre"}${primeraHoy.asignacion ? `, ${hora(primeraHoy.asignacion.responder_antes_de)}` : ""}`
                 : "Nada vence hoy"}
             </span>
           }
@@ -83,7 +85,7 @@ export default async function AprobacionesPage({ searchParams }: PageProps<"/apr
       ) : (
         <section aria-label="Facturas escaladas" className="flex flex-col gap-4">
           {a.pendientes.map((t) => (
-            <TarjetaAprobacion key={t.ref_interna} t={t} permiso={permiso} />
+            <TarjetaAprobacion key={t.ref_interna} t={t} permiso={permiso} cuenta={sesion?.usuario_id ?? ""} />
           ))}
         </section>
       )}
