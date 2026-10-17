@@ -15,6 +15,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 // Navegación de especificación §13. Los conteos (badge de Aprobaciones) los agrega #6.
@@ -27,6 +28,7 @@ const navegacion = [
 
 export function AppSidebar() {
   const ruta = usePathname();
+  const { setOpenMobile } = useSidebar();
 
   return (
     <Sidebar>
@@ -53,7 +55,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     size="lg"
                     isActive={href === "/" ? ruta === "/" : ruta.startsWith(href)}
-                    render={<Link href={href} />}
+                    render={<Link href={href} onClick={() => setOpenMobile(false)} />}
                   >
                     <Icono />
                     <span>{titulo}</span>

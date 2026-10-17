@@ -58,7 +58,7 @@ Canal (portal | correo | telegram | carga_manual)
   → UI (§13) / API (§12) / Evaluación (§14)
 ```
 
-Stack propuesto (decisión en #1): **Next.js (App Router) + TypeScript estricto + Vitest**. Persistencia detrás de interfaz `Repositorio`: implementación en memoria/JSON (tests, evaluación, demo local) y Supabase (deploy). Generador de dataset en Python (reportlab + Pillow).
+Stack **aceptado en #1**: **Next.js 16.4 (App Router) + TypeScript estricto + Vitest + fast-check + shadcn/ui (Tailwind v4)**. Persistencia detrás de interfaz `Repositorio`: implementación en memoria/JSON (tests, evaluación, demo local) y Supabase (deploy). Generador de dataset en Python (reportlab + Pillow).
 
 ```
 src/
@@ -99,14 +99,15 @@ tests/                    # espejo de src/
 data/                     # §11
 ```
 
-Comandos (a fijar en #1 y copiar a `CLAUDE.md`):
+Comandos (fijados en #1; lista completa en `CLAUDE.md` "Stack y comandos"):
 
 | Comando | Hace |
 |---|---|
 | `npm run dev` | App en `localhost:3000` con escenario `lote-demo-oct` precargado |
 | `npm test` | Vitest (unidad + propiedades) |
 | `npm run evaluar -- --escenario lote-demo-oct [--extraccion golden\|real]` | §14 |
-| `npm run dataset` | `python3 scripts/dataset/generar.py` |
+| `npm run typecheck` · `npm run lint` | `next typegen && tsc --noEmit` · ESLint (prohíbe reloj en dominio/reglas) |
+| `npm run dataset` | `scripts/dataset/generar.py` (con `.venv/bin/python` si existe, si no `python3`) |
 
 ## 3. Modelo de datos
 

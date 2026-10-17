@@ -6,7 +6,7 @@ Plataforma: https://hackradar.30x.com/recursos
 ## Estado actual
 
 - **Reto confirmado: Blinka — Agentes que pagan por la empresa** (pago automático de facturas). Todo el trabajo va a este reto. Brief completo: @docs/retos/blinka.md
-- Fase: **especificación v1 → construcción**. Qué y por qué: @docs/producto.md. **Contrato técnico (tipos, reglas R1–R11, dataset, API, pantallas, evaluación): @docs/especificacion.md** — fuente de verdad para escribir código. Prototipo visual navegable: `docs/diseno/prototipo-ui.html` (5 pantallas). Stack aceptado en #1 (ver "Stack y comandos").
+- Fase: **especificación v1 → construcción**. Qué y por qué: @docs/producto.md. **Contrato técnico (tipos, reglas R1–R11, dataset, API, pantallas, evaluación): @docs/especificacion.md** — fuente de verdad para escribir código. Prototipo visual navegable: `docs/diseno/prototipo-ui.html` (5 pantallas). Stack aceptado y esqueleto listo en #1 (ver "Stack y comandos"). Dataset generado en #3 (`data/`).
 - Cada issue (#1–#14) cita secciones de la especificación (`§4.3`) y trae un prompt listo para Claude Code. Antes de implementar: `gh issue view <n>` + leer las secciones citadas.
 
 ## Producto en una frase
@@ -18,8 +18,6 @@ Reparto: **bots/canales = código que transporta · LLM = lee y explica · códi
 - Otros retos quedan solo como referencia (`docs/retos/jev.md`, `radar-de-contenido.md`, `dapta.md`). No proponer trabajo para ellos salvo que el equipo lo pida. Excepción útil: JEV podría servir como clasificador rápido dentro del agente de facturas.
 - Decisiones del equipo: @docs/decisiones.md — leer antes de proponer algo que ya se decidió o descartó.
 - Hallazgos de investigación: `docs/research/` (un archivo por tema).
-
-Cuando se elija stack, actualizar sección "Stack y comandos" y registrar decisión con skill `/registrar-decision`.
 
 ## Reto Blinka — resumen operativo
 
@@ -63,11 +61,11 @@ Next 16.4 cambia APIs respecto a versiones anteriores: antes de usar una API de 
 | `npm run build` / `npm start` | Build y servidor de producción (Railway) |
 | `npm test` / `npm run test:watch` | Vitest (`tests/**/*.test.ts`) |
 | `npm run typecheck` | `next typegen && tsc --noEmit` |
-| `npm run lint` | ESLint (incluye prohibición de `Date.now()` / `new Date()` en `src/dominio` y `src/reglas`) |
+| `npm run lint` | ESLint. Prohíbe leer el reloj (`Date.now()`, `new Date()`) en `src/{dominio,reglas,aprobaciones,registro,evaluacion}`: lista en `CARPETAS_SIN_RELOJ` de `eslint.config.mjs`; `tests/arquitectura/reloj.test.ts` corre la misma regla en CI |
 | `npm run evaluar -- --escenario lote-demo-oct --extraccion golden\|real` | Evaluación §14 (stub hasta #7) |
-| `npm run dataset` | `.venv/bin/python scripts/dataset/generar.py` (requiere `python3 -m venv .venv && .venv/bin/pip install -r scripts/dataset/requirements.txt`) |
+| `npm run dataset` | `scripts/dataset/generar.py` con `.venv/bin/python` si existe, si no `python3` (setup: `python3 -m venv .venv && .venv/bin/pip install -r scripts/dataset/requirements.txt`) |
 
-CI (`.github/workflows/ci.yml`): `npm ci` → `typecheck` → `lint` → `test` en cada PR. Componentes UI en `src/components/ui/` (shadcn, agregar con `npx shadcn@4.22.0 add …`), layout del panel en `src/app/(panel)/`, barra lateral en `src/components/app-sidebar.tsx`. Tokens §15 en `src/app/globals.css` (`bg-pagada`, `text-frenada-foreground`, `bg-brand`, etc.).
+Node ≥ 22.12 (lo exige Vitest 5). CI (`.github/workflows/ci.yml`): `npm ci --ignore-scripts` → `typecheck` → `lint` → `test` → `build` en cada PR; SonarCloud también revisa. Solo tema claro (sin `.dark`). Pantallas placeholder en `src/app/(panel)/{aprobaciones,reglas,registro}` con `PantallaPendiente`; #6 las reemplaza. Componentes UI en `src/components/ui/` (shadcn, agregar con `npx shadcn@4.22.0 add …`), layout del panel en `src/app/(panel)/`, barra lateral en `src/components/app-sidebar.tsx`. Tokens §15 en `src/app/globals.css` (`bg-pagada`, `text-frenada-foreground`, `bg-brand`, etc.).
 
 Infra: deploy en **Railway** (plan Hobby USD 5, proyecto `hackradar-30x`, dueño N). Persistencia en deploy: **Supabase** en cuenta del equipo, nunca cuentas personales.
 
@@ -109,4 +107,4 @@ Equipo GitHub: `Nicolukazzz`, `juandatiner`, `Siftings`. Los agentes de distinta
 
 Externas (instaladas con `npx skills`, lock en `skills-lock.json`): `shadcn`, `supabase`, `supabase-postgres-best-practices`, `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines`, `use-railway`, `test-driven-development` (usar en motor de reglas), `systematic-debugging`, `verification-before-completion` (correr `npm test` + `typecheck` antes de decir "listo").
 
-MCPs: `playwright` (probar UI), `shadcn` (componentes + registros gratis), `21st` (buscar ideas; free = 2 descargas/día, necesita `API_KEY_21ST` en la shell), `next-devtools` (errores del `next dev`), `supabase` (OAuth con la cuenta del equipo, nunca personal). Railway MCP va por persona, no en repo. Versiones de MCP fijadas: subirlas a propósito, no con `@latest`. Detalle: `docs/research/herramientas-claude-code.md`.
+MCPs: `playwright` (probar UI; usa Chrome del sistema, cada quien puede apuntarlo a su navegador en scope local, ver README), `shadcn` (componentes + registros gratis), `21st` (buscar ideas; free = 2 descargas/día, necesita `API_KEY_21ST` en la shell), `next-devtools` (errores del `next dev`), `supabase` (OAuth con la cuenta del equipo, nunca personal). Railway MCP va por persona, no en repo. Versiones de MCP fijadas: subirlas a propósito, no con `@latest`. Detalle: `docs/research/herramientas-claude-code.md`.
