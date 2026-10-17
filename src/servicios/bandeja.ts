@@ -32,7 +32,10 @@ export type FilaBandeja = {
 export type ConteoMonto = { n: number; usd_centavos: number };
 
 export type RespuestaBandeja = {
+  /** id del periodo de presupuesto (periodoDe: "2026-10" · "2026-10-Q2" · "2026-T4") */
   periodo: string;
+  /** mes calendario del lote, para mostrar ("2026-10") */
+  mes: string;
   /** cuándo decidió el agente (null si aún no hay lote) */
   procesado_en: string | null;
   /** documentos del escenario que esperan "Procesar facturas nuevas" */
@@ -49,6 +52,8 @@ export type RespuestaBandeja = {
     pagadas: ConteoMonto;
     frenadas: ConteoMonto;
     escaladas: ConteoMonto;
+    /** escaladas que todavía esperan a una persona (sin resolución humana final) */
+    escaladas_pendientes: number;
     rechazadas_no_factura: number;
   };
   presupuesto: {
@@ -79,7 +84,8 @@ export async function obtenerBandeja(repo: Repositorio, opciones: { decision?: F
   ]);
   const ahora = esc?.config.ahora ?? lote.at(-1)?.momento ?? "";
   const tipo = reglas.presupuesto.periodo;
-  const periodo = esc?.config.periodo ?? periodoDe(ahora, tipo);
+  // El periodo de presupuesto sale del tipo de las reglas vigentes (mensual, quincenal o trimestral), no del escenario.
+  const periodo = periodoDe(ahora, tipo);
 
   // Presupuesto (§6): lo pagado antes del lote sale del historial importado; el resto, del lote y sus resoluciones.
   const importadas = new Set(registro.slice(0, esc?.entradas_importadas ?? 0).map((e) => e.id));
@@ -122,14 +128,13 @@ export async function obtenerBandeja(repo: Repositorio, opciones: { decision?: F
 
   const q = normalizarTexto(opciones.q ?? "").trim();
   const filtro = opciones.decision && opciones.decision !== "todas" ? FILTRO[opciones.decision] : null;
-  const filas = todas.filter(
-    (f) =>
-      (!filtro || f.decision === filtro) &&
-      (!q || normalizarTexto(`${f.factura_numero ?? ""} ${f.beneficiario ?? ""} ${f.ref_interna}`).includes(q)),
-  );
+  // La búsqueda filtra primero; los conteos de las pestañas siguen a la búsqueda.
+  const buscadas = todas.filter((f) => !q || normalizarTexto(`${f.factura_numero ?? ""} ${f.beneficiario ?? ""} ${f.ref_interna}`).includes(q));
+  const filas = buscadas.filter((f) => !filtro || f.decision === filtro);
 
   return {
     periodo,
+    mes: (esc?.config.ahora ?? ahora).slice(0, 7),
     procesado_en: lote.length > 0 ? ahora : null,
     por_procesar: pendientes.length,
     kpis: {
@@ -142,6 +147,7 @@ export async function obtenerBandeja(repo: Repositorio, opciones: { decision?: F
       pagadas: suma(lote, "PAGAR"),
       frenadas: suma(lote, "FRENAR"),
       escaladas: suma(lote, "ESCALAR"),
+      escaladas_pendientes: todas.filter((f) => f.estado === "ESCALAR").length,
       rechazadas_no_factura: lote.filter((e) => e.decision === "RECHAZADA_NO_FACTURA").length,
     },
     presupuesto: {
@@ -152,10 +158,10 @@ export async function obtenerBandeja(repo: Repositorio, opciones: { decision?: F
       disponible: reglas.presupuesto.monto_usd - pagado_antes - pagado_en_lote - reservado,
     },
     conteos: {
-      todas: todas.length,
-      pagar: todas.filter((f) => f.decision === "PAGAR").length,
-      frenar: todas.filter((f) => f.decision === "FRENAR").length,
-      escalar: todas.filter((f) => f.decision === "ESCALAR").length,
+      todas: buscadas.length,
+      pagar: buscadas.filter((f) => f.decision === "PAGAR").length,
+      frenar: buscadas.filter((f) => f.decision === "FRENAR").length,
+      escalar: buscadas.filter((f) => f.decision === "ESCALAR").length,
     },
     filas,
   };

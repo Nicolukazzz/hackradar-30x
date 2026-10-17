@@ -25,11 +25,15 @@ type ArchivoLeido = { nombre: string; mime: string; bytes: Buffer };
 export async function leerAdjunto(adj: Adjunto, opciones: OpcionesNormalizar = {}): Promise<Buffer> {
   if (adj.bytes_base64 !== undefined) return Buffer.from(adj.bytes_base64, "base64");
   if (adj.ruta === undefined) throw new Error(`adjunto ${adj.nombre} sin bytes ni ruta`);
-  const base = path.resolve(opciones.dirBase ?? ".");
-  const ruta = path.resolve(base, adj.ruta);
+  // Sin carpeta base no se lee nada del disco (antes caía en "." = todo el proyecto).
+  if (!opciones.dirBase) throw new Error(`adjunto ${adj.nombre} con ruta pero sin carpeta base (dirBase)`);
+  if (path.isAbsolute(adj.ruta)) throw new Error(`ruta de adjunto fuera de la carpeta permitida: ${adj.ruta}`);
+  // turbopackIgnore: lectura en tiempo de ejecución, acotada a dirBase y validada abajo; no debe trazar el proyecto entero.
+  const base = path.resolve(/*turbopackIgnore: true*/ opciones.dirBase);
+  const ruta = path.join(/*turbopackIgnore: true*/ base, adj.ruta);
   if (ruta !== base && !ruta.startsWith(base + path.sep)) throw new Error(`ruta de adjunto fuera de la carpeta permitida: ${adj.ruta}`);
   if (ruta.split(path.sep).includes(CARPETA_PRIVADA)) throw new Error(`prohibido leer ${CARPETA_PRIVADA}/: ${adj.ruta}`);
-  return readFile(ruta);
+  return readFile(/*turbopackIgnore: true*/ ruta);
 }
 
 function tipoDe(a: { nombre: string; mime: string }): "pdf" | "imagen" | "eml" | "xml" | "texto" | "otro" {

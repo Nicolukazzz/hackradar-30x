@@ -27,6 +27,7 @@ export function Kpi({
   icono,
   href,
   detalleMono = false,
+  className,
 }: {
   etiqueta: string;
   valor: React.ReactNode;
@@ -37,6 +38,7 @@ export function Kpi({
   href?: string;
   /** detalle en mono (montos: "USD 7.444,05") */
   detalleMono?: boolean;
+  className?: string;
 }) {
   const t = TONOS[tono];
   const contenido = (
@@ -50,7 +52,7 @@ export function Kpi({
       {detalle ? <span className={cn("text-[13px] leading-snug", t.detalle, detalleMono && "font-mono")}>{detalle}</span> : null}
     </>
   );
-  const clase = cn("flex flex-col gap-2 rounded-[14px] px-5 py-[18px]", t.caja);
+  const clase = cn("flex flex-col gap-2 rounded-[14px] px-5 py-[18px]", t.caja, className);
   if (href) {
     return (
       <Link

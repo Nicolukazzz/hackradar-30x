@@ -50,6 +50,8 @@ describe("normalizarDocumento", () => {
     const adj = (ruta: string) => ({ nombre: "x.pdf", mime: "application/pdf", ruta });
     await expect(leerAdjunto(adj("../../package.json"), { dirBase: "data/escenarios/lote-demo-oct" })).rejects.toThrow("fuera de la carpeta");
     await expect(leerAdjunto(adj("contexto-privado/factura.pdf"), { dirBase: "." })).rejects.toThrow("contexto-privado");
+    await expect(leerAdjunto(adj("/etc/passwd"), { dirBase: "data/escenarios/lote-demo-oct" })).rejects.toThrow("fuera de la carpeta");
+    await expect(leerAdjunto(adj("documentos/001-fac-1041.pdf"), {})).rejects.toThrow("sin carpeta base");
   });
 });
 

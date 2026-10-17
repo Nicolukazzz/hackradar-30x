@@ -7,3 +7,4 @@ export { Kpi } from "./kpi";
 export { Monto } from "./monto";
 export { PildoraDecision, PildoraResultado } from "./pildora-decision";
 export { Tarjeta, TarjetaEncabezado, TarjetaPie } from "./tarjeta";
+export * from "./formato";
