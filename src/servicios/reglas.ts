@@ -2,7 +2,11 @@
 
 import type { Aprobador, Beneficiario, EntradaRegistro, Moneda, Reglas, TablaTasas } from "@/dominio/tipos";
 import { evaluarEscenario, type ReporteEvaluacion } from "@/evaluacion/evaluar";
+import { sinConfigurar } from "@/reglas/sin-configurar";
 import type { Repositorio, ResumenVersion } from "@/repositorio/repositorio";
+
+/** Set de prueba de `data/` para simular reglas cuando no hay escenario cargado (producción, #106). */
+const SET_DE_PRUEBA = "lote-demo-oct";
 
 export type UsoTasa = { moneda: Moneda; tasa: string; facturas: number };
 
@@ -59,9 +63,12 @@ export async function obtenerReglas(repo: Repositorio): Promise<RespuestaReglas>
  * y compara con el esperado (§14, modo golden).
  */
 export async function simularReglas(repo: Repositorio, reglas: Reglas): Promise<ReporteEvaluacion> {
+  // La versión 0 (sin configurar, #106) escala todo: se simula como la versión 1 que se va a guardar.
+  const candidata = sinConfigurar(reglas) ? { ...reglas, version: 1 } : reglas;
   const esc = await repo.escenario();
-  if (!esc) throw new ErrorReglas(409, "No hay un escenario cargado para simular.");
-  return evaluarEscenario(esc.config.id, { extraccion: "golden", reglas, repo });
+  // Producción no carga escenario (#106): se simula sobre el set de prueba de data/, el mismo del CI.
+  if (!esc) return evaluarEscenario(SET_DE_PRUEBA, { extraccion: "golden", reglas: candidata });
+  return evaluarEscenario(esc.config.id, { extraccion: "golden", reglas: candidata, repo });
 }
 
 /**

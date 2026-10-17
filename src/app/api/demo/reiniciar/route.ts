@@ -1,5 +1,5 @@
 import { conSesion } from "@/lib/auth/ruta";
-import { reiniciarRepositorio } from "@/repositorio";
+import { obtenerRepositorio, reiniciarRepositorio } from "@/repositorio";
 
 import { error, manejar, ok } from "../../_http";
 import { demoActiva } from "../../_identidad";
@@ -11,6 +11,8 @@ import { demoActiva } from "../../_identidad";
 export const POST = conSesion(async (_req, _ctx, sesion) => {
   try {
     if (!demoActiva()) return error(404, "Modo demo apagado (DEMO=1 para activarlo).");
+    // Producción sin datos de ejemplo (#106): no hay escenario que volver a sembrar.
+    if (!(await (await obtenerRepositorio()).escenario())) return error(409, "No hay demo: esta instalación no usa datos de ejemplo.");
     await reiniciarRepositorio(sesion.correo || sesion.usuario_id);
     return ok({ reiniciado: true });
   } catch (e) {

@@ -1,6 +1,9 @@
 // Repositorio en Supabase (#44): lo mismo que el de memoria, pero lo que cambia (registro, documentos,
-// reglas guardadas, beneficiarios agregados, archivos, datos de la empresa #84) sobrevive a los deploys. Lo fijo
-// (los 14 beneficiarios base, tasas, escenario y sus documentos) sigue saliendo de data/.
+// reglas guardadas, beneficiarios agregados, archivos, datos de la empresa #84) sobrevive a los deploys.
+// Producción (#106, sin ESCENARIO): no hay nada de ejemplo. Proveedores, reglas y aprobadores salen solo de la base y
+// del equipo; sin reglas guardadas rige la versión 0 «sin configurar» (todo escala). De data/ solo se leen las tasas
+// (hasta #86) y los valores por defecto de la empresa. Con ESCENARIO (demo): 14 beneficiarios base, historial y
+// documentos del escenario, como antes.
 // Corridas de demo (#76): cada tabla de la demo tiene corrida_id (por defecto, la vigente, resuelta en la base).
 // Se lee de las vistas `*_vigente(s)` y se escribe en las tablas; "Reiniciar demo" abre una corrida nueva y las
 // anteriores quedan intactas.
@@ -11,17 +14,26 @@ import path from "node:path";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { DIR_DATA_POR_DEFECTO } from "@/dominio/cargar";
+import { cargarDatosComunes, DIR_DATA_POR_DEFECTO } from "@/dominio/cargar";
 import { EmpresaSchema } from "@/dominio/esquemas";
-import type { Beneficiario, DocumentoRecibido, Empresa, EntradaRegistro, Reglas } from "@/dominio/tipos";
-import { cargarGolden } from "@/evaluacion/escenario";
+import type { Aprobador, Beneficiario, DocumentoRecibido, Empresa, EntradaRegistro, Reglas } from "@/dominio/tipos";
+import { cargarGolden, type DocGolden } from "@/evaluacion/escenario";
 import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
+import { reglasSinConfigurar } from "@/reglas/sin-configurar";
 
 import { coincideFiltro, conVinculosTelegram, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
 import type { CambiosEmpresa, Repositorio, ResumenVersion } from "./repositorio";
 
-export type ConfigSupabase = { url: string; claveSecreta: string; escenario: string; dir?: string };
+export type ConfigSupabase = {
+  url: string;
+  claveSecreta: string;
+  /** null = producción sin datos de ejemplo (#106) */
+  escenario: string | null;
+  dir?: string;
+  /** cuentas del equipo que firman (#106); en demo se suman a las de data/aprobadores.json */
+  aprobadores?: () => Promise<Aprobador[]>;
+};
 
 const BUCKET = "documentos";
 
@@ -64,16 +76,26 @@ const fila = (e: EntradaRegistro) => ({ id: e.id, ref_interna: e.ref_interna, ti
 
 export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<Repositorio> {
   const db = createClient(config.url, config.claveSecreta, { auth: { persistSession: false, autoRefreshToken: false } });
-  const g = await cargarGolden(config.escenario, config.dir ?? DIR_DATA_POR_DEFECTO);
-  const escenario = {
-    config: g.escenario.config,
-    esperado: g.escenario.esperado,
-    entradas_importadas: g.escenario.historial.length,
-    carpeta: g.escenario.carpeta,
-  };
-  const refsGolden = new Set(g.docs.map((d) => d.doc.ref_interna));
-  const archivoGolden = new Map(g.docs.map((d) => [d.doc.ref_interna, path.join(g.escenario.carpeta, d.esperado.documento)]));
-  await sembrar(db, g.datos.reglas.versiones, g.escenario.historial);
+  const dir = config.dir ?? DIR_DATA_POR_DEFECTO;
+  const demo = config.escenario ? await cargarGolden(config.escenario, dir) : null;
+  // Producción: de data/ solo tasas y empresa por defecto. Ni proveedores, ni aprobadores, ni reglas de ejemplo.
+  const comunes = demo ? demo.datos : { ...(await cargarDatosComunes(dir)), beneficiarios: [], aprobadores: [] };
+  const docsDemo: DocGolden[] = demo?.docs ?? [];
+  const historialDemo: EntradaRegistro[] = demo?.escenario.historial ?? [];
+  const carpeta = demo?.escenario.carpeta ?? dir;
+  const escenario = demo
+    ? { config: demo.escenario.config, esperado: demo.escenario.esperado, entradas_importadas: historialDemo.length, carpeta }
+    : null;
+  const refsGolden = new Set(docsDemo.map((d) => d.doc.ref_interna));
+  const archivoGolden = new Map(demo ? demo.docs.map((d) => [d.doc.ref_interna, path.join(carpeta, d.esperado.documento)]) : []);
+  if (demo) await sembrar(db, demo.datos.reglas.versiones, historialDemo);
+
+  /** Sin reglas guardadas (producción recién creada): versión 0, todo escala. */
+  const vigenteDe = (vs: readonly Reglas[]): Reglas => (vs.length > 0 ? versionVigente(vs) : reglasSinConfigurar());
+  async function aprobadores(): Promise<Aprobador[]> {
+    const equipo = config.aprobadores ? await config.aprobadores() : [];
+    return [...comunes.aprobadores, ...equipo.filter((a) => !comunes.aprobadores.some((b) => b.id === a.id))];
+  }
 
   const enExclusiva = crearCola();
 
@@ -98,7 +120,7 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
 
   async function beneficiarios(): Promise<Beneficiario[]> {
     const [extra, telegram] = await Promise.all([agregados(), vinculosTelegram()]);
-    return conVinculosTelegram([...g.datos.beneficiarios, ...extra], telegram);
+    return conVinculosTelegram([...comunes.beneficiarios, ...extra], telegram);
   }
 
   async function registro(): Promise<EntradaRegistro[]> {
@@ -134,7 +156,7 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
    * se usan los de data/ (la app nunca queda sin nombre de empresa).
    */
   async function empresa(): Promise<Empresa> {
-    const base = g.datos.empresa;
+    const base = comunes.empresa;
     const { data, error } = await db.from("empresas").select("nombre, jurisdiccion, paises_operacion, moneda_base, zona_horaria").eq("id", base.id).maybeSingle();
     fallar("leer empresa", error);
     if (!data || !data.jurisdiccion) return structuredClone(base);
@@ -144,8 +166,8 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
 
   return {
     async datosComunes() {
-      const [vs, bs, emp] = await Promise.all([versiones(), beneficiarios(), empresa()]);
-      return { ...g.datos, empresa: emp, beneficiarios: bs, reglas: { vigente: versionVigente(vs), versiones: vs } };
+      const [vs, bs, emp, aps] = await Promise.all([versiones(), beneficiarios(), empresa(), aprobadores()]);
+      return { ...comunes, empresa: emp, beneficiarios: bs, aprobadores: aps, reglas: { vigente: vigenteDe(vs), versiones: vs } };
     },
     empresa,
     async guardarEmpresa(cambios: CambiosEmpresa) {
@@ -157,7 +179,7 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
       return empresa();
     },
     async reglasVigentes() {
-      return versionVigente(await versiones());
+      return vigenteDe(await versiones());
     },
     async reglasVersion(version) {
       const { data, error } = await db.from("reglas_vigentes").select("reglas").eq("version", version).maybeSingle();
@@ -168,20 +190,20 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
       return (await versiones()).map(({ version, editada_por, editada_en }) => ({ version, editada_por, editada_en })).sort((a, b) => b.version - a.version);
     },
     async guardarReglas(r) {
-      const version = versionVigente(await versiones()).version + 1;
+      const version = vigenteDe(await versiones()).version + 1;
       // La clave primaria impide que dos guardados simultáneos tomen el mismo número.
       const { error } = await db.from("reglas_versiones").insert({ version, reglas: { ...r, version } });
       fallar("guardar reglas", error);
       return version;
     },
     async guardarBeneficiario(b) {
-      if (g.datos.beneficiarios.some((x) => x.id === b.id)) throw new Error(`el beneficiario ${b.id} ya existe`);
+      if (comunes.beneficiarios.some((x) => x.id === b.id)) throw new Error(`el beneficiario ${b.id} ya existe`);
       const { error } = await db.from("beneficiarios_agregados").insert({ id: b.id, beneficiario: b });
       if (error?.code === "23505") throw new Error(`el beneficiario ${b.id} ya existe`);
       fallar("guardar beneficiario", error);
     },
     async vincularTelegram(beneficiario_id, chat_id) {
-      const existe = g.datos.beneficiarios.some((b) => b.id === beneficiario_id) || (await agregados()).some((b) => b.id === beneficiario_id);
+      const existe = comunes.beneficiarios.some((b) => b.id === beneficiario_id) || (await agregados()).some((b) => b.id === beneficiario_id);
       if (!existe) throw new Error(`no existe el beneficiario ${beneficiario_id}`);
       // Atómico en la base: borra el vínculo anterior del chat y del beneficiario e inserta el nuevo.
       const { error } = await db.rpc("vincular_telegram", { p_beneficiario: beneficiario_id, p_chat: chat_id });
@@ -212,11 +234,11 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
       return { nombre: path.basename(ruta), mime: mimeDeArchivo(ruta), bytes: await readFile(/*turbopackIgnore: true*/ ruta) };
     },
     async leerAdjunto(ref, indice) {
-      return leerAdjuntoDe((await filaDocumento(ref))?.documento as DocumentoRecibido | null | undefined, indice, g.escenario.carpeta);
+      return leerAdjuntoDe((await filaDocumento(ref))?.documento as DocumentoRecibido | null | undefined, indice, carpeta);
     },
     async siguienteRef(anio) {
       // Consecutivo atómico en la base. El mínimo deja libres las refs reservadas por el escenario y las del historial.
-      const minimo = maxRef([...refsGolden, ...g.escenario.historial.map((e) => e.ref_interna)], anio) + 1;
+      const minimo = maxRef([...refsGolden, ...historialDemo.map((e) => e.ref_interna)], anio) + 1;
       const { data, error } = await db.rpc("siguiente_secuencia", { p_nombre: `INT-${anio}`, p_minimo: minimo });
       fallar("siguiente ref", error);
       return formatoRef(anio, Number(data));
@@ -251,20 +273,21 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
     // fallar uno (error visible, nunca una decisión duplicada ni un registro pisado).
     enExclusiva,
     documentosEscenario() {
-      return Promise.resolve([...g.docs]);
+      return Promise.resolve([...docsDemo]);
     },
     async pendientes() {
       const guardados = await refsConDocumento();
-      return g.docs.filter((d) => !guardados.has(d.doc.ref_interna));
+      return docsDemo.filter((d) => !guardados.has(d.doc.ref_interna));
     },
     reiniciar(iniciada_por) {
+      if (!demo || !config.escenario) return Promise.reject(new Error("No hay demo que reiniciar: producción no carga datos de ejemplo."));
       return enExclusiva(async () => {
         // Corrida y siembra en una sola transacción (función SQL): nunca queda una corrida vigente sin reglas.
         const { error } = await db.rpc("nueva_corrida_demo", {
           p_por: iniciada_por,
           p_escenario: config.escenario,
-          p_reglas: g.datos.reglas.versiones.map((v) => ({ version: v.version, reglas: v })),
-          p_historial: g.escenario.historial.map(fila),
+          p_reglas: demo.datos.reglas.versiones.map((v) => ({ version: v.version, reglas: v })),
+          p_historial: historialDemo.map(fila),
         });
         fallar("nueva corrida", error);
       });

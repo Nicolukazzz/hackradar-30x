@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 ```
 
 ---
+## 2026-10-17 — Producción sin datos de ejemplo; sin reglas guardadas todo escala (#106)
+- Estado: propuesta
+- Decisión: con `REPOSITORIO=supabase` y **sin `ESCENARIO`** la app es producción: no siembra proveedores, aprobadores, reglas ni historial de `data/`. Proveedores = solo los de la base (creados en la app o al aprobar); aprobadores = miembros del equipo que firman (`aprobadoresDelEquipo`, `src/equipo/aprobadores.ts`; el admin es el principal sin límite); empresa = fila de `empresas` (#84). Sin una versión de reglas guardada rige la **versión 0 «sin configurar»** (`src/reglas/sin-configurar.ts`): el motor evalúa R1–R11 para la traza pero **siempre ESCALA** («la empresa aún no configuró sus reglas de pago»), nunca paga ni frena. La pantalla de Reglas muestra «Sin configurar» con valores sugeridos y ofrece guardar la v1. `ReglasSchema.version` acepta 0 (solo se muestra y se simula; guardar asigna 1). «Simular» sin escenario cargado corre sobre el set de prueba de `data/` (el mismo del CI). «Reiniciar demo» responde 409 sin escenario. Con `ESCENARIO` (o `REPOSITORIO=memoria`) todo sigue como antes: `data/` queda como set de prueba de CI y evaluación, y sus facturas de ejemplo sirven para probar envíos. Tasas siguen de `data/` hasta #86.
+- Por qué: el equipo decidió (2026-10-17) que producción arranque vacía y todo se cree real. Escalar todo mientras no hay reglas falla hacia lo seguro.
+- Quién: J
+
 ## 2026-10-17 — Gemini con lista de modelos y aviso cuando el LLM no responde (#103)
 - Estado: propuesta
 - Decisión: `GEMINI_MODEL` acepta una lista separada por comas; cada modelo va con su reintento y, si falla (503, 429, 404), se prueba el siguiente antes de pasar a Groq. Por defecto `gemini-3.5-flash,gemini-3.5-flash-lite,gemini-flash-lite-latest` (antes `gemini-flash-latest`). Si se necesitaba el LLM y ningún proveedor respondió, la extracción lleva `senales_llm.sin_respuesta: true` (campo opcional nuevo en `Extraccion`, §3; solo se escribe cuando pasa) y R1 falla con «el servicio de lectura no respondió; no se pudo leer el documento». La explicación lo dice así y, si no hay nombre legible, omite R3/R11 (fallan solo por no haber leído nada; la traza las conserva). Sin nombre ya no se escribe «la factura de El beneficiario».

@@ -3,9 +3,9 @@
 
 import type { Aprobador } from "@/dominio/tipos";
 import { obtenerAlmacenEquipo } from "@/equipo";
-import { firmantes } from "@/equipo/servicio";
+import { aprobadoresDelEquipo, comoAprobador } from "@/equipo/aprobadores";
 import { EMPRESA_ID, type Miembro } from "@/equipo/tipos";
-import { NOMBRE_ROL, type Rol, type Sesion } from "@/lib/auth/permisos";
+import type { Sesion } from "@/lib/auth/permisos";
 
 /**
  * Ruta de demo (reiniciar el escenario): siempre en desarrollo; en producción solo con DEMO=1.
@@ -13,34 +13,6 @@ import { NOMBRE_ROL, type Rol, type Sesion } from "@/lib/auth/permisos";
  */
 export function demoActiva(): boolean {
   return process.env.NODE_ENV !== "production" || process.env.DEMO === "1";
-}
-
-type Cuenta = { usuario_id: string; nombre: string; correo: string; rol: Rol; limite_aprobacion_usd: number | null };
-
-/**
- * Una cuenta de la empresa como aprobador de §10. El admin es el aprobador principal sin límite (guarda reglas);
- * el aprobador firma hasta su límite. Los aprobadores de data/aprobadores.json (Laura, Andrés) quedan para la
- * asignación y el historial del dataset.
- */
-function comoAprobador(c: Cuenta): Aprobador {
-  const iniciales =
-    c.nombre
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase() ?? "")
-      .join("") || "?";
-  // El nombre lo escribe la persona al registrarse: va con su correo (confirmado) para que nadie pase por otro en el registro.
-  const nombre = c.correo ? `${c.nombre} (${c.correo})` : c.nombre;
-  const admin = c.rol === "admin";
-  return {
-    id: c.usuario_id,
-    nombre,
-    rol: NOMBRE_ROL[c.rol],
-    limite_usd: admin ? null : c.limite_aprobacion_usd,
-    principal: admin,
-    iniciales,
-  };
 }
 
 /** La cuenta de la sesión. Solo para rutas que ya exigieron el permiso (`aprobar` o `editar_reglas`). */
@@ -59,5 +31,5 @@ export function aprobadorDeMiembro(m: Miembro): Aprobador {
  */
 export async function cuentasFirmantes(): Promise<Aprobador[]> {
   const almacen = await obtenerAlmacenEquipo();
-  return firmantes(await almacen.miembros(EMPRESA_ID)).map(aprobadorDeMiembro);
+  return aprobadoresDelEquipo(await almacen.miembros(EMPRESA_ID));
 }

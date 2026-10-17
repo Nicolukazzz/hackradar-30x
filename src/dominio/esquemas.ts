@@ -62,7 +62,7 @@ const tipoPeriodo = z.enum(["mensual", "quincenal", "trimestral"]);
 
 export const ReglasSchema = z
   .strictObject({
-    version: z.int().positive(),
+    version: z.int().nonnegative(), // 0 = sin configurar (#106): nunca se guarda, solo se muestra y se simula
     editada_por: texto,
     editada_en: momento,
     limites: z.strictObject({

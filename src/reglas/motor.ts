@@ -21,10 +21,11 @@ import { asignarAprobador, responderAntesDe } from "./asignacion";
 import { evaluacion } from "./catalogo";
 import { combinar } from "./combinar";
 import { afectado, type ContextoRegla, montoUsd, type Regla } from "./contexto";
-import { EXPLICACION_ERROR, explicar, observaciones } from "./explicar";
+import { EXPLICACION_ERROR, EXPLICACION_SIN_REGLAS, explicar, observaciones } from "./explicar";
 import { periodoDe } from "./libro";
 import { aplicar, type EstadoPresupuesto, estadoInicial } from "./presupuesto";
 import { r01Extraccion } from "./r01-extraccion";
+import { sinConfigurar } from "./sin-configurar";
 import { r02Duplicado } from "./r02-duplicado";
 import { r03Beneficiario } from "./r03-beneficiario";
 import { r04Cuenta } from "./r04-cuenta";
@@ -139,7 +140,10 @@ function evaluarSinProteccion(input: EntradaMotor): ResultadoMotor {
   const evaluaciones = REGLAS.map((regla, i) => correr(regla, ID_REGLAS[i]!, ctx));
   const usd = montoUsd(ctx);
   const tasa_usada = usd !== null && ext.monto_total.valor ? aUsd(ext.monto_total.valor, tasas).tasa_usada : null;
-  const { decision, reglas_que_fallaron } = combinar(evaluaciones, usd);
+  const combinado = combinar(evaluaciones, usd);
+  // #106: sin reglas guardadas por la empresa ninguna factura se decide sola; la traza igual muestra cada regla.
+  const decision = sinConfigurar(reglas) ? "ESCALAR" : combinado.decision;
+  const { reglas_que_fallaron } = combinado;
 
   let asignado_a: string | null = null;
   let responder_antes_de: string | null = null;
@@ -158,8 +162,10 @@ function evaluarSinProteccion(input: EntradaMotor): ResultadoMotor {
     disponible_antes_usd_centavos: presupuesto.disponible,
     asignado_a,
     responder_antes_de,
-    explicacion: explicar({ decision, evaluaciones, doc, ext, beneficiario, monto_usd_centavos: usd, reglas, ahora }),
-    observaciones: observaciones(usd, reglas),
+    explicacion: sinConfigurar(reglas)
+      ? EXPLICACION_SIN_REGLAS
+      : explicar({ decision, evaluaciones, doc, ext, beneficiario, monto_usd_centavos: usd, reglas, ahora }),
+    observaciones: sinConfigurar(reglas) ? [] : observaciones(usd, reglas),
   };
 }
 
