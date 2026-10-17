@@ -4,7 +4,7 @@ Proyecto del equipo para el hackathon HackRadar 30X. Reto elegido: **Blinka — 
 
 Estado: especificación v1 lista ([`docs/especificacion.md`](docs/especificacion.md)); stack aceptado en #1 (Next.js 16 + TS + Vitest + shadcn/ui). Prototipo visual: [`docs/diseno/prototipo-ui.html`](docs/diseno/prototipo-ui.html) (descargar y abrir en el navegador).
 
-Requisitos: Claude Code, Node 20.9+ (recomendado 22), [`gh`](https://cli.github.com/) con `gh auth login` hecho.
+Requisitos: Claude Code, Node 22.12+, [`gh`](https://cli.github.com/) con `gh auth login` hecho.
 
 ## Arranque (cada integrante)
 
@@ -19,7 +19,7 @@ Al abrir Claude Code en la carpeta por primera vez:
 
 1. Aceptar "trust this folder".
 2. Aceptar instalar los plugins del proyecto (vienen en `.claude/settings.json`, marketplace oficial `claude-plugins-official`). Si no aparece el aviso: `/plugin` y habilitarlos.
-3. Aprobar los MCP `playwright`, `shadcn`, `next-devtools`, `21st` y `supabase` (`.mcp.json`). Requieren Node 20.19+ (`npx`).
+3. Aprobar los MCP `playwright`, `shadcn`, `next-devtools`, `21st` y `supabase` (`.mcp.json`). Corren con `npx`.
    - `21st`: llave gratis en https://21st.dev/mcp y `set -Ux API_KEY_21ST <llave>` (fish) o `export API_KEY_21ST=<llave>` antes de abrir `claude`.
    - `supabase`: `/mcp` → `supabase` → Authenticate **con la cuenta del equipo** (ventana privada si tu navegador tiene otra sesión).
 4. `cp .env.example .env` y llenar llaves (nunca commitear `.env`).
@@ -42,7 +42,7 @@ Verificar: `/mcp` muestra los MCP conectados; `/` lista las skills; `npm run typ
 | `npm run evaluar` | Evaluación §14 (#7) |
 | `npm run dataset` | Regenera `data/` (#3) |
 
-CI (`.github/workflows/ci.yml`) corre typecheck, lint y tests en cada PR; SonarCloud analiza calidad y seguridad.
+CI (`.github/workflows/ci.yml`) corre typecheck, lint, tests y build en cada PR; SonarCloud analiza calidad y seguridad.
 
 ## Qué hay
 

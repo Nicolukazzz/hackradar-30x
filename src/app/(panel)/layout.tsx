@@ -1,9 +1,14 @@
+import { cookies } from "next/headers";
+
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
-export default function PanelLayout({ children }: LayoutProps<"/">) {
+export default async function PanelLayout({ children }: LayoutProps<"/">) {
+  // La barra lateral guarda si quedó abierta en la cookie `sidebar_state` (componente Sidebar de shadcn).
+  const abierta = (await cookies()).get("sidebar_state")?.value !== "false";
+
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={abierta}>
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-14 items-center px-4 md:hidden">

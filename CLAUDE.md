@@ -61,11 +61,11 @@ Next 16.4 cambia APIs respecto a versiones anteriores: antes de usar una API de 
 | `npm run build` / `npm start` | Build y servidor de producción (Railway) |
 | `npm test` / `npm run test:watch` | Vitest (`tests/**/*.test.ts`) |
 | `npm run typecheck` | `next typegen && tsc --noEmit` |
-| `npm run lint` | ESLint (incluye prohibición de `Date.now()` / `new Date()` en `src/dominio` y `src/reglas`) |
+| `npm run lint` | ESLint. Prohíbe leer el reloj (`Date.now()`, `new Date()`) en `src/{dominio,reglas,aprobaciones,registro,evaluacion}`: lista en `CARPETAS_SIN_RELOJ` de `eslint.config.mjs`; `tests/arquitectura/reloj.test.ts` corre la misma regla en CI |
 | `npm run evaluar -- --escenario lote-demo-oct --extraccion golden\|real` | Evaluación §14 (stub hasta #7) |
-| `npm run dataset` | `.venv/bin/python scripts/dataset/generar.py` (requiere `python3 -m venv .venv && .venv/bin/pip install -r scripts/dataset/requirements.txt`) |
+| `npm run dataset` | `scripts/dataset/generar.py` con `.venv/bin/python` si existe, si no `python3` (setup: `python3 -m venv .venv && .venv/bin/pip install -r scripts/dataset/requirements.txt`) |
 
-CI (`.github/workflows/ci.yml`): `npm ci` → `typecheck` → `lint` → `test` en cada PR. Componentes UI en `src/components/ui/` (shadcn, agregar con `npx shadcn@4.22.0 add …`), layout del panel en `src/app/(panel)/`, barra lateral en `src/components/app-sidebar.tsx`. Tokens §15 en `src/app/globals.css` (`bg-pagada`, `text-frenada-foreground`, `bg-brand`, etc.).
+Node ≥ 22.12 (lo exige Vitest 5). CI (`.github/workflows/ci.yml`): `npm ci --ignore-scripts` → `typecheck` → `lint` → `test` → `build` en cada PR; SonarCloud también revisa. Solo tema claro (sin `.dark`). Pantallas placeholder en `src/app/(panel)/{aprobaciones,reglas,registro}` con `PantallaPendiente`; #6 las reemplaza. Componentes UI en `src/components/ui/` (shadcn, agregar con `npx shadcn@4.22.0 add …`), layout del panel en `src/app/(panel)/`, barra lateral en `src/components/app-sidebar.tsx`. Tokens §15 en `src/app/globals.css` (`bg-pagada`, `text-frenada-foreground`, `bg-brand`, etc.).
 
 Infra: deploy en **Railway** (plan Hobby USD 5, proyecto `hackradar-30x`, dueño N). Persistencia en deploy: **Supabase** en cuenta del equipo, nunca cuentas personales.
 

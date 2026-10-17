@@ -107,7 +107,7 @@ Comandos (fijados en #1; lista completa en `CLAUDE.md` "Stack y comandos"):
 | `npm test` | Vitest (unidad + propiedades) |
 | `npm run evaluar -- --escenario lote-demo-oct [--extraccion golden\|real]` | §14 |
 | `npm run typecheck` · `npm run lint` | `next typegen && tsc --noEmit` · ESLint (prohíbe reloj en dominio/reglas) |
-| `npm run dataset` | `.venv/bin/python scripts/dataset/generar.py` |
+| `npm run dataset` | `scripts/dataset/generar.py` (con `.venv/bin/python` si existe, si no `python3`) |
 
 ## 3. Modelo de datos
 

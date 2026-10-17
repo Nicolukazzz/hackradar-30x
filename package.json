@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "evaluar": "tsx scripts/evaluar.ts",
-    "dataset": ".venv/bin/python scripts/dataset/generar.py"
+    "dataset": "$([ -x .venv/bin/python ] && echo .venv/bin/python || echo python3) scripts/dataset/generar.py"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -42,6 +42,6 @@
     "vitest": "^5.0.5"
   },
   "engines": {
-    "node": ">=20.9"
+    "node": ">=22.12"
   }
 }
