@@ -6,7 +6,7 @@ import { z } from "zod";
 import type { AlmacenEnlaces } from "./almacen";
 import { ErrorCodigoRepetido, type EnlaceConCodigo } from "./tipos";
 
-// Portal del proveedor en Supabase (migración 20261018000000_portal_proveedor.sql). Llave secreta: la tabla no tiene
+// Portal del proveedor en Supabase (migración 20261017232107_portal_proveedor.sql). Llave secreta: la tabla no tiene
 // acceso desde el cliente. El código y el token se guardan solo como sha256.
 
 const TABLA = "enlaces_proveedor";
