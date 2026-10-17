@@ -49,6 +49,8 @@ export type RespuestaBandeja = {
     pagadas: ConteoMonto;
     frenadas: ConteoMonto;
     escaladas: ConteoMonto;
+    /** escaladas que todavía esperan a una persona (sin resolución humana final) */
+    escaladas_pendientes: number;
     rechazadas_no_factura: number;
   };
   presupuesto: {
@@ -142,6 +144,7 @@ export async function obtenerBandeja(repo: Repositorio, opciones: { decision?: F
       pagadas: suma(lote, "PAGAR"),
       frenadas: suma(lote, "FRENAR"),
       escaladas: suma(lote, "ESCALAR"),
+      escaladas_pendientes: todas.filter((f) => f.estado === "ESCALAR").length,
       rechazadas_no_factura: lote.filter((e) => e.decision === "RECHAZADA_NO_FACTURA").length,
     },
     presupuesto: {
