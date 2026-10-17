@@ -44,7 +44,7 @@ export default async function PaginaFacturasProveedor({ params }: PageProps<"/vi
               {datos.empresa.nombre} · {enlace.nombre}
             </span>
             <h1 className="text-[32px] leading-tight font-semibold tracking-tight">Ingrese sus facturas</h1>
-            <p className="text-[15px] leading-relaxed text-muted-foreground">Sube cada factura en PDF o como foto. El agente la revisa al instante y aquí ves en qué va.</p>
+            <p className="text-[15px] leading-relaxed text-muted-foreground">Agrega una o varias facturas en PDF o como foto, revisa la lista y pulsa Enviar. El agente revisa cada una al instante y aquí ves en qué va.</p>
           </div>
           <Salir token={token} />
         </header>
