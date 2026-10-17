@@ -8,10 +8,8 @@ import path from "node:path";
 
 import { DIR_DATA_POR_DEFECTO } from "@/dominio/cargar";
 import type { DecisionAgente, EntradaRegistro, IdRegla, Reglas, Trampa } from "@/dominio/tipos";
-import { cacheEnDisco, type CacheExtraccion } from "@/extraccion/cache";
-import { extraer } from "@/extraccion/extraer";
+import type { CacheExtraccion } from "@/extraccion/cache";
 import type { ProveedorLLM } from "@/extraccion/llm/contrato";
-import { proveedorDesdeEntorno } from "@/extraccion/llm/proveedor";
 import { procesarLote, type DatosMotor } from "@/reglas/motor";
 import type { Repositorio } from "@/repositorio/repositorio";
 
@@ -86,27 +84,42 @@ function matrizVacia(): ReporteEvaluacion["matriz"] {
   return Object.fromEntries(DECISIONES.map((d) => [d, fila()])) as ReporteEvaluacion["matriz"];
 }
 
+/**
+ * El motor tiene que devolver exactamente un resultado por documento del escenario. Si falta uno,
+ * sobra uno o los arreglos no calzan, se lanza: un documento omitido nunca puede contar como "sin pago indebido".
+ */
+function emparejar(docs: readonly DocGolden[], lote: ReturnType<typeof procesarLote>) {
+  const { resultados, entradas } = lote;
+  if (resultados.length !== entradas.length) {
+    throw new Error(`El motor devolvió ${resultados.length} resultados y ${entradas.length} entradas de registro.`);
+  }
+  const porRef = new Map(entradas.map((e, i) => [e.ref_interna, { entrada: e, resultado: resultados[i]! }]));
+  const faltan = docs.filter((d) => !porRef.has(d.doc.ref_interna)).map((d) => d.esperado.documento);
+  if (faltan.length > 0 || porRef.size !== docs.length || entradas.length !== docs.length) {
+    throw new Error(`El motor no devolvió una decisión por documento (${entradas.length} de ${docs.length}; faltan: ${faltan.join(", ") || "—"}).`);
+  }
+  return docs.map((golden) => ({ golden, ...porRef.get(golden.doc.ref_interna)! }));
+}
+
 /** Corre el lote con `reglas` y compara cada decisión con el esperado del escenario. No registra nada. */
 export function evaluarLote(docs: readonly DocGolden[], ctx: ContextoEvaluacion): ReporteEvaluacion {
-  const { resultados, entradas } = (ctx.motor ?? procesarLote)(docs, ctx);
-  const porRef = new Map(docs.map((d) => [d.doc.ref_interna, d]));
-  const documentos = entradas.map((e, i): ResultadoDocumento => {
-    const golden = porRef.get(e.ref_interna);
-    const resultado = resultados[i];
-    const obtenido = resultado?.decision ?? "ESCALAR";
-    const esperado = golden?.esperado.decision ?? "ESCALAR";
-    const reglas_obtenidas = resultado?.reglas_que_fallaron ?? [];
-    const explicacion = resultado?.explicacion ?? e.explicacion;
+  const pares = emparejar(docs, (ctx.motor ?? procesarLote)(docs, ctx));
+  const documentos = pares.map(({ golden, entrada: e, resultado }): ResultadoDocumento => {
+    // Si el resultado y la entrada del registro no dicen lo mismo, cuenta el peor: PAGAR en cualquiera de los dos.
+    const obtenido = e.decision === "PAGAR" ? "PAGAR" : resultado.decision;
+    const esperado = golden.esperado.decision;
+    const reglas_obtenidas = resultado.reglas_que_fallaron;
+    const explicacion = resultado.explicacion;
     return {
-      documento: golden?.esperado.documento ?? e.ref_interna,
+      documento: golden.esperado.documento,
       ref_interna: e.ref_interna,
       factura_numero: e.factura_numero,
       beneficiario: e.beneficiario,
-      trampa: golden?.esperado.trampa ?? [],
+      trampa: golden.esperado.trampa,
       esperado,
       obtenido,
       coincide: obtenido === esperado,
-      reglas_esperadas: golden?.esperado.reglas_que_fallan ?? [],
+      reglas_esperadas: golden.esperado.reglas_que_fallan,
       reglas_obtenidas,
       explicacion,
       problemas: problemasExplicacion({ decision: obtenido, reglas: reglas_obtenidas, explicacion }),
@@ -194,6 +207,12 @@ async function baseDesdeRepo(id: string, repo: Repositorio): Promise<Base> {
  * (ref, sha256 y remitente→beneficiario calculados igual que la ingesta).
  */
 async function conExtraccionReal(base: Base, reglas: Reglas, opciones: OpcionesEvaluacion): Promise<DocGolden[]> {
+  // Import dinámico: "Simular" (golden) no carga parsers de PDF/correo ni clientes de LLM.
+  const [{ extraer }, { cacheEnDisco }, { proveedorDesdeEntorno }] = await Promise.all([
+    import("@/extraccion/extraer"),
+    import("@/extraccion/cache"),
+    import("@/extraccion/llm/proveedor"),
+  ]);
   const llm = opciones.llm ?? proveedorDesdeEntorno();
   const cache = opciones.cache ?? cacheEnDisco();
   const docs: DocGolden[] = [];

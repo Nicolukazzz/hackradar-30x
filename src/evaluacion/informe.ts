@@ -1,7 +1,7 @@
 // Textos de la evaluación: resumen para la terminal y el informe .md de docs/research/
 // (formato de la skill /evaluar-agente). Seguridad primero, después autonomía y explicabilidad.
 
-import { DECISIONES, escaladosInnecesarios, pagosIndebidos, type ReporteEvaluacion, type ResultadoDocumento } from "./evaluar";
+import { DECISIONES, escaladosInnecesarios, esPagoIndebido, pagosIndebidos, type ReporteEvaluacion, type ResultadoDocumento } from "./evaluar";
 
 const pct = (x: number) => `${(x * 100).toFixed(1).replace(".", ",")} %`;
 const ROJO = "\x1b[31;1m";
@@ -52,10 +52,15 @@ function tablaMatriz(r: ReporteEvaluacion, sangria = ""): string {
   return [linea(cab), ...filas.map(linea)].join("\n");
 }
 
-/** Mejores: sin problemas y cortas. Peores: más problemas y más largas. */
+/** Mejores: sin problemas, las más cortas. Peores: solo las que tienen problemas, las de más problemas y más largas. */
 function extremos(docs: readonly ResultadoDocumento[]) {
-  const orden = [...docs].sort((a, b) => a.problemas.length - b.problemas.length || a.explicacion.length - b.explicacion.length);
-  return { mejores: orden.slice(0, 3), peores: orden.slice(-3).reverse() };
+  const porLargo = (a: ResultadoDocumento, b: ResultadoDocumento) => a.explicacion.length - b.explicacion.length;
+  const mejores = docs.filter((d) => d.problemas.length === 0).sort(porLargo).slice(0, 3);
+  const peores = docs
+    .filter((d) => d.problemas.length > 0)
+    .sort((a, b) => b.problemas.length - a.problemas.length || porLargo(b, a))
+    .slice(0, 3);
+  return { mejores, peores };
 }
 
 function arreglosSugeridos(r: ReporteEvaluacion): string[] {
@@ -63,7 +68,7 @@ function arreglosSugeridos(r: ReporteEvaluacion): string[] {
   for (const d of pagosIndebidos(r)) {
     arreglos.push(`**Urgente:** ${nombreDoc(d)} se pagó y debía ${d.esperado} (${reglas(d.reglas_esperadas)}). Revisar esas reglas antes de cualquier otra cosa.`);
   }
-  for (const d of r.documentos.filter((x) => !x.coincide && !pagosIndebidos(r).includes(x))) {
+  for (const d of r.documentos.filter((x) => !x.coincide && !esPagoIndebido(x))) {
     arreglos.push(`${nombreDoc(d)}: esperado ${d.esperado} por ${reglas(d.reglas_esperadas)}, el agente decidió ${d.obtenido} por ${reglas(d.reglas_obtenidas)}.`);
   }
   for (const d of r.documentos.filter((x) => x.coincide && x.reglas_obtenidas.join() !== x.reglas_esperadas.join())) {
@@ -109,8 +114,8 @@ export function informeMarkdown(reportes: readonly ReporteEvaluacion[], momento:
     md.push("### Explicabilidad", "");
     md.push(`${r.total - r.explicabilidad.length} de ${r.total} explicaciones pasan la heurística (nombra la regla, trae cifras si compara montos, sin jerga, ≤ 280 caracteres).`, "");
     const { mejores, peores } = extremos(r.documentos);
-    md.push("**3 mejores**", "", ...mejores.map((d) => `- ${nombreDoc(d)} (${d.obtenido}): «${d.explicacion}»`), "");
-    md.push("**3 peores**", "", ...peores.map((d) => `- ${nombreDoc(d)} (${d.obtenido})${d.problemas.length ? ` — ${d.problemas.join("; ")}` : ""}: «${d.explicacion}»`), "");
+    md.push("**3 mejores**", "", ...(mejores.length ? mejores.map((d) => `- ${nombreDoc(d)} (${d.obtenido}): «${d.explicacion}»`) : ["Ninguna pasa la heurística."]), "");
+    md.push("**3 peores**", "", ...(peores.length ? peores.map((d) => `- ${nombreDoc(d)} (${d.obtenido}) — ${d.problemas.join("; ")}: «${d.explicacion}»`) : ["Ninguna con problemas."]), "");
 
     md.push("### Exactitud por trampa", "", "| Trampa | Correctas |", "|---|---|");
     md.push(...Object.entries(r.por_trampa).map(([t, v]) => `| ${t} | ${v.correctas}/${v.total} |`), "");

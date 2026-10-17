@@ -15,8 +15,11 @@ ejecutarCli(process.argv.slice(2), {
   escribir: (texto) => console.log(texto),
   color: process.stdout.isTTY,
 })
-  .then((codigo) => process.exit(codigo))
+  // exitCode y no exit(): en macOS stdout por tubería es asíncrono y exit() corta las últimas líneas.
+  .then((codigo) => {
+    process.exitCode = codigo;
+  })
   .catch((e: unknown) => {
-    console.error(e);
-    process.exit(1);
+    console.error(e instanceof Error ? e.message : e);
+    process.exitCode = 1;
   });

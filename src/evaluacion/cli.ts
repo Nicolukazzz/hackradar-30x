@@ -28,15 +28,25 @@ const USO = "Uso: npm run evaluar -- (--escenario <id> | --todos) [--extraccion 
 
 /** Devuelve el exit code: 1 si hay algún pago indebido (o error de uso), 0 si no. */
 export async function ejecutarCli(argv: string[], deps: DependenciasCli): Promise<number> {
-  const { values } = parseArgs({
-    args: argv,
-    options: {
-      escenario: { type: "string" },
-      todos: { type: "boolean", default: false },
-      extraccion: { type: "string", default: "golden" },
-      "sin-informe": { type: "boolean", default: false },
-    },
-  });
+  let values;
+  try {
+    ({ values } = parseArgs({
+      args: argv,
+      options: {
+        escenario: { type: "string" },
+        todos: { type: "boolean", default: false },
+        extraccion: { type: "string", default: "golden" },
+        "sin-informe": { type: "boolean", default: false },
+      },
+    }));
+  } catch (e) {
+    deps.escribir(`${e instanceof Error ? e.message : String(e)}\n${USO}`);
+    return 1;
+  }
+  if (values.todos && values.escenario) {
+    deps.escribir(`Usar --escenario o --todos, no los dos.\n${USO}`);
+    return 1;
+  }
   const modo = values.extraccion;
   if (modo !== "golden" && modo !== "real") {
     deps.escribir(`--extraccion debe ser golden o real (llegó «${modo}»).\n${USO}`);

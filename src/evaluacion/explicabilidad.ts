@@ -51,7 +51,8 @@ export function problemasExplicacion(x: { decision: DecisionAgente; reglas: read
   const numerica = decision === "PAGAR" || reglas.some((id) => NUMERICAS.has(id));
   if (numerica && !/\d/.test(explicacion)) problemas.push("sin cifras en una comparación numérica");
 
-  const jerga = JERGA.exec(explicacion);
+  // Lo citado entre «» es texto del proveedor (R10), no de la plantilla: no cuenta como jerga.
+  const jerga = JERGA.exec(explicacion.replace(/«[^»]*»/g, "«»"));
   if (jerga) problemas.push(`jerga interna «${jerga[0]}»`);
   if (explicacion.length > LARGO_MAXIMO) problemas.push(`${explicacion.length} caracteres (máximo ${LARGO_MAXIMO})`);
   return problemas;

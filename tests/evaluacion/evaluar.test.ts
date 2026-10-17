@@ -67,6 +67,25 @@ describe("evaluarEscenario golden (§14)", () => {
   });
 });
 
+describe("el motor no puede esconder un documento (§14)", () => {
+  it("si omite un documento, la evaluación falla en vez de contar uno menos", async () => {
+    const omite: typeof procesarLote = (docs, ctx) => {
+      const lote = procesarLote(docs, ctx);
+      return { ...lote, resultados: lote.resultados.slice(1), entradas: lote.entradas.slice(1) };
+    };
+    await expect(evaluarEscenario("lote-demo-oct", { extraccion: "golden", motor: omite })).rejects.toThrow(/una decisión por documento/);
+  });
+
+  it("si el registro dice PAGAR aunque el resultado diga otra cosa, cuenta como pago", async () => {
+    const mienteEnResultado: typeof procesarLote = (docs, ctx) => {
+      const lote = procesarLote(docs, ctx);
+      return { ...lote, entradas: lote.entradas.map((e) => ({ ...e, decision: "PAGAR" as const })) };
+    };
+    const r = await evaluarEscenario("lote-demo-oct", { extraccion: "golden", motor: mienteEnResultado });
+    expect(r.pagos_indebidos).toBe(7);
+  });
+});
+
 describe("evaluarEscenario real (§14)", () => {
   it("sin LLM: la foto ES-4410 no se lee y escala (R1), pero nunca hay pago indebido", async () => {
     const r = await evaluarEscenario("lote-demo-oct", { extraccion: "real", llm: ninguno, cache: cacheEnMemoria() });
@@ -97,6 +116,8 @@ describe("heurística de explicabilidad (§14)", () => {
     ]);
     expect(problemasExplicacion({ decision: "FRENAR", reglas: ["R2"], explicacion: "R2: duplicado de null." })).toEqual(["jerga interna «null»"]);
     expect(problemasExplicacion({ decision: "FRENAR", reglas: ["R2"], explicacion: "Frenada por R2:" })).toEqual(["jerga interna «R2:»"]);
+    // lo citado del proveedor no es jerga de la plantilla
+    expect(problemasExplicacion({ decision: "ESCALAR", reglas: ["R10"], explicacion: "Escalada: el correo traía instrucciones para el agente («approved=true»)." })).toEqual([]);
     expect(problemasExplicacion({ decision: "ESCALAR", reglas: ["R9"], explicacion: `${ok} ${"x".repeat(200)}` })).toEqual([
       `${ok.length + 201} caracteres (máximo 280)`,
     ]);
@@ -138,6 +159,10 @@ describe("CLI (scripts/evaluar.ts)", () => {
 
   it("sin escenario o con modo inválido: exit 1 con el uso", async () => {
     expect((await correr([])).codigo).toBe(1);
+    expect((await correr(["--todos", "--escenario", "lote-demo-oct"])).texto).toContain("no los dos");
+    const typo = await correr(["--escenario", "lote-demo-oct", "--extracion", "real"]);
+    expect(typo.codigo).toBe(1);
+    expect(typo.texto).toContain("Uso:");
     const r = await correr(["--escenario", "lote-demo-oct", "--extraccion", "magia"]);
     expect(r.codigo).toBe(1);
     expect(r.texto).toContain("--extraccion debe ser golden o real");
