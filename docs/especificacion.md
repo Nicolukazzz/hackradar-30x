@@ -586,7 +586,7 @@ Resultado: PAGAR 3 · FRENAR 3 · ESCALAR 7 · RECHAZADA_NO_FACTURA 1.
 | `GET /api/facturas/:ref` | — | `{ entrada, documento, extraccion, evaluaciones, linea_tiempo }` | Traza |
 | `GET /api/documentos/:ref/archivo` | — | binario original | Traza |
 | `GET /api/aprobaciones?orden=vencimiento\|monto` | — | `{ pendientes: TarjetaAprobacion[], reservado_usd }` | Aprobaciones |
-| `POST /api/aprobaciones/:ref` | `{ accion: 'aprobar'\|'rechazar', comentario, aprobador_id, agregar_a_lista? }` | `EntradaRegistro` | Aprobaciones, Traza |
+| `POST /api/aprobaciones/:ref` | `{ accion: 'aprobar'\|'rechazar', comentario, agregar_a_lista? }` | `EntradaRegistro` | Aprobaciones, Traza |
 | `GET /api/reglas` | — | `{ vigente: Reglas, historial: {version, editada_por, editada_en}[], beneficiarios, aprobadores, tasas }` | Reglas |
 | `POST /api/reglas` | `Reglas` sin version | `{ version }` + entrada `CAMBIO_REGLAS` | Reglas ("Guardar como v8") |
 | `POST /api/reglas/simular` | `Reglas` | `ReporteEvaluacion` (§14) | Reglas ("Simular de nuevo") |
@@ -595,7 +595,7 @@ Resultado: PAGAR 3 · FRENAR 3 · ESCALAR 7 · RECHAZADA_NO_FACTURA 1.
 | `POST /api/ingesta` | `DocumentoEntrante` | `{ ref_interna, estado }` | canales |
 | `POST /api/evaluar` | `{ extraccion, beneficiario_id? }` | `ResultadoMotor` (simulación sin registrar) | API para otros agentes (pitch) |
 
-Errores: `{ error: string }` con 400/403/404/409. Toda escritura pasa por el dominio, nunca SQL directo desde la ruta.
+Errores: `{ error: string }` con 400/401/403/404/409. El **401** lo emite `src/proxy.ts` para cualquier `/api/*` sin sesión válida, antes de llegar a la ruta; el resto los emite la ruta. Toda escritura pasa por el dominio, nunca SQL directo desde la ruta. El actor (quién aprueba) sale de la sesión de Supabase, no del cuerpo de la petición.
 
 ## 13. Pantallas
 

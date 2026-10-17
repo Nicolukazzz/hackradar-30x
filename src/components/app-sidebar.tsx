@@ -1,10 +1,11 @@
 "use client";
 
-import { CircleCheckIcon, InboxIcon, ListIcon, ShieldCheckIcon, SlidersHorizontalIcon } from "lucide-react";
+import { CircleCheckIcon, InboxIcon, ListIcon, LogOutIcon, ShieldCheckIcon, SlidersHorizontalIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense, use } from "react";
 import { usePathname } from "next/navigation";
 
+import { salir } from "@/app/entrar/acciones";
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +27,12 @@ const navegacion = [
   { titulo: "Reglas", href: "/reglas", icono: SlidersHorizontalIcon },
   { titulo: "Registro", href: "/registro", icono: ListIcon },
 ] as const;
+
+const ETIQUETA_ROL = {
+  tesoreria: "Tesorería",
+  aprobador: "Aprobador",
+  proveedor: "Proveedor",
+} as const;
 
 /** Logo + rol. Lo comparten la barra lateral y la cabecera móvil. */
 export function MarcaTesorero({ className }: { className?: string }) {
@@ -59,7 +66,13 @@ function BadgePendientes({ pendientes }: { pendientes: Promise<number | null> })
   );
 }
 
-export function AppSidebar({ pendientes }: { pendientes: Promise<number | null> }) {
+export function AppSidebar({
+  usuario,
+  pendientes,
+}: {
+  usuario: { nombre: string; rol: keyof typeof ETIQUETA_ROL };
+  pendientes: Promise<number | null>;
+}) {
   const ruta = usePathname();
   const { setOpenMobile } = useSidebar();
 
@@ -115,7 +128,7 @@ export function AppSidebar({ pendientes }: { pendientes: Promise<number | null> 
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="px-4 pb-6">
+      <SidebarFooter className="gap-3 px-4 pb-6">
         <div className="flex flex-col gap-2.5 rounded-xl bg-sidebar-card p-3.5">
           <span className="flex items-center gap-2 text-[13px] font-semibold">
             <span aria-hidden className="size-2 rounded-full bg-sidebar-primary" />
@@ -124,6 +137,23 @@ export function AppSidebar({ pendientes }: { pendientes: Promise<number | null> 
           <p className="text-xs leading-normal text-sidebar-muted">
             Reglas v7 · solo decide, nunca mueve dinero. Prototipo para el Reto Blinka.
           </p>
+        </div>
+
+        {/* Identidad desde la sesión (#25): nada de "actuar como". */}
+        <div className="flex items-center justify-between gap-2 px-1">
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate text-sm font-medium text-sidebar-foreground">{usuario.nombre}</span>
+            <span className="text-xs text-sidebar-muted">{ETIQUETA_ROL[usuario.rol]}</span>
+          </span>
+          <form action={salir}>
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 rounded-[10px] px-2 py-1.5 text-xs font-medium text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            >
+              <LogOutIcon className="size-4" aria-hidden />
+              Salir
+            </button>
+          </form>
         </div>
       </SidebarFooter>
     </Sidebar>
