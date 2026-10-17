@@ -13,6 +13,7 @@ import { obtenerSesion } from "@/lib/auth/sesion";
 import { relojSistema } from "@/lib/reloj-sistema";
 
 import { unirme } from "./acciones";
+import { FormularioCrearCuenta } from "./formulario";
 
 export const metadata: Metadata = { title: "Unirme al equipo · Agente de cuentas por pagar", referrer: "no-referrer" };
 
@@ -68,6 +69,28 @@ export default async function PaginaUnirse({ params, searchParams }: PageProps<"
   }
 
   const vista = await vistaInvitacion(await obtenerAlmacenEquipo(), token, relojSistema().ahora());
+  // #80: sin sesión y con un enlace vigente, la persona crea aquí su cuenta (nombre + contraseña).
+  if (vista && !sesion && vista.correo_esperado) {
+    const limiteSinSesion =
+      vista.rol === "aprobador" ? (vista.limite_aprobacion_usd === null ? ", sin límite de monto" : `, hasta USD ${formatearUsd(vista.limite_aprobacion_usd)} por pago`) : "";
+    return (
+      <Marco>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <UserPlusIcon />
+          </EmptyMedia>
+          <EmptyTitle>Crea tu cuenta</EmptyTitle>
+          <EmptyDescription>
+            Entrarás como <strong className="font-semibold text-foreground">{NOMBRE_ROL[vista.rol]}</strong>
+            {limiteSinSesion}. {DESCRIPCION_ROL[vista.rol]}
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent className="w-full max-w-sm">
+          <FormularioCrearCuenta token={token} correo={vista.correo_esperado} />
+        </EmptyContent>
+      </Marco>
+    );
+  }
   if (!vista || !sesion) {
     return (
       <Marco>

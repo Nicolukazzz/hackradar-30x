@@ -2,7 +2,8 @@
 // de nuevo en el servidor con `obtenerSesion()` (layout del panel y `conSesion`).
 
 /** Páginas que se ven sin sesión. */
-export const PAGINAS_PUBLICAS = ["/entrar", "/sin-permiso"] as const;
+/** `/unirse` (#80): la persona todavía no tiene cuenta; la crea con el enlace del correo. */
+export const PAGINAS_PUBLICAS = ["/entrar", "/sin-permiso", "/unirse"] as const;
 
 /**
  * Rutas de API que no pasan por `conSesion` (cada una verifica por su cuenta):

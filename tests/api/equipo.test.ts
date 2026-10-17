@@ -23,7 +23,7 @@ describe("/api/equipo (#51)", () => {
     for (const rol of ["aprobador", "tesoreria"] as const) {
       comoCuenta(`Persona ${rol}`, rol);
       expect((await getEquipo(peticion("http://x/api/equipo"))).status).toBe(403);
-      expect((await invitarCon({ rol: "admin" })).status).toBe(403);
+      expect((await invitarCon({ rol: "admin", correo_esperado: "x@y.example" })).status).toBe(403);
       expect((await patch(CUENTA.usuario_id, { rol: "tesoreria" })).status).toBe(403);
     }
     comoSesion(null);
@@ -32,9 +32,10 @@ describe("/api/equipo (#51)", () => {
 
   it("admin invita → enlace /unirse/<token>; la persona acepta y aparece en el equipo con su rol", async () => {
     await repoProcesado();
-    const res = await invitarCon({ rol: "aprobador", limite_aprobacion_usd: 500000 });
+    const res = await invitarCon({ rol: "aprobador", limite_aprobacion_usd: 500000, correo_esperado: "nueva@x.example" });
     expect(res.status).toBe(201);
-    const { invitacion, enlace } = await res.json();
+    const { invitacion, enlace, correo_enviado } = await res.json();
+    expect(correo_enviado).toBe(false); // sin buzón configurado en tests: la pantalla muestra el enlace
     expect(enlace).toMatch(/^http:\/\/localhost:3000\/unirse\/[A-Za-z0-9_-]{43}$/);
     expect(invitacion).not.toHaveProperty("token_hash");
     equipoActual().agregarCuenta({ usuario_id: "u-nueva", nombre: "Nueva", correo: "nueva@x.example" });
@@ -49,8 +50,9 @@ describe("/api/equipo (#51)", () => {
   it("cuerpo inválido → 400; revocar dos veces → 404; el único admin no se baja de rol ni se quita (409)", async () => {
     await repoProcesado();
     expect((await invitarCon({ rol: "dueño" })).status).toBe(400);
-    expect((await invitarCon({ rol: "aprobador", dias_vigencia: 90 })).status).toBe(400);
-    const { invitacion } = await (await invitarCon({ rol: "tesoreria" })).json();
+    expect((await invitarCon({ rol: "aprobador", dias_vigencia: 90, correo_esperado: "x@y.example" })).status).toBe(400);
+    expect((await invitarCon({ rol: "tesoreria" })).status).toBe(400); // #80: sin correo no se crea
+    const { invitacion } = await (await invitarCon({ rol: "tesoreria", correo_esperado: "t@y.example" })).json();
     const revocarla = () => deleteInvitacion(peticion(`http://x/api/equipo/invitaciones/${invitacion.id}`, { method: "DELETE" }), ctxInvitacion(invitacion.id));
     expect((await revocarla()).status).toBe(200);
     expect((await revocarla()).status).toBe(404);
