@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-16 — Doble lectura LLM (Gemini + Haiku) y canal de chat WhatsApp
+- Estado: propuesta (falta que N y S la acepten en el PR)
+- Decisión: (1) **Doble lectura**: cuando el parser sin IA no resuelve un campo obligatorio, se llama a Gemini Flash y a Claude Haiku 5.5 en paralelo, ambos solo para los campos faltantes, y se cruzan con el parser: un campo queda con confianza ≥ 0,90 solo si al menos 2 de los 3 lectores coinciden; si no, ≤ 0,5 y R1 escala. Señales de R10 de cualquiera de los dos cuentan. Groq queda de respaldo si uno falla. Reemplaza "Gemini → Groq → Haiku opcional" de `producto.md` §4. (2) **Canales**: WhatsApp Cloud API como chat de proveedores en lugar de Telegram (vinculación con token de un solo uso desde el portal), Teams solo como aviso interno a aprobadores (webhook de Workflows) y Telegram como plan B. Correo: Gmail del equipo por IMAP. Siguen siendo 3 canales de entrada.
+- Por qué: un solo LLM puede leer mal o ser engañado por la factura sin que nadie lo note; con 2 de 3 un dato falso necesita que dos lectores independientes se equivoquen igual. Haiku cuesta ~USD 0,001 por factura y solo corre en las que el parser no resuelve. WhatsApp y Teams son lo que usan las empresas de referencia; Telegram casi no.
+- Impacto: #4 (extracción) suma el lector Haiku y el cruce 2 de 3 (issue nuevo); #13 pasa a WhatsApp; #14 usa IMAP; `.env.example` suma las variables. Nada cambia en el motor: la decisión sigue siendo código.
+
 ## 2026-10-16 — Portal de proveedores (#12) sobre el login de #25
 - Estado: propuesta
 - Decisión: `/portal` usa el login OTP de Supabase (rol `proveedor`, `beneficiario_id` en `perfiles`), no la cookie demo `PORTAL_SECRET` que pedía el issue (el modo demo se quitó en #25). Una sola página: "Envía una factura" (`SubirDocumento` → `POST /api/documentos`, #26) y "Tus facturas" (`facturasDelProveedor` en `src/servicios/portal.ts`, también `GET /api/portal/facturas`). El proveedor ve solo documentos cuyo remitente está vinculado a su beneficiario (`beneficiario_remitente_id` de la sesión, nunca de la petición), con 4 estados (aprobada · en revisión · no se pagará · no es factura) y textos de `respuesta.ts`; la decisión humana reemplaza la del agente con un texto fijo (el comentario del aprobador es interno). Vincular Telegram queda para #13, pendiente de decidir el canal de chat.

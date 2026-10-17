@@ -90,6 +90,8 @@ Restricción: el equipo tiene **Claude Pro**, que **no incluye API**. La API de 
 
 **Recomendación:** Gemini Flash free como principal, Groq como respaldo automático ante error/límite, y Claude Haiku 5.5 si aparece presupuesto o créditos del hackathon (preguntar a la organización). Para el volumen de una demo (decenas a cientos de facturas) los free tiers alcanzan.
 
+**Propuesta 2026-10-16 (doble lectura, pendiente de aceptar):** cuando una factura necesita LLM, leerla con **Gemini Flash y Claude Haiku 5.5 a la vez** y cruzarlos con el parser sin IA: 3 lectores. Un campo obligatorio solo queda con confianza ≥ 0,90 si **al menos 2 de los 3 coinciden**; si no, queda bajo el umbral y R1 escala. Así un solo modelo equivocado (o engañado por la factura) no puede meter un dato falso. Haiku cuesta ~USD 0,001 por factura y solo se usa en las que el parser no resuelve. Groq queda como respaldo si uno de los dos falla. Ver `docs/decisiones.md`.
+
 **Sigue igual:** el LLM solo lee y explica. Como la decisión es código, cambiar a un modelo más barato **no afecta la seguridad**, solo la calidad de extracción, y la baja confianza termina en ESCALAR.
 
 Explicaciones: generarlas con **plantillas** a partir de las reglas evaluadas (gratis y siempre correctas). LLM para pulir la redacción es opcional.
@@ -117,6 +119,14 @@ Explicaciones: generarlas con **plantillas** a partir de las reglas evaluadas (g
 | **Correo** | Dirección `facturas@…`. Demo: buzón Gmail leído por IMAP cada X seg, o servicio de correo entrante con webhook (Postmark, Mailgun, SendGrid, Cloudflare Email) | Correos autorizados en ficha del proveedor | Media |
 
 Orden sugerido para construir: **Portal → Telegram → Correo.**
+
+**Propuesta 2026-10-16 (pendiente de aceptar):** las empresas de referencia usan sobre todo **WhatsApp y Teams**; Telegram es poco común. Reparto propuesto:
+- **WhatsApp (Cloud API de Meta)** = canal de chat de los proveedores, en lugar de Telegram. Vinculación igual: token de un solo uso desde el portal (`wa.me/<número>?text=<token>`).
+- **Teams (webhook de Workflows)** = aviso interno a los aprobadores cuando algo se escala. No recibe facturas.
+- **Telegram** = plan B si la verificación de WhatsApp Business no llega a tiempo.
+- **Correo** = buzón Gmail nuevo del equipo leído por IMAP (clave de aplicación ya cargada en Railway).
+
+Siguen siendo 3 canales de entrada (portal, correo, chat); cambia qué chat.
 
 ## 6. Usuarios y roles
 
@@ -168,7 +178,8 @@ Archivos reales: solo en `contexto-privado/` (ignorado por git). Hallazgos anoni
 
 - [x] El LLM lee y explica; el código decide (sección 3). Aceptado en #9.
 - [x] LLM: Gemini free principal + Groq respaldo (en implementación, #4).
-- [ ] ¿Ponemos USD 5 para Claude Haiku 5.5? ¿El hackathon da créditos? (sección 4).
+- [ ] ¿Ponemos USD 5 para Claude Haiku 5.5? ¿El hackathon da créditos? (sección 4). **Propuesta:** sí, para la doble lectura Gemini + Haiku (2 de 3 con el parser).
+- [ ] Canal de chat: **WhatsApp** en vez de Telegram, y Teams como aviso interno (sección 5). Propuesta pendiente.
 - [x] 3 canales, en este orden: portal (#12) → Telegram (#13) → correo (#14). Aceptado en #9.
 - [ ] Roles para la demo. **Propuesta (#9):** Tesorero como vista principal del panel; Laura Méndez y Andrés Pardo como aprobadores con un selector "Actuar como" (sin login); Proveedor en el portal. Cuentas por pagar y Admin se ven como el mismo panel. Confirmar.
 - [x] Stack (#1): Next.js 16 + TS + Vitest + shadcn/ui, Railway + Supabase.
