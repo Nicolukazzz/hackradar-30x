@@ -228,3 +228,7 @@ def test_limite_mensual_cero_no_cae_al_default():
     sin_cupo = copy.deepcopy(mundo.BENEFICIARIOS)
     next(b for b in sin_cupo if b["id"] == "ben-cloudnorte")["limite_mensual_usd"] = 0
     assert _evaluar_uno(_ext(), CLOUDNORTE, sin_cupo)["reglas_que_fallan"] == ["R8"]
+
+
+def test_tasa_texto_redondea_half_up_como_typescript():
+    assert dinero.tasa_texto("MXN", {"MXN": "18.505"}) == "MXN 18,51"

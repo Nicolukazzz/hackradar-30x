@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-16 — Contrato del dominio en código (#2)
+- Estado: propuesta
+- Decisión: el contrato de §3 y §9 vive en `src/dominio/`: `tipos.ts` (tipos escritos a mano, incluidos los del dataset: `MetaDocumento`, `ExtraccionPlana`, `EsperadoDocumento`, `ConfigEscenario`, `Trampa`) y `esquemas.ts` (zod estricto; un test de compilación exige que cada esquema produzca exactamente su tipo). Interfaz entre módulos: `cargarDatosComunes()` y `cargarEscenario(id)` (`cargar.ts`, valida todo `data/`, documentos en orden de llegada por instante real), `aUsd`/`formatear*`/`porcentaje` (`dinero.ts`), `normalizarNombre`/`normalizarNumeroFactura` (`normalizar.ts`), `Reloj` + `relojFijo` (`reloj.ts`). El reloj real (`relojSistema`) va en `src/lib/reloj-sistema.ts` porque el lint prohíbe leer la hora en el dominio. Invariantes en los datos: R9 ≤ R6, solo R5/R8 desactivables, tasas > 0, canales únicos por beneficiario, un aprobador principal, cada documento con exactamente una respuesta esperada.
+- Por qué: #4, #5, #7, #11 y #17 dependen de estos nombres; con tipos y esquemas atados en compilación no pueden desincronizarse. La paridad con el generador Python (mismos USD, tasa y normalización) se verifica en los tests.
+- Quién: J
+
 ## 2026-10-16 — Reglas de UI: componentes primero, estilo premium
 - Estado: aceptada
 - Decisión: antes de escribir UI se busca el componente (MCP `shadcn` con registros gratis `@react-bits`, `@skiper-ui`, `@magicui`, `@aceternity`, `@kibo-ui`; MCP `21st`). Estilo profesional premium tipo Apple, Geist sin cursiva, interacción por pasos (máx. 3–5 campos visibles), nada de formularios largos. Reglas completas en `CLAUDE.md` "Reglas de UI".
