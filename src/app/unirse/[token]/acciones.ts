@@ -1,11 +1,17 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
+import { errorDeContrasena } from "@/app/entrar/estado";
 import { obtenerAlmacenEquipo } from "@/equipo";
-import { aceptar } from "@/equipo/servicio";
+import { aceptar, vistaInvitacion } from "@/equipo/servicio";
+import { hashToken } from "@/equipo/token";
 import { auditar } from "@/lib/auth/auditoria";
 import { obtenerSesion } from "@/lib/auth/sesion";
+import { relojSistema } from "@/lib/reloj-sistema";
+import { crearClienteAdmin } from "@/lib/supabase/admin";
+import { crearClienteServidor } from "@/lib/supabase/servidor";
 
 // Aceptar una invitación (#51). La cuenta sale de la sesión (y su correo, de la sesión verificada); el token, del
 // enlace. Next verifica el Origin de cada server action (CSRF).
@@ -17,4 +23,49 @@ export async function unirme(token: string): Promise<void> {
   auditar({ tipo: "equipo", usuario_id: sesion.usuario_id, ruta: "/unirse", motivo: `invitación ${resultado}` });
   if (resultado === "aceptada") redirect("/");
   redirect(`${aqui}?resultado=${resultado}`);
+}
+
+export type EstadoCrearCuenta = { error?: string; nombre?: string };
+
+const esquemaNombre = z.string().trim().min(1).max(120);
+
+/**
+ * Crear la cuenta desde el enlace del correo (#80). Quien llega aquí abrió el enlace que se envió a `correo_esperado`:
+ * eso prueba que es dueño del correo, así que la cuenta se crea ya confirmada (admin API) y entra con la invitación
+ * aceptada de forma atómica. El correo no se pide en el formulario: sale de la invitación.
+ */
+export async function crearCuentaYUnirme(token: string, _previo: EstadoCrearCuenta, formulario: FormData): Promise<EstadoCrearCuenta> {
+  const nombre = esquemaNombre.safeParse(formulario.get("nombre"));
+  const contrasena = typeof formulario.get("contrasena") === "string" ? (formulario.get("contrasena") as string) : "";
+  if (!nombre.success) return { error: "Escribe tu nombre (hasta 120 caracteres)." };
+  const problema = errorDeContrasena(contrasena);
+  if (problema) return { error: problema, nombre: nombre.data };
+
+  const almacen = await obtenerAlmacenEquipo();
+  const vista = await vistaInvitacion(almacen, token, relojSistema().ahora());
+  const correo = vista?.correo_esperado;
+  if (!vista || !correo) return { error: "Este enlace ya no sirve: venció, se usó o lo revocaron. Pide uno nuevo a tu administrador." };
+
+  const { data, error } = await crearClienteAdmin().auth.admin.createUser({ email: correo, password: contrasena, email_confirm: true, user_metadata: { nombre: nombre.data } });
+  if (error || !data.user) {
+    const existe = error?.code === "email_exists" || /already/i.test(error?.message ?? "");
+    return {
+      nombre: nombre.data,
+      error: existe ? "Ya hay una cuenta con este correo: inicia sesión y vuelve a abrir el enlace." : "No se pudo crear la cuenta. Intenta de nuevo en un momento.",
+    };
+  }
+
+  // Primero la membresía (atómica, valida el enlace otra vez): si falla, la cuenta recién creada se borra y no queda
+  // una cuenta huérfana que bloquee el siguiente intento con «ya hay una cuenta».
+  const resultado = await almacen.aceptarInvitacion(hashToken(token), data.user.id, correo).catch(() => "invalida" as const);
+  auditar({ tipo: "equipo", usuario_id: data.user.id, ruta: "/unirse", motivo: `cuenta creada por invitación: ${resultado}` });
+  if (resultado !== "aceptada") {
+    await crearClienteAdmin().auth.admin.deleteUser(data.user.id).catch(() => undefined);
+    return { error: "Este enlace ya no sirve: venció, se usó o lo revocaron. Pide uno nuevo a tu administrador." };
+  }
+  const supabase = await crearClienteServidor();
+  const entrada = await supabase.auth.signInWithPassword({ email: correo, password: contrasena });
+  // La cuenta y la membresía ya existen: si falla solo el inicio de sesión, que entre desde /entrar.
+  if (entrada.error) redirect("/entrar");
+  redirect("/");
 }

@@ -34,8 +34,10 @@ async function falla(p: Promise<unknown>, estado: number, texto?: string) {
 }
 
 describe("esquemas", () => {
-  it("límite solo para aprobador; correo en minúsculas; vigencia 7 días por defecto, máximo 30", () => {
-    expect(EsquemaNuevaInvitacion.parse({ rol: "admin", limite_aprobacion_usd: 500000 })).toEqual({ rol: "admin", limite_aprobacion_usd: null, correo_esperado: null, dias_vigencia: 7 });
+  it("límite solo para aprobador; correo obligatorio en minúsculas (#80); vigencia 3 días por defecto, máximo 30", () => {
+    expect(EsquemaNuevaInvitacion.parse({ rol: "admin", limite_aprobacion_usd: 500000, correo_esperado: "a@b.example" })).toEqual({ rol: "admin", limite_aprobacion_usd: null, correo_esperado: "a@b.example", dias_vigencia: 3 });
+    expect(EsquemaNuevaInvitacion.safeParse({ rol: "admin" }).success).toBe(false);
+    expect(EsquemaNuevaInvitacion.safeParse({ rol: "admin", correo_esperado: "" }).success).toBe(false);
     expect(EsquemaNuevaInvitacion.parse({ rol: "aprobador", limite_aprobacion_usd: 500000, correo_esperado: " Ana@Correo.Example " })).toMatchObject({ limite_aprobacion_usd: 500000, correo_esperado: "ana@correo.example" });
     expect(EsquemaNuevaInvitacion.safeParse({ rol: "aprobador", dias_vigencia: 31 }).success).toBe(false);
     expect(EsquemaNuevaInvitacion.safeParse({ rol: "dueño" }).success).toBe(false);
@@ -75,27 +77,27 @@ describe("último admin", () => {
 describe("invitaciones", () => {
   it("invitar → enlace con token; en el almacén solo queda el hash; aceptar crea la membresía con rol y límite", async () => {
     const { almacen, nueva } = preparar();
-    const { invitacion, enlace } = await invitar(almacen, ADMIN, { rol: "aprobador", limite_aprobacion_usd: 500000 }, AHORA);
+    const { invitacion, enlace } = await invitar(almacen, ADMIN, { rol: "aprobador", limite_aprobacion_usd: 500000, correo_esperado: "u-beto@correo.example" }, AHORA);
     const token = tokenDe(enlace);
     expect(pareceToken(token)).toBe(true);
-    expect(invitacion).toMatchObject({ rol: "aprobador", limite_aprobacion_usd: 500000, usos_max: 1, usos: 0, estado: "activa", creada_por: "u-admin", expira_en: "2026-10-24T15:00:00.000Z" });
+    expect(invitacion).toMatchObject({ rol: "aprobador", limite_aprobacion_usd: 500000, usos_max: 1, usos: 0, estado: "activa", creada_por: "u-admin", expira_en: "2026-10-20T15:00:00.000Z" });
     expect(JSON.stringify(invitacion)).not.toContain(token);
     expect(await almacen.invitacionPorHash(EMPRESA_ID, hashToken(token))).toMatchObject({ id: invitacion.id });
 
-    expect(await vistaInvitacion(almacen, token, AHORA)).toEqual({ rol: "aprobador", limite_aprobacion_usd: 500000, expira_en: invitacion.expira_en });
+    expect(await vistaInvitacion(almacen, token, AHORA)).toEqual({ rol: "aprobador", limite_aprobacion_usd: 500000, expira_en: invitacion.expira_en, correo_esperado: "u-beto@correo.example" });
     const beto = nueva("u-beto");
     expect(await aceptar(almacen, token, beto)).toBe("aceptada");
     const miembros = await almacen.miembros(EMPRESA_ID);
     expect(miembros.find((x) => x.usuario_id === "u-beto")).toMatchObject({ rol: "aprobador", limite_aprobacion_usd: 500000 });
-    // un solo uso: otra cuenta con el mismo enlace no entra, y la vista ya no la muestra
-    expect(await aceptar(almacen, token, nueva("u-carla"))).toBe("invalida");
+    // un solo uso: con el mismo enlace nadie más entra, y la vista ya no la muestra
+    expect(await aceptar(almacen, token, nueva("u-carla", "u-beto@correo.example"))).toBe("invalida");
     expect(await vistaInvitacion(almacen, token, AHORA)).toBeNull();
     expect((await obtenerEquipo(almacen, AHORA)).invitaciones[0]?.estado).toBe("usada");
   });
 
   it("ya miembro: no cambia su rol ni gasta el enlace", async () => {
     const { almacen } = preparar();
-    const { enlace } = await invitar(almacen, ADMIN, { rol: "tesoreria" }, AHORA);
+    const { enlace } = await invitar(almacen, ADMIN, { rol: "tesoreria", correo_esperado: ADMIN.correo }, AHORA);
     expect(await aceptar(almacen, tokenDe(enlace), ADMIN)).toBe("ya_miembro");
     expect((await almacen.miembros(EMPRESA_ID))[0]?.rol).toBe("admin");
     expect(await vistaInvitacion(almacen, tokenDe(enlace), AHORA)).not.toBeNull();
@@ -110,8 +112,8 @@ describe("invitaciones", () => {
 
   it("vencida o revocada → invalida (mismo resultado, no se dice cuál); token mal formado → invalida sin ir a la base", async () => {
     const { almacen, reloj, nueva } = preparar();
-    const a = await invitar(almacen, ADMIN, { rol: "tesoreria", dias_vigencia: 1 }, AHORA);
-    const b = await invitar(almacen, ADMIN, { rol: "tesoreria" }, AHORA);
+    const a = await invitar(almacen, ADMIN, { rol: "tesoreria", dias_vigencia: 1, correo_esperado: "u-2@correo.example" }, AHORA);
+    const b = await invitar(almacen, ADMIN, { rol: "tesoreria", correo_esperado: "u-1@correo.example" }, AHORA);
     await revocar(almacen, b.invitacion.id, AHORA);
     await falla(revocar(almacen, b.invitacion.id, AHORA), 404);
     await falla(revocar(almacen, "no-es-uuid", AHORA), 404);

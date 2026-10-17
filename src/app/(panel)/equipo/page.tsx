@@ -11,7 +11,7 @@ import { obtenerSesion } from "@/lib/auth/sesion";
 import { relojSistema } from "@/lib/reloj-sistema";
 
 import { Invitaciones } from "./_equipo/invitaciones";
-import { Invitar } from "./_equipo/invitar";
+import { CrearEmpleado } from "./_equipo/invitar";
 import { Miembros } from "./_equipo/miembros";
 
 export const metadata: Metadata = { title: "Equipo · Agente de cuentas por pagar" };
@@ -34,7 +34,7 @@ export default async function EquipoPage() {
             reglas o el equipo. El agente nunca paga por encima de las reglas, sin importar quién esté conectado.
           </p>
         </div>
-        <Invitar />
+        <CrearEmpleado />
       </header>
 
       <Tarjeta as="section" aria-labelledby="titulo-miembros">
@@ -57,10 +57,10 @@ export default async function EquipoPage() {
           titulo={
             <span className="flex items-center gap-2">
               <MailIcon className="size-[18px]" aria-hidden />
-              Invitaciones
+              Pendientes de activar
             </span>
           }
-          descripcion={activas > 0 ? `${activas} sin usar. Cada enlace sirve una vez.` : "Cada enlace sirve una vez y vence solo."}
+          descripcion={activas > 0 ? `${activas} sin activar. Cada enlace sirve una vez y vence en 72 horas.` : "Cada enlace sirve una vez y vence en 72 horas."}
         />
         {invitaciones.length > 0 ? (
           <Invitaciones invitaciones={invitaciones} />
@@ -70,8 +70,8 @@ export default async function EquipoPage() {
               <EmptyMedia variant="icon">
                 <MailIcon />
               </EmptyMedia>
-              <EmptyTitle>Aún no invitaste a nadie</EmptyTitle>
-              <EmptyDescription>Usa Invitar persona: eliges el rol y copias un enlace para enviárselo.</EmptyDescription>
+              <EmptyTitle>No hay cuentas por activar</EmptyTitle>
+              <EmptyDescription>Usa Crear empleado: eliges el rol y le llega un correo para crear su contraseña.</EmptyDescription>
             </EmptyHeader>
           </Empty>
         )}

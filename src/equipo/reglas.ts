@@ -7,7 +7,8 @@ import { ROLES, type Rol } from "@/lib/auth/permisos";
 
 import { ErrorEquipo, MENSAJE_ULTIMO_ADMIN, type EstadoInvitacion, type Invitacion, type Miembro } from "./tipos";
 
-export const VIGENCIA_DIAS_POR_DEFECTO = 7;
+/** #80: 72 horas. Un enlace que viaja por correo no debería quedar vivo una semana. */
+export const VIGENCIA_DIAS_POR_DEFECTO = 3;
 export const VIGENCIA_DIAS_MAXIMA = 30;
 /** USD 1.000.000 en centavos: tope de cordura para el límite de un aprobador. */
 const LIMITE_MAXIMO_CENTAVOS = 100_000_000;
@@ -23,11 +24,11 @@ export const EsquemaNuevaInvitacion = z
   .strictObject({
     rol: z.enum(ROLES),
     limite_aprobacion_usd: limite.optional(),
-    // vacío = cualquier cuenta puede usar el enlace
-    correo_esperado: z.string().trim().toLowerCase().max(254).pipe(z.union([z.literal(""), z.email()])).nullable().optional(),
+    // #80: obligatorio. El enlace va a ese correo y solo esa dirección puede crear la cuenta con él.
+    correo_esperado: z.string().trim().toLowerCase().max(254).pipe(z.email({ message: "Escribe el correo de la persona." })),
     dias_vigencia: z.number().int().min(1).max(VIGENCIA_DIAS_MAXIMA).default(VIGENCIA_DIAS_POR_DEFECTO),
   })
-  .transform((v) => ({ ...conLimiteCoherente(v), correo_esperado: v.correo_esperado || null }));
+  .transform(conLimiteCoherente);
 
 export type EntradaInvitacion = z.input<typeof EsquemaNuevaInvitacion>;
 
