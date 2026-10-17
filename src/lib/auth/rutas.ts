@@ -4,8 +4,11 @@
 /** Páginas que se ven sin sesión. */
 export const PAGINAS_PUBLICAS = ["/entrar", "/sin-permiso"] as const;
 
-/** Rutas de API sin sesión de usuario (webhooks de canales con su propia verificación). Vacío por ahora. */
-export const API_PUBLICAS: readonly string[] = [];
+/**
+ * Rutas de API sin sesión de usuario (webhooks de canales con su propia verificación). Telegram (#13): cabecera
+ * X-Telegram-Bot-Api-Secret-Token.
+ */
+export const API_PUBLICAS: readonly string[] = ["/api/canales/telegram/webhook"];
 
 export type DecisionRuta = "seguir" | "redirigir" | "no_autorizado";
 

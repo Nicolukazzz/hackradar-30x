@@ -57,7 +57,7 @@ describe("recibirCorreo de punta a punta", () => {
     const eml = await readFile(path.join(esc.carpeta, "documentos/002-inv-2210.eml"));
     const falsificado = Buffer.concat([Buffer.from("Authentication-Results: mx.google.com; spf=fail smtp.mailfrom=billing@cloudnorte.example\r\n"), eml]);
     const repo = await crearRepositorioMemoria("lote-demo-oct", undefined, { lote: "vacio" });
-    const r = decidido(await recibirCorreo(falsificado, { repo, ahora: AHORA, extractor: await extractorGolden("lote-demo-oct"), urlPortal: "x" }));
+    const r = decidido(await recibirCorreo(falsificado, { repo, ahora: AHORA, extractor: await extractorGolden("lote-demo-oct") }));
     expect(r.entrada.decision).toBe("ESCALAR");
     expect(r.entrada.reglas_que_fallaron).toContain("R11");
     expect(r.respuesta).toBeNull();
@@ -69,11 +69,11 @@ describe("recibirCorreo de punta a punta", () => {
     const eml = await readFile(path.join(esc.carpeta, "documentos/011-inv-2245.eml"));
     const repo = await crearRepositorioMemoria("trampas-extra", undefined, { lote: "vacio" });
     const r = decidido(
-      await recibirCorreo(eml, { repo, ahora: esc.config.ahora, extractor: await extractorGolden("trampas-extra"), urlPortal: "https://app.example/portal", exigirAutenticacion: false }),
+      await recibirCorreo(eml, { repo, ahora: esc.config.ahora, extractor: await extractorGolden("trampas-extra"), exigirAutenticacion: false }),
     );
     expect(r.entrada).toMatchObject({ decision: "ESCALAR", reglas_que_fallaron: ["R11"] });
     expect(r.respuesta).toMatchObject({ para: "pagos-cloudnorte@gmail.example", asunto: expect.stringMatching(/^Re: /) });
-    expect(r.respuesta?.texto).toContain("https://app.example/portal");
+    expect(r.respuesta?.texto).toContain("ask your contact on the finance team for the link to connect this email address");
     expect(r.respuesta?.texto).not.toContain("INV-2245"); // no confirma la factura a un remitente no verificado
   });
 });
@@ -87,7 +87,6 @@ describe("buzón real: ante la duda, no verificado; automáticos ignorados (revi
     repo: await crearRepositorioMemoria("lote-demo-oct", undefined, { lote: "vacio" }),
     ahora: AHORA,
     extractor: await extractorGolden("lote-demo-oct"),
-    urlPortal: "x",
     buzonPropio: "facturas.nebula.demo@gmail.com",
   });
 

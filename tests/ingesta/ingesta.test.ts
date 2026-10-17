@@ -180,7 +180,7 @@ describe("respuesta al remitente (§8 paso 8)", () => {
     }
     for (const e of todas) {
       for (const idioma of ["es", "en", "pt"] as Idioma[]) {
-        const texto = textoRespuesta(e, idioma, { urlPortal: "https://portal.example" });
+        const texto = textoRespuesta(e, idioma);
         expect(texto).not.toMatch(PROHIBIDO);
         expect(texto).toContain(e.ref_interna);
       }
@@ -190,11 +190,12 @@ describe("respuesta al remitente (§8 paso 8)", () => {
   it("dice el estado y pide vincular el canal cuando falla R11", async () => {
     const entradas = await cargarEscenarioPorIngesta("lote-demo-oct", { repo: await repoVacio(), extractor: await espia() });
     const por = (n: string) => entradas.find((e) => e.factura_numero === n)!;
-    const r = (n: string, idioma: Idioma = "es") => textoRespuesta(por(n), idioma, { urlPortal: "https://portal.example" });
+    const r = (n: string, idioma: Idioma = "es") => textoRespuesta(por(n), idioma);
     expect(r("FAC-1041")).toBe("Recibimos tu factura FAC-1041. Ref INT-2026-000001. Estado: aprobada para pago.");
     expect(r("PX-77")).toContain("no se pagará: el monto o el concepto no coincide con lo acordado");
     expect(r("LF-2026-10")).toContain("en revisión por el equipo de finanzas");
-    expect(r("TD-001")).toContain("vincula este correo en el portal: https://portal.example");
+    expect(r("TD-001")).toContain("pide a tu contacto en el equipo de finanzas el enlace para vincular este correo");
+    expect(textoRespuesta(por("TD-001"), "es", { urlVincular: "https://t.me/bot?start=x" })).toContain("vincula este correo: https://t.me/bot?start=x");
     // remitente no verificado: no se le confirma el número de factura
     expect(r("TD-001")).not.toContain("TD-001");
     expect(r("TD-001")).toContain("en revisión");

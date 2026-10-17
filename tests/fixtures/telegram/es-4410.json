@@ -1,0 +1,26 @@
+{
+  "update_id": 900012,
+  "message": {
+    "message_id": 12,
+    "chat": {
+      "id": 700100008,
+      "type": "private"
+    },
+    "from": {
+      "language_code": "pt"
+    },
+    "caption": "Olá! Segue a fatura de outubro da trilha sonora.",
+    "photo": [
+      {
+        "file_id": "es-4410-chica",
+        "width": 90,
+        "height": 120
+      },
+      {
+        "file_id": "es-4410",
+        "width": 900,
+        "height": 1200
+      }
+    ]
+  }
+}

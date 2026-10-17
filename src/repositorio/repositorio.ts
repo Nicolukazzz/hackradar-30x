@@ -43,6 +43,12 @@ export interface Repositorio {
   /** Guarda una versión nueva (la siguiente a la vigente) y devuelve su número. */
   guardarReglas(r: Omit<Reglas, "version">): Promise<number>;
   guardarBeneficiario(b: Beneficiario): Promise<void>;
+  /**
+   * Vincula un chat de Telegram a un beneficiario (base o agregado) (#13). Un chat pertenece a un solo
+   * beneficiario y un beneficiario tiene un solo chat: el vínculo anterior de cualquiera de los dos se reemplaza.
+   * Lanza si el beneficiario no existe.
+   */
+  vincularTelegram(beneficiario_id: string, chat_id: string): Promise<void>;
 
   guardarArchivo(ref: string, archivo: ArchivoGuardado): Promise<void>;
   /** Archivo original tal como llegó (PDF, PNG, .eml, chat). */

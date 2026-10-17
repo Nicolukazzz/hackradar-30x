@@ -597,6 +597,9 @@ Resultado: PAGAR 3 · FRENAR 3 · ESCALAR 7 · RECHAZADA_NO_FACTURA 1.
 | `GET /api/registro?decision=&actor=agente\|humano&q=` | — | `EntradaRegistro[]` agrupadas por día | Registro |
 | `GET /api/registro/export.json` · `export.csv` | — | archivo | Registro |
 | `POST /api/ingesta` | `DocumentoEntrante` | `{ ref_interna, estado }` | canales |
+| `POST /api/canales/telegram/webhook` | `Update` de Telegram + cabecera `X-Telegram-Bot-Api-Secret-Token` | `{ ok }` (responde al chat por `sendMessage`) | canal Telegram (#13; en `API_PUBLICAS`) |
+| `POST /api/canales/telegram/simular` | `{ update, archivos? }` | `{ respuesta, ref_interna, estado, … }` | demo sin bot (#13) |
+| `POST /api/canales/telegram/enlace` | `{ beneficiario_id }` | `{ enlace: "https://t.me/<bot>?start=<token>" }` (firmado, un uso, 72 h) | vincular el chat de un proveedor (#13) |
 | `POST /api/evaluar` | `{ extraccion, beneficiario_id? }` | `ResultadoMotor` (simulación sin registrar) | API para otros agentes (pitch) |
 | `GET /api/equipo` | — | `{ miembros: Miembro[], invitaciones: (Invitacion & { estado })[] }` | Equipo (admin) |
 | `POST /api/equipo/invitaciones` | `{ rol, limite_aprobacion_usd?, correo_esperado?, dias_vigencia? }` | `{ invitacion, enlace }` (el token solo viaja aquí) | Equipo (admin) |

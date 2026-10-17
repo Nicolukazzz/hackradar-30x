@@ -14,7 +14,7 @@ import { cargarGolden } from "@/evaluacion/escenario";
 import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
 
-import { coincideFiltro, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
+import { coincideFiltro, conVinculosTelegram, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
 import type { Repositorio, ResumenVersion } from "./repositorio";
 
 export type ConfigSupabase = { url: string; claveSecreta: string; escenario: string; dir?: string };
@@ -81,6 +81,13 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
     return (data ?? []).map((r) => r.beneficiario as Beneficiario);
   }
 
+  /** beneficiario_id → chat_id (#13). */
+  async function vinculosTelegram(): Promise<Map<string, string>> {
+    const { data, error } = await db.from("vinculos_telegram").select("beneficiario_id, chat_id");
+    fallar("leer vínculos de Telegram", error);
+    return new Map((data ?? []).map((r) => [r.beneficiario_id as string, r.chat_id as string]));
+  }
+
   async function registro(): Promise<EntradaRegistro[]> {
     const filas = await todas<{ entrada: unknown }>((a, b) => db.from("registro").select("entrada").order("orden").range(a, b), "leer registro");
     return filas.map((r) => r.entrada as EntradaRegistro);
@@ -111,8 +118,9 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
 
   return {
     async datosComunes() {
-      const [vs, extra] = await Promise.all([versiones(), agregados()]);
-      return { ...g.datos, beneficiarios: [...g.datos.beneficiarios, ...extra], reglas: { vigente: versionVigente(vs), versiones: vs } };
+      const [vs, extra, vinculos] = await Promise.all([versiones(), agregados(), vinculosTelegram()]);
+      const beneficiarios = conVinculosTelegram([...g.datos.beneficiarios, ...extra], vinculos);
+      return { ...g.datos, beneficiarios, reglas: { vigente: versionVigente(vs), versiones: vs } };
     },
     async reglasVigentes() {
       return versionVigente(await versiones());
@@ -137,6 +145,13 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
       const { error } = await db.from("beneficiarios_agregados").insert({ id: b.id, beneficiario: b });
       if (error?.code === "23505") throw new Error(`el beneficiario ${b.id} ya existe`);
       fallar("guardar beneficiario", error);
+    },
+    async vincularTelegram(beneficiario_id, chat_id) {
+      const existe = g.datos.beneficiarios.some((b) => b.id === beneficiario_id) || (await agregados()).some((b) => b.id === beneficiario_id);
+      if (!existe) throw new Error(`no existe el beneficiario ${beneficiario_id}`);
+      // Atómico en la base: borra el vínculo anterior del chat y del beneficiario e inserta el nuevo.
+      const { error } = await db.rpc("vincular_telegram", { p_beneficiario: beneficiario_id, p_chat: chat_id });
+      fallar("vincular Telegram", error);
     },
     async guardarArchivo(ref, archivo) {
       const ruta = rutaArchivo(ref, archivo.nombre);
