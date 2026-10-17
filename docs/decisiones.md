@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-17 — Usuarios de la demo por alias del Gmail del equipo (#46)
+- Estado: aceptada
+- Decisión: la semilla de Supabase Auth crea un usuario por rol con alias de `facturas.nebula.demo@gmail.com` (`+laura` aprobadora principal, `+andres` aprobador, `+tesoreria`, y 5 proveedores con portal), versionados en `scripts/auth/usuarios.equipo.json`; correos personales siguen en `scripts/auth/usuarios.json` (ignorado). `/entrar` avisa cuando el correo no se pudo enviar (5xx) pero sigue sin delatar correos no registrados (4xx). El proxy vuelve a respetar `API_PUBLICAS`. Se quitan de `permisos.ts` los helpers que duplicaban reglas del dominio (límite del aprobador, aprobador principal, documentos del proveedor).
+- Por qué: con un solo usuario nadie más del equipo podía entrar ni probar el portal (#12). Un buzón compartido deja a cualquiera presentar la demo con cualquier rol, sin modo demo ni contraseñas. Una sola fuente de verdad por regla de permisos.
+- Quién: N
+
 ## 2026-10-17 — Repositorio en Supabase (#44)
 - Estado: propuesta
 - Decisión: `REPOSITORIO=supabase` implementa la interfaz `Repositorio` (#17) en `src/repositorio/supabase.ts`. En la base vive lo que cambia: `registro` (append-only con dos capas: `service_role` solo tiene SELECT/INSERT y un trigger rechaza UPDATE, DELETE y TRUNCATE incluso al superusuario), `documentos`, `reglas_versiones`, `beneficiarios_agregados` y `secuencias` (función atómica `siguiente_secuencia` para la ref INT). Los archivos van al bucket **privado** `documentos` (`{ref}/{nombre}`). Lo fijo (empresa, 14 beneficiarios base, tasas, escenario y sus documentos) sigue en `data/`, que viaja con el deploy. Al primer arranque se siembran las versiones de reglas y el historial del escenario. RLS activado y sin acceso para `anon`/`authenticated`. Lecturas paginadas de a 1000 filas (PostgREST corta ahí: un historial a medias haría que R2 no viera un duplicado). La siembra es `ON CONFLICT DO NOTHING` (dos instancias a la vez no chocan). La exclusividad (`enExclusiva`) es dentro del proceso; si durante un deploy el contenedor viejo y el nuevo escriben a la vez, la clave única de `registro.id` hace fallar uno con error visible, nunca una decisión duplicada. `siguienteRef` reserva la ref en los dos repositorios (nunca se reutiliza).

@@ -1,8 +1,11 @@
 // Crea o actualiza usuarios de Supabase Auth y sus filas en public.perfiles (issue #25). Idempotente.
 //
-//   cp scripts/auth/usuarios.example.json scripts/auth/usuarios.json   # correos reales (ignorado por git)
-//   npm run auth:sembrar [-- --archivo otra/ruta.json]
+//   npm run auth:sembrar                              # usuarios.equipo.json + usuarios.json si existe
+//   npm run auth:sembrar -- --archivo otra/ruta.json  # solo ese archivo
 //
+// usuarios.equipo.json: un usuario por rol con alias del Gmail compartido del equipo
+// (facturas.nebula.demo+laura@gmail.com…); todos los códigos llegan a ese buzón. usuarios.json (ignorado
+// por git, ver usuarios.example.json): correos personales.
 // Sin contraseñas: cada persona entra con el código de 6 dígitos que le llega al correo.
 // Lee NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SECRET_KEY de .env o del entorno. La llave secreta salta
 // RLS: este script nunca corre en el navegador ni en la app.
@@ -72,8 +75,16 @@ async function sembrar(u: UsuarioSemilla, existentes: User[]) {
 }
 
 async function principal() {
-  const archivo = argumento("--archivo") ?? "scripts/auth/usuarios.json";
-  const usuarios = z.array(esquemaUsuario).parse(JSON.parse(await readFile(archivo, "utf8")));
+  const elegido = argumento("--archivo");
+  const archivos = elegido ? [elegido] : ["scripts/auth/usuarios.equipo.json", "scripts/auth/usuarios.json"];
+  const usuarios: UsuarioSemilla[] = [];
+  for (const archivo of archivos) {
+    const texto = await readFile(archivo, "utf8").catch((e: NodeJS.ErrnoException) => {
+      if (e.code === "ENOENT" && !elegido && archivo.endsWith("/usuarios.json")) return null; // opcional
+      throw e;
+    });
+    if (texto !== null) usuarios.push(...z.array(esquemaUsuario).parse(JSON.parse(texto)));
+  }
 
   // Los ids deben existir en data/ (aprobadores.json, proveedores.json).
   const datos = await cargarDatosComunes();

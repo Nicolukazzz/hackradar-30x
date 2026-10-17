@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import type { EstadoEntrar } from "@/app/entrar/estado";
+import { respuestaEnvio, type EstadoEntrar } from "@/app/entrar/estado";
 import { auditar } from "@/lib/auth/auditoria";
 import { obtenerSesion } from "@/lib/auth/sesion";
 import { destinoTrasEntrar } from "@/lib/auth/rutas";
@@ -26,10 +26,11 @@ export async function pedirCodigo(_previo: EstadoEntrar, formulario: FormData): 
   const supabase = await crearClienteServidor();
   // shouldCreateUser: false → nadie crea cuentas desde /entrar; un correo desconocido falla en silencio.
   const { error } = await supabase.auth.signInWithOtp({ email: correo.data, options: { shouldCreateUser: false } });
-  if (error?.status === 429) {
-    return { paso: "correo", error: "Pediste muchos códigos seguidos. Espera un minuto e inténtalo de nuevo." };
+  const respuesta = respuestaEnvio(error, correo.data);
+  if (respuesta.paso === "correo" && error?.status !== 429) {
+    auditar({ tipo: "error_envio", usuario_id: null, ruta: "/entrar", motivo: `${error?.status ?? "sin status"} ${error?.code ?? ""}`.trim() });
   }
-  return { paso: "codigo", correo: correo.data };
+  return respuesta;
 }
 
 export async function verificarCodigo(_previo: EstadoEntrar, formulario: FormData): Promise<EstadoEntrar> {

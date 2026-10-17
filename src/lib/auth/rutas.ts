@@ -30,11 +30,11 @@ export function destinoTrasEntrar(siguiente: string | null | undefined, rol: Rol
   return siguiente;
 }
 
-export function clasificarRuta(ruta: string, haySesion: boolean): DecisionRuta {
+export function clasificarRuta(ruta: string, haySesion: boolean, apiPublicas: readonly string[] = API_PUBLICAS): DecisionRuta {
   if (haySesion) return "seguir";
   if (PAGINAS_PUBLICAS.some((p) => coincide(ruta, p))) return "seguir";
-  // Toda ruta /api exige sesión de usuario. Los webhooks públicos se declararán en
-  // API_PUBLICAS y se atenderán aquí (ver #26).
-  if (coincide(ruta, "/api")) return "no_autorizado";
+  // /api exige sesión salvo las rutas declaradas en API_PUBLICAS (webhooks que verifican por su cuenta;
+  // el test de arquitectura usa la misma lista).
+  if (coincide(ruta, "/api")) return apiPublicas.some((p) => coincide(ruta, p)) ? "seguir" : "no_autorizado";
   return "redirigir";
 }

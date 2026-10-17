@@ -4,7 +4,7 @@ import { ErrorAuth, exigirRol, MENSAJE_401, MENSAJE_403, type Rol, type Sesion }
 // para probar sin red; la versión conectada a Supabase es `conRol` de ruta.ts.
 
 export type EventoAuditoria = {
-  tipo: "entrar" | "salir" | "401" | "403";
+  tipo: "entrar" | "salir" | "error_envio" | "401" | "403";
   usuario_id: string | null;
   ruta: string;
   motivo?: string;

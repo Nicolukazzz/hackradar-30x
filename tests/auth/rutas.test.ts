@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { clasificarRuta, destinoTrasEntrar } from "@/lib/auth/rutas";
+import { API_PUBLICAS, clasificarRuta, destinoTrasEntrar } from "@/lib/auth/rutas";
 
 describe("destinoTrasEntrar", () => {
   it("sin siguiente va al inicio del rol", () => {
@@ -37,6 +37,17 @@ describe("clasificarRuta (proxy, chequeo optimista)", () => {
   it("con sesión sigue (el rol se verifica en el servidor, no aquí)", () => {
     expect(clasificarRuta("/", true)).toBe("seguir");
     expect(clasificarRuta("/api/bandeja", true)).toBe("seguir");
+  });
+
+  it("API pública declarada sigue sin sesión (la ruta verifica por su cuenta)", () => {
+    expect(clasificarRuta("/api/telegram", false, ["/api/telegram"])).toBe("seguir");
+    expect(clasificarRuta("/api/telegram/webhook", false, ["/api/telegram"])).toBe("seguir");
+    expect(clasificarRuta("/api/telegramx", false, ["/api/telegram"])).toBe("no_autorizado");
+  });
+
+  it("por defecto usa API_PUBLICAS", () => {
+    for (const p of API_PUBLICAS) expect(clasificarRuta(p, false)).toBe("seguir");
+    expect(clasificarRuta("/api/bandeja", false)).toBe("no_autorizado");
   });
 
   it("/entrarx no se confunde con /entrar", () => {
