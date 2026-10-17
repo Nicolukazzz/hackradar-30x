@@ -47,6 +47,19 @@ export function mensajeDeError(error: { status?: number; code?: string }): strin
   return "No pudimos completar la acción. Inténtalo de nuevo.";
 }
 
+/** El código de 6 dígitos del formulario (`codigo`), o null si no tiene esa forma. */
+export function codigoDe(formulario: FormData): string | null {
+  const valor = formulario.get("codigo");
+  const codigo = typeof valor === "string" ? valor.trim() : "";
+  return /^\d{6}$/.test(codigo) ? codigo : null;
+}
+
+/** La contraseña no se recorta: un espacio al final es parte de ella. */
+export function contrasenaDe(formulario: FormData): string {
+  const valor = formulario.get("contrasena");
+  return typeof valor === "string" ? valor : "";
+}
+
 export function errorDeContrasena(contrasena: string): string | null {
   if (contrasena.length < MINIMO_CONTRASENA) return `La contraseña debe tener al menos ${MINIMO_CONTRASENA} caracteres.`;
   if (new TextEncoder().encode(contrasena).length > MAXIMO_BYTES_CONTRASENA) return "La contraseña es demasiado larga: usa hasta 72 caracteres sin tildes ni emojis.";

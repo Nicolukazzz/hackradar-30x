@@ -4,7 +4,7 @@ import { ErrorAuth, exigirPermiso, exigirSesion, MENSAJE_401, MENSAJE_403, type 
 // para probar sin red; la versión conectada a Supabase es `conSesion` de ruta.ts.
 
 export type EventoAuditoria = {
-  tipo: "entrar" | "salir" | "error_envio" | "401" | "403" | "equipo";
+  tipo: "entrar" | "salir" | "error_envio" | "contrasena" | "401" | "403" | "equipo";
   usuario_id: string | null;
   ruta: string;
   motivo?: string;
