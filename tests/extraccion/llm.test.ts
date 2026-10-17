@@ -6,7 +6,7 @@ import { cargarEscenario } from "@/dominio/cargar";
 import type { DocumentoRecibido } from "@/dominio/tipos";
 import { cacheEnMemoria } from "@/extraccion/cache";
 import { extraer } from "@/extraccion/extraer";
-import { crearGemini } from "@/extraccion/llm/gemini";
+import { crearGemini, modelosGemini } from "@/extraccion/llm/gemini";
 import { crearGroq } from "@/extraccion/llm/groq";
 import { ninguno } from "@/extraccion/llm/ninguno";
 import { mensajeUsuario } from "@/extraccion/llm/prompt";
@@ -192,7 +192,37 @@ describe("proveedores HTTP (fetch simulado)", () => {
     expect(errores[0]).toBeInstanceOf(ErrorLLM);
 
     const caido = crearGroq({ apiKey: "k", fetch: (async () => respuesta(503, {})) as typeof fetch });
-    expect(await cadena([gemini, caido]).extraer(vacio, ["numero"])).toEqual({ proveedor_llm: "ninguno" });
+    expect(await cadena([gemini, caido]).extraer(vacio, ["numero"])).toEqual({ proveedor_llm: "ninguno", sin_respuesta: true });
+  });
+
+  it("#103: GEMINI_MODEL admite lista; un modelo saturado (503) o retirado (404) pasa al siguiente", async () => {
+    expect(modelosGemini(undefined)).toEqual(["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"]);
+    expect(modelosGemini(" ")).toEqual(modelosGemini(undefined));
+    expect(modelosGemini("a, b ,,a")).toEqual(["a", "b"]);
+
+    const urls: string[] = [];
+    const f = (async (url: string) => {
+      urls.push(url);
+      if (url.includes("/saturado:")) return respuesta(503, {});
+      if (url.includes("/retirado:")) return respuesta(404, {});
+      return respuesta(200, { candidates: [{ content: { parts: [{ text: JSON.stringify({ numero: conf("F-0106") }) }] } }] });
+    }) as unknown as typeof fetch;
+    const modelos = modelosGemini("saturado,retirado,bueno").map((modelo) => crearGemini({ apiKey: "k", modelo, fetch: f }));
+    const r = await cadena(modelos, () => undefined).extraer(vacio, ["numero"]);
+    expect(r.numero?.valor).toBe("F-0106");
+    expect(r.sin_respuesta).toBeUndefined();
+    expect(urls.map((u) => u.split("/models/")[1])).toEqual(["saturado:generateContent", "retirado:generateContent", "bueno:generateContent"]);
+  });
+
+  it("#103: si ningún modelo responde, extraer() marca sin_respuesta y R1 escala diciendo por qué", async () => {
+    const caido = crearGemini({ apiKey: "k", fetch: (async () => respuesta(503, {})) as typeof fetch });
+    const ext = await extraer(chat("te mando la factura"), { llm: cadena([caido], () => undefined) });
+    expect(ext.senales_llm.sin_respuesta).toBe(true);
+    expect(ext.proveedor_llm).toBe("ninguno");
+
+    // Con lectura completa por el parser no se consulta al LLM: la señal no aparece.
+    const sinConsulta = await extraer(chat("te mando la factura"), { llm: ninguno });
+    expect(sinConsulta.senales_llm).toEqual({ instrucciones_sospechosas: [] });
   });
 
   it("#93: un 503 o 429 pasajero se reintenta una vez y la factura se lee", async () => {

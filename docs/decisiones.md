@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 ```
 
 ---
+## 2026-10-17 — Gemini con lista de modelos y aviso cuando el LLM no responde (#103)
+- Estado: propuesta
+- Decisión: `GEMINI_MODEL` acepta una lista separada por comas; cada modelo va con su reintento y, si falla (503, 429, 404), se prueba el siguiente antes de pasar a Groq. Por defecto `gemini-3.5-flash,gemini-3.5-flash-lite,gemini-flash-lite-latest` (antes `gemini-flash-latest`). Si se necesitaba el LLM y ningún proveedor respondió, la extracción lleva `senales_llm.sin_respuesta: true` (campo opcional nuevo en `Extraccion`, §3; solo se escribe cuando pasa) y R1 falla con «el servicio de lectura no respondió; no se pudo leer el documento». La explicación lo dice así y, si no hay nombre legible, omite R3/R11 (fallan solo por no haber leído nada; la traza las conserva). Sin nombre ya no se escribe «la factura de El beneficiario».
+- Por qué: en producción `gemini-flash-latest` respondía 503 "high demand" y, sin respaldo, una foto legible (F-0106) quedó con confianza 0 % y escalada sin leer. Probado con la llave de producción: los tres modelos por defecto leen bien la factura; `gemini-2.5-*` ya no se ofrece a cuentas nuevas.
+- Quién: J
+
 ## 2026-10-17 — «¿Olvidaste tu contraseña?» revisa que la cuenta exista (#100)
 - Estado: propuesta
 - Decisión: antes de `resetPasswordForEmail`, `/entrar` llama `existe_cuenta_activa(correo)` (función SQL `security definer`, solo `service_role`, migración `20261017224106_existe_cuenta.sql`) con el cliente admin. Sin cuenta activa → error en el paso 1 («No hay una cuenta activa con ese correo. Pídela a tu administrador.») y no se envía nada; si la consulta falla, se pide reintentar. Reemplaza el criterio anterior de responder igual para no delatar qué correos existen; el login con contraseña sigue sin decirlo.

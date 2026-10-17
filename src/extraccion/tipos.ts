@@ -62,6 +62,8 @@ export type ExtraccionParcial = { [K in NombreCampo]?: Campo<ValoresCampos[K]> }
   instrucciones_sospechosas?: string[];
   /** quién produjo este parcial (solo LLM) */
   proveedor_llm?: ProveedorLlm;
+  /** se consultó al LLM y ningún proveedor respondió (503, 429, red…) */
+  sin_respuesta?: true;
 };
 
 /** Confianzas del parser (issue #4): etiqueta + valor válido / valor inferido sin etiqueta. */

@@ -244,7 +244,7 @@ export type Extraccion = {
   hito_numero?: Campo<number>;
   idioma: 'es'|'en'|'pt';
   texto_crudo: string;                      // todo el texto visto (para R10 y auditoría)
-  senales_llm: { instrucciones_sospechosas: string[] }; // el LLM reporta, el código decide
+  senales_llm: { instrucciones_sospechosas: string[]; sin_respuesta?: boolean }; // el LLM reporta, el código decide. sin_respuesta: se necesitaba el LLM y ninguno respondió (R1 escala diciéndolo, #103)
   proveedor_llm: 'ninguno'|'gemini'|'groq'|'anthropic';
 };
 

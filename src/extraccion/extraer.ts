@@ -174,7 +174,11 @@ export async function extraer(doc: DocumentoRecibido, deps: DependenciasExtracci
     idioma: parser.idioma ?? llm.idioma ?? otro?.idioma ?? "es",
     texto_crudo: textoCrudo(n),
     // Señales de R10 de cualquiera de los dos lectores cuentan.
-    senales_llm: { instrucciones_sospechosas: [...new Set([...(llm.instrucciones_sospechosas ?? []), ...(otro?.instrucciones_sospechosas ?? [])])] },
+    senales_llm: {
+      instrucciones_sospechosas: [...new Set([...(llm.instrucciones_sospechosas ?? []), ...(otro?.instrucciones_sospechosas ?? [])])],
+      // Hacía falta el LLM y ningún lector respondió (#103). Solo se escribe cuando pasa, así las demás extracciones no cambian.
+      ...(faltantes.length > 0 && llm.sin_respuesta && (otro === null || otro.sin_respuesta) ? { sin_respuesta: true } : {}),
+    },
     proveedor_llm: faltantes.length > 0 ? (llm.proveedor_llm ?? otro?.proveedor_llm ?? "ninguno") : "ninguno",
   };
   for (const k of NOMBRES_CAMPOS) {

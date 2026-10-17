@@ -147,7 +147,11 @@ export type Extraccion = {
   /** texto completo visto en el documento (para R10 y auditoría) */
   texto_crudo: string;
   /** el LLM reporta, el código decide */
-  senales_llm: { instrucciones_sospechosas: string[] };
+  senales_llm: {
+    instrucciones_sospechosas: string[];
+    /** se necesitaba el LLM y ningún proveedor respondió (#103): R1 lo dice en vez de "confianza 0 %" */
+    sin_respuesta?: boolean;
+  };
   proveedor_llm: ProveedorLlm;
 };
 

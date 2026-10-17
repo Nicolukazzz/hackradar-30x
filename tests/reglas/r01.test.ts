@@ -56,6 +56,13 @@ describe("R1 Extracción completa y confiable", () => {
       .toBe("fecha de emisión inválida (2026-02-30)");
   });
 
+  it("#103: FALLA diciendo que el servicio de lectura no respondió", () => {
+    const e = r01Extraccion(ctx(d, { ext: { senales_llm: { instrucciones_sospechosas: [], sin_respuesta: true } } }));
+    expect(e.resultado).toBe("FALLA");
+    expect(e.comparacion).toBe("el servicio de lectura no respondió; no se pudo leer el documento");
+    expect(e.datos.lectura).toBe("sin_respuesta");
+  });
+
   it("FALLA si no se puede confirmar que sea factura", () => {
     expect(r01Extraccion(ctx(d, { ext: { es_factura: campo(true, 0.5) } })).comparacion)
       .toBe("no se pudo confirmar que sea factura (confianza 50% < 90%)");

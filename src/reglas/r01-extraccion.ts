@@ -8,6 +8,15 @@ export function r01Extraccion(ctx: ContextoRegla) {
   const minima = reglas.extraccion.confianza_minima;
   const datos = { confianza_minima_requerida: minima };
 
+  // El parser no alcanzó y el LLM no respondió (#103): no hay nada confiable que leer. Siempre falla (escala).
+  if (ext.senales_llm.sin_respuesta) {
+    return evaluacion("R1", "FALLA", "el servicio de lectura no respondió; no se pudo leer el documento", {
+      ...datos,
+      lectura: "sin_respuesta",
+      campos_afectados: "es_factura",
+    });
+  }
+
   if (ext.es_factura.valor !== true || bajaConfianza(ext.es_factura.confianza, minima)) {
     return evaluacion("R1", "FALLA", `no se pudo confirmar que sea factura (confianza ${pctEntero(ext.es_factura.confianza)} < ${pctEntero(minima)})`, {
       ...datos,
