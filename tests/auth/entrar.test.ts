@@ -6,7 +6,7 @@ const correo = "ana@empresa.example";
 
 describe("respuestaEnvio (código enviado al correo)", () => {
   it("sin error pasa al paso indicado", () => {
-    expect(respuestaEnvio(null, { vista: "confirmar", correo })).toEqual({ vista: "confirmar", correo });
+    expect(respuestaEnvio(null, { vista: "recuperar", correo })).toEqual({ vista: "recuperar", correo });
   });
 
   it("4xx responde igual que un envío correcto: no delata qué correos existen", () => {
@@ -14,8 +14,8 @@ describe("respuestaEnvio (código enviado al correo)", () => {
   });
 
   it("429 se avisa en la misma vista", () => {
-    expect(respuestaEnvio({ status: 429 }, { vista: "confirmar", correo }, "crear")).toEqual({
-      vista: "crear",
+    expect(respuestaEnvio({ status: 429 }, { vista: "recuperar", correo }, "olvide")).toEqual({
+      vista: "olvide",
       correo,
       error: "Pediste muchos códigos seguidos. Espera un minuto e inténtalo de nuevo.",
     });

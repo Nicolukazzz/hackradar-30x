@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 ```
 
 ---
+## 2026-10-17 — Login solo para entrar; código solo para seguridad (#81)
+- Estado: propuesta
+- Decisión: `/entrar` deja de crear cuentas (sin pestaña «Crear cuenta», sin pasos de confirmar ni reenviar código): las crea un admin con «Crear empleado» (#80). Queda iniciar sesión y «¿Olvidaste tu contraseña?» con código de 6 dígitos. El código está centrado y es un componente reutilizable (`src/components/campo-codigo.tsx`) para cambiar la contraseña en Ajustes (#82). Registro público apagado en Supabase (`enable_signup = false` en `supabase/config.toml` y en el dashboard del equipo); la admin API sigue creando cuentas. Una cuenta vieja sin confirmar ve «pide a tu administrador que te cree la cuenta de nuevo».
+- Por qué: que solo existan las cuentas que el admin quiere.
+- Quién: J
+
 ## 2026-10-17 — Crear empleado por correo (#80)
 - Estado: propuesta
 - Decisión: «Invitar persona» pasa a **Crear empleado**: el admin elige rol (y límite) y el **correo, ahora obligatorio**; se envía un correo formal (HTML + texto, `src/equipo/correo.ts`) por el SMTP del buzón del equipo (#14, mismo transporte que los avisos de #68) con un enlace `/unirse/<token>` de un solo uso que **vence en 72 h**. `/unirse` es página pública: sin sesión pide **nombre + contraseña** y la cuenta se crea con la admin API de Supabase ya confirmada (abrir el enlace enviado a ese correo prueba que es su dueño), inicia sesión y acepta la invitación (atómica). Si el correo no sale (sin buzón en desarrollo, o falla SMTP), la invitación queda y la pantalla muestra el enlace para copiarlo. «Reenviar» revoca el enlace y manda uno nuevo. El paso siguiente (#81) quita «Crear cuenta» de `/entrar`.

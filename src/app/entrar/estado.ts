@@ -1,14 +1,13 @@
 // Estado del asistente de /entrar y mensajes (los archivos "use server" solo pueden exportar funciones).
 // Lógica pura: se prueba sin Supabase en tests/auth/entrar.test.ts.
 
-export type Vista = "entrar" | "crear" | "confirmar" | "olvide" | "recuperar";
+/** #81: ya no se crean cuentas aquí (las crea el admin, #80). Quedan entrar y recuperar la contraseña con código. */
+export type Vista = "entrar" | "olvide" | "recuperar";
 
 export type EstadoEntrar = {
   vista: Vista;
-  /** correo escrito (se conserva tras un error) o al que se mandó el código (confirmar, recuperar) */
+  /** correo escrito (se conserva tras un error) o al que se mandó el código (recuperar) */
   correo?: string;
-  /** nombre escrito al crear la cuenta (se conserva tras un error) */
-  nombre?: string;
   error?: string;
   /** aviso no bloqueante, p. ej. "te reenviamos el código" */
   aviso?: string;
@@ -20,13 +19,13 @@ export const MINIMO_CONTRASENA = 8;
 const MAXIMO_BYTES_CONTRASENA = 72; // bcrypt ignora lo que pase de 72 bytes (UTF-8: una ñ ocupa 2)
 
 /**
- * Tras pedir un código (crear cuenta, reenviar, olvidé mi contraseña). Un 4xx (p. ej. correo no registrado)
+ * Tras pedir un código (olvidé mi contraseña). Un 4xx (p. ej. correo no registrado)
  * se trata igual que un envío correcto para no delatar qué correos existen; 429 y fallas del envío (5xx,
  * red) sí se avisan en la vista de origen, para que nadie espere un código que no va a llegar.
  */
 export function respuestaEnvio(error: ErrorSupabase, siguiente: EstadoEntrar, origen: Vista = siguiente.vista): EstadoEntrar {
   if (!error) return siguiente;
-  // En error se conserva el correo: desde "confirmar" el siguiente paso lo necesita, y en los formularios se ve.
+  // En error se conserva el correo: el siguiente paso lo necesita, y en los formularios se ve.
   const conservar = siguiente.correo === undefined ? {} : { correo: siguiente.correo };
   if (error.status === 429) return { vista: origen, ...conservar, error: "Pediste muchos códigos seguidos. Espera un minuto e inténtalo de nuevo." };
   if (error.status !== undefined && error.status >= 400 && error.status < 500) return siguiente;
