@@ -4,7 +4,7 @@ import { reiniciarRepositorio } from "@/repositorio";
 import { error, manejar, ok } from "../../_http";
 import { demoActiva } from "../../_identidad";
 
-/** POST /api/demo/reiniciar: vuelve al estado inicial del escenario (solo con REPOSITORIO=memoria). */
+/** POST /api/demo/reiniciar: vuelve al estado inicial del escenario (solo con REPOSITORIO=memoria). Solo administradores. */
 export const POST = conSesion(async () => {
   try {
     if (!demoActiva()) return error(404, "Modo demo apagado (DEMO=1 para activarlo).");
@@ -14,4 +14,4 @@ export const POST = conSesion(async () => {
   } catch (e) {
     return manejar(e);
   }
-});
+}, { permiso: "administrar" });

@@ -27,7 +27,7 @@ export const GET = conSesion(async (req: Request, ctx: RouteContext<"/api/docume
         "content-type": archivo.mime,
         "content-disposition": `${visor ? "inline" : "attachment"}; filename="${nombre}"`,
         "x-content-type-options": "nosniff",
-        "content-security-policy": `default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'${visor ? "" : "; sandbox"}`,
+        "content-security-policy": `default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; frame-ancestors 'self'${visor ? "" : "; sandbox"}`,
         "cache-control": "private, max-age=300",
       },
     });

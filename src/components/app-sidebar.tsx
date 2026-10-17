@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheckIcon, InboxIcon, ListIcon, LogOutIcon, ShieldCheckIcon, SlidersHorizontalIcon } from "lucide-react";
+import { CircleCheckIcon, InboxIcon, ListIcon, LogOutIcon, ShieldCheckIcon, SlidersHorizontalIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense, use } from "react";
 import { usePathname } from "next/navigation";
@@ -18,6 +18,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { NOMBRE_ROL, type Rol } from "@/lib/auth/permisos";
 import { cn } from "@/lib/utils";
 
 // Barra lateral de especificación §13 "Comunes", con el aspecto del prototipo.
@@ -27,6 +28,9 @@ const navegacion = [
   { titulo: "Reglas", href: "/reglas", icono: SlidersHorizontalIcon },
   { titulo: "Registro", href: "/registro", icono: ListIcon },
 ] as const;
+
+/** Solo administradores (#51). */
+const navegacionAdmin = [{ titulo: "Equipo", href: "/equipo", icono: UsersIcon }] as const;
 
 /** Logo + rol. Lo comparten la barra lateral y la cabecera móvil. */
 export function MarcaTesorero({ className }: { className?: string }) {
@@ -64,10 +68,11 @@ export function AppSidebar({
   usuario,
   pendientes,
 }: {
-  usuario: { nombre: string; correo: string };
+  usuario: { nombre: string; correo: string; rol: Rol };
   pendientes: Promise<number | null>;
 }) {
   const ruta = usePathname();
+  const enlaces = usuario.rol === "admin" ? [...navegacion, ...navegacionAdmin] : navegacion;
   const { setOpenMobile } = useSidebar();
 
   return (
@@ -89,7 +94,7 @@ export function AppSidebar({
           <SidebarGroupContent>
             <nav aria-label="Principal">
               <SidebarMenu className="gap-1">
-                {navegacion.map(({ titulo, href, icono: Icono }) => {
+                {enlaces.map(({ titulo, href, icono: Icono }) => {
                   const activa = href === "/" ? ruta === "/" : ruta.startsWith(href);
                   return (
                     <SidebarMenuItem key={href}>
@@ -137,7 +142,9 @@ export function AppSidebar({
         <div className="flex items-center justify-between gap-2 px-1">
           <span className="flex min-w-0 flex-col">
             <span className="truncate text-sm font-medium text-sidebar-foreground">{usuario.nombre}</span>
-            <span className="truncate text-xs text-sidebar-muted">{usuario.correo}</span>
+            <span className="truncate text-xs text-sidebar-muted">
+              {NOMBRE_ROL[usuario.rol]} · {usuario.correo}
+            </span>
           </span>
           <form action={salir}>
             <button

@@ -7,7 +7,9 @@ import type { EntradaRegistro } from "@/dominio/tipos";
 import { obtenerAprobaciones } from "@/servicios/aprobaciones";
 import { obtenerBandeja } from "@/servicios/bandeja";
 
-import { CUENTA, comoCuenta, comoSesion, entradaDe, escaladaSintetica, peticion, repoProcesado } from "./ayuda";
+import { EMPRESA_ID } from "@/equipo/tipos";
+
+import { CUENTA, comoCuenta, comoSesion, entradaDe, equipoActual, escaladaSintetica, peticion, repoProcesado } from "./ayuda";
 
 
 vi.mock("server-only", () => ({}));
@@ -117,7 +119,7 @@ describe("POST /api/aprobaciones/:ref (ruta)", () => {
     expect((await post(lf.ref_interna, { accion: "aprobar", comentario: "" })).status).toBe(400);
   });
 
-  it("#49: cualquier cuenta aprueba con su propio nombre → 201; errores con { error }", async () => {
+  it("#51: un admin aprueba con su propio nombre → 201; errores con { error }", async () => {
     const repo = await repoProcesado();
     const lf = await entradaDe(repo, "LF-2026-10");
     const res = await post(lf.ref_interna, { accion: "aprobar", comentario: "Hito final entregado y revisado." });
@@ -130,7 +132,7 @@ describe("POST /api/aprobaciones/:ref (ruta)", () => {
     expect(await r409.json()).toHaveProperty("error");
   });
 
-  it("#49: sobre USD 10.000 hacen falta dos cuentas distintas; la misma cuenta dos veces → 409", async () => {
+  it("sobre USD 10.000 hacen falta dos cuentas distintas; la misma cuenta dos veces → 409", async () => {
     const repo = await repoProcesado();
     const ref = await escaladaSintetica(repo, 1_200_000);
     const primera = await post(ref, { accion: "aprobar", comentario: "Primera firma, revisado" });
@@ -141,5 +143,80 @@ describe("POST /api/aprobaciones/:ref (ruta)", () => {
     const segunda = await post(ref, { accion: "aprobar", comentario: "Segunda firma, de acuerdo" });
     expect(segunda.status).toBe(201);
     expect(((await segunda.json()) as EntradaRegistro)).toMatchObject({ decision: "APROBADA_HUMANO", actor: { nombre: "Beto Ruiz (beto-ruiz@nebula.example)" } });
+  });
+});
+
+describe("POST /api/aprobaciones/:ref — roles (#51)", () => {
+  const firmar = async (ref: string, comentario: string) => {
+    const res = await post(ref, { accion: "aprobar", comentario });
+    return { status: res.status, cuerpo: (await res.json()) as EntradaRegistro & { error?: string } };
+  };
+
+  it("tesorería no aprueba ni rechaza (403 con motivo); una cuenta sin empresa tampoco", async () => {
+    const repo = await repoProcesado();
+    const lf = await entradaDe(repo, "LF-2026-10");
+    comoCuenta("Tere Sánchez", "tesoreria");
+    const r = await post(lf.ref_interna, { accion: "rechazar", comentario: "No me corresponde" });
+    expect(r.status).toBe(403);
+    expect((await r.json()).error).toContain("no permite aprobar");
+    comoCuenta("Nadie", null);
+    const sin = await post(lf.ref_interna, { accion: "aprobar", comentario: "Quiero pagar" });
+    expect(sin.status).toBe(403);
+    expect((await sin.json()).error).toContain("no pertenece a la empresa");
+    expect((await repo.registro({ tipo: ["DECISION_HUMANA"], ref_interna: lf.ref_interna })).length).toBe(0);
+  });
+
+  it("aprobador con límite USD 5.000: aprueba LF-2026-10 (4.500), no una de USD 6.000 (403); rechazar sí puede", async () => {
+    const repo = await repoProcesado();
+    const lf = await entradaDe(repo, "LF-2026-10");
+    const grande = await escaladaSintetica(repo, 600_000);
+    comoCuenta("Andrea Paz", "aprobador", 500_000);
+    expect((await firmar(lf.ref_interna, "Hito final revisado")).status).toBe(201);
+    const r = await firmar(grande, "La apruebo yo");
+    expect(r.status).toBe(403);
+    expect(r.cuerpo.error).toContain("Supera tu límite");
+    expect((await post(grande, { accion: "rechazar", comentario: "No corresponde" })).status).toBe(201);
+  });
+
+  it("agregar a la lista permitida (TD-001, R3) es solo de admin: un aprobador recibe 403 y no se escribe nada", async () => {
+    const repo = await repoProcesado();
+    const td = await entradaDe(repo, "TD-001");
+    comoCuenta("Andrea Paz", "aprobador", 500_000);
+    const r = await post(td.ref_interna, { accion: "aprobar", comentario: "Proveedor validado", agregar_a_lista: true });
+    expect(r.status).toBe(403);
+    expect((await r.json()).error).toContain("Solo un administrador");
+    expect(await repo.registro({ tipo: ["DECISION_HUMANA", "CAMBIO_BENEFICIARIOS"], ref_interna: td.ref_interna })).toHaveLength(0);
+    comoSesion(CUENTA);
+    expect((await post(td.ref_interna, { accion: "aprobar", comentario: "Proveedor validado", agregar_a_lista: true })).status).toBe(201);
+    expect(await repo.registro({ tipo: ["CAMBIO_BENEFICIARIOS"] })).toHaveLength(1);
+  });
+
+  it("doble firma: aprobador limitado firma primero (control) y el admin cubre el monto con la segunda", async () => {
+    const repo = await repoProcesado();
+    const ref = await escaladaSintetica(repo, 1_200_000);
+    comoCuenta("Andrea Paz", "aprobador", 500_000);
+    expect((await firmar(ref, "Primera firma de control")).cuerpo.decision).toBeNull();
+    comoSesion(CUENTA);
+    expect((await firmar(ref, "Segunda firma, cubre el monto")).cuerpo.decision).toBe("APROBADA_HUMANO");
+  });
+
+  it("doble firma: si el admin firmó primero, un aprobador limitado puede dar la segunda (antes no se encontraba la primera firma)", async () => {
+    const repo = await repoProcesado();
+    const ref = await escaladaSintetica(repo, 1_200_000);
+    expect((await firmar(ref, "Primera firma, cubre el monto")).cuerpo.decision).toBeNull();
+    comoCuenta("Andrea Paz", "aprobador", 500_000);
+    expect((await firmar(ref, "Segunda firma de control")).cuerpo.decision).toBe("APROBADA_HUMANO");
+  });
+
+  it("doble firma: si quien firmó primero perdió el rol, su firma ya no cubre el monto", async () => {
+    const repo = await repoProcesado();
+    const ref = await escaladaSintetica(repo, 1_200_000);
+    comoCuenta("Otro Admin", "admin");
+    expect((await firmar(ref, "Primera firma, cubre el monto")).cuerpo.decision).toBeNull();
+    await equipoActual().cambiarMiembro(EMPRESA_ID, "u-otro-admin", "tesoreria", null);
+    comoCuenta("Andrea Paz", "aprobador", 500_000);
+    const r = await firmar(ref, "Segunda firma de control");
+    expect(r.status).toBe(403);
+    expect(r.cuerpo.error).toContain("la primera firma tampoco lo cubre");
   });
 });
