@@ -10,7 +10,7 @@ Plataforma: https://hackradar.30x.com/recursos
 
 ## Producto en una frase
 
-Bandeja única de facturas: proveedores mandan por **correo, Telegram o portal web** (solo esos 3) → el sistema identifica al remitente, descarta duplicados, extrae los datos (Claude), crea el **registro interno con número propio** (reemplaza al digitador manual de la empresa de referencia) y el **motor de reglas en código** decide PAGAR / FRENAR / ESCALAR con explicación. Tesorería solo ve el registro interno y aprueba lo escalado.
+Bandeja única de facturas: proveedores mandan por **correo, Telegram o portal web** (solo esos 3) → el sistema identifica al remitente, descarta duplicados, extrae los datos (parser XML/PDF primero, LLM barato solo si hace falta), crea el **registro interno con número propio** (reemplaza al digitador manual de la empresa de referencia) y el **motor de reglas en código** decide PAGAR / FRENAR / ESCALAR con explicación. Tesorería solo ve el registro interno y aprueba lo escalado.
 
 Reparto: **bots/canales = código que transporta · LLM = lee y explica · código = decide**. Remitente no vinculado → CUARENTENA, nunca pago. Los 3 canales entran por una sola ingesta y comparten estado y número de referencia.
 - `contexto-privado/` (ignorado por git) tiene documentos **reales** de una empresa de referencia. Leerlos para entender el problema, pero **nunca** copiar su contenido, nombres, montos ni formatos identificables al repo (es público) ni al dataset. Resumir hallazgos anonimizados en `docs/research/contexto-empresa-real.md`.
@@ -48,7 +48,9 @@ Dataset vive en `data/` (ver `data/README.md`). Generar con skill `/generar-fact
 
 ## Stack y comandos
 
-_Pendiente de decidir_ (propuesta en `docs/producto.md` §9: Next.js + TS + Supabase + Claude API + bot Telegram por webhook). LLM: Claude — `claude-opus-5-5` por defecto, `claude-haiku-5-5` como primera pasada barata si se elige la opción escalonada (§4). Extracción con PDF/imagen nativo y salida estructurada. Consultar skill `claude-api` antes de escribir código de LLM.
+_Pendiente de decidir_ (propuesta en `docs/producto.md` §9: Next.js + TS + Supabase free + bot Telegram por webhook).
+
+**Presupuesto LLM: $0.** El equipo tiene Claude Pro (sirve para construir con Claude Code, NO incluye API; nunca usar su token en el backend). En runtime: parsear XML/PDF sin IA primero; LLM solo para fotos/escaneados/texto desordenado, detrás de interfaz intercambiable (`LLM_PROVIDER`): Gemini Flash free tier → Groq free tier como respaldo → Claude Haiku 5.5 (`claude-haiku-5-5`) solo si aparece presupuesto. Explicaciones con plantillas desde las reglas evaluadas. Detalle: `docs/producto.md` §4. Si se usa Claude API, consultar skill `claude-api` antes de escribir código.
 
 ## Cómo trabajamos (3 personas, cada una con su Claude)
 

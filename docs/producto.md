@@ -32,10 +32,10 @@ Regla de oro: **los bots transportan, el LLM lee, el código decide.**
 |---|---|---|---|
 | Bot de Telegram, receptor de correo, portal | **Código** (adaptadores, sin IA) | Recibir archivo, saber quién lo mandó, pasarlo a la ingesta, responder "recibido" | Juzgar nada |
 | Ingesta | **Código** | Un solo punto de entrada para los 3 canales. Guarda archivo, hash, canal, remitente | — |
-| LLM extractor | **Claude** (1 llamada por factura) | ¿Es factura? Extrae campos + confianza por campo, en JSON validado | Decidir pagos |
+| LLM extractor | **LLM barato/gratis** (solo si el parseo sin IA no alcanza) | ¿Es factura? Extrae campos + confianza por campo, en JSON validado | Decidir pagos |
 | Validador / duplicados | **Código** | Sumas cuadran, campos obligatorios, duplicado exacto (hash) y lógico (proveedor + nº, o monto + fecha cercana) | — |
 | Motor de reglas | **Código** | PAGAR / FRENAR / ESCALAR según reglas de la empresa | Inventar excepciones |
-| LLM explicador | **Claude** | Convierte el resultado de las reglas en frase clara | Cambiar la decisión |
+| Explicador | **Plantillas en código** (LLM opcional para redactar) | Convierte el resultado de las reglas en frase clara | Cambiar la decisión |
 
 ### ¿Por qué el "segundo LLM" no decide si se paga?
 
@@ -52,36 +52,45 @@ Dónde **sí** aporta el LLM en la decisión: señales difusas, por ejemplo "¿e
 1. Recepción       (código)  canal + remitente + archivo + hash SHA-256
 2. Identificar     (código)  ¿remitente = proveedor registrado? no → CUARENTENA + respuesta automática
 3. Duplicado exacto(código)  mismo hash ya visto → FRENAR (duplicado)
-4. Leer            (LLM)     ¿es factura? + campos + confianza  ── no es factura → RECHAZADA_NO_FACTURA
+4. Leer            (XML/PDF parser → LLM si hace falta)  ¿es factura? + campos + confianza  ── no es factura → RECHAZADA_NO_FACTURA
 5. Validar         (código)  obligatorios, subtotal+impuestos=total, fechas; confianza baja → ESCALAR
 6. Duplicado lógico(código)  proveedor+nº repetido, o mismo monto ±N días → FRENAR / ESCALAR
 7. Registro interno(código)  crea INT-2026-000123 (guarda también el nº del proveedor)   ← lo que hacía el digitador
 8. Decidir         (código)  motor de reglas → PAGAR | FRENAR | ESCALAR + reglas evaluadas con valores
-9. Explicar        (LLM)     frase clara a partir de 8 (sin cambiar la decisión)
+9. Explicar        (plantilla; LLM opcional) frase clara a partir de 8 (sin cambiar la decisión)
 10. Avisar         (código)  al proveedor por su mismo canal ("recibida, ref INT-…, estado …"); escaladas al aprobador
 ```
 
 Estados: `RECIBIDA → CUARENTENA | RECHAZADA_NO_FACTURA | REGISTRADA → PAGAR | FRENAR | ESCALAR → (humano) APROBADA | RECHAZADA`.
 
-## 4. ¿Qué LLM usamos?
+## 4. ¿Qué LLM usamos? (presupuesto: $0)
 
-**Claude** (API de Anthropic). Lee PDF de forma nativa y también imágenes (fotos de factura por Telegram), y entrega **salida estructurada** (JSON validado contra un esquema). Así la extracción no se rompe por formato.
+Restricción: el equipo tiene **Claude Pro**, que **no incluye API**. La API de Anthropic se paga aparte y por adelantado ([soporte Anthropic](https://support.claude.com/en/articles/9876003)). Claude Pro sirve para **construir** (Claude Code, investigar), no como motor de la app en producción. No usar el login/token de Pro dentro del backend: va contra los términos y se rompe.
 
-Precios por millón de tokens (lista de Anthropic, cacheada 2026-10-06):
+### Estrategia: gastar la menor cantidad de LLM posible
 
-| Modelo | ID | Entrada | Salida | Uso propuesto |
+1. **Sin LLM primero (gratis, exacto):**
+   - Factura electrónica con XML (DIAN Colombia, CFDI México, NF-e Brasil): **parsear el XML**. Trae todos los campos estructurados.
+   - PDF digital (con texto): extraer texto con librería (`pdf-parse`/`pdfjs`) + reglas/regex para campos típicos.
+   - **Caché por hash**: el mismo archivo nunca se procesa dos veces.
+2. **LLM solo cuando hace falta**: fotos (Telegram), PDF escaneados, texto desordenado de correo/chat, o confianza baja del paso 1.
+3. **Proveedor de LLM detrás de una interfaz** (`extraerFactura(archivo) → JSON + confianza`). Cambiar de proveedor = cambiar una variable de entorno.
+
+### Opciones de proveedor (verificar límites al configurar: cambian seguido)
+
+| Opción | Costo | Visión / PDF | Límites aprox. free | Nota |
 |---|---|---|---|---|
-| Claude Haiku 5.5 | `claude-haiku-5-5` | $0.10 | $0.50 | Primera pasada: ¿es factura? + extracción. Barato y rápido |
-| Claude Opus 5.5 | `claude-opus-5-5` | $4.00 | $20.00 | Casos difíciles: confianza baja, factura escaneada fea, señal "¿cuadra con contrato?" |
-| Claude Sonnet 5.5 | `claude-sonnet-5-5` | $2.00 | $10.00 | Intermedio, si Haiku no alcanza y Opus sobra |
+| **Google Gemini Flash / Flash-Lite** (AI Studio) | Free tier | Sí, imagen y PDF | Fuentes 2026 contradictorias: ~5–15 RPM, ~100–1.500 req/día | **Recomendado por defecto.** En el free tier Google puede entrenar con los prompts → solo datos ficticios (ya es regla) |
+| **Groq** (Llama 4 Scout, multimodal) | Free tier sin tarjeta | Imagen sí; PDF hay que convertirlo a imagen/texto | ~30 RPM, ~1.000 req/día | Muy rápido. Respaldo si Gemini da 429 |
+| **Claude Haiku 5.5** (API Anthropic) | $0.10 / $0.50 por M tokens | Sí, PDF nativo + salida estructurada | Pago por uso | ~$0.001 por factura: con $5 de crédito alcanzan unas 5.000. Mejor calidad. Opción si el equipo pone $5 o el hackathon da créditos |
+| **Ollama local** (Qwen-VL, Llama vision) | $0 | Sí | Sin límite | Necesita GPU/RAM y no corre en un deploy gratis; útil solo en desarrollo |
+| **JEV** (TypeSafe, reto 30X) | $0,042/M entrada, salida gratis | Solo texto | — | Solo clasifica ("¿es factura?"), no extrae. Opcional |
 
-Costo aproximado por factura (unos 5k tokens de entrada y 500 de salida): Haiku ≈ $0.001; Opus ≈ $0.03. Con 200 facturas de demo, menos de $7 aun usando todo Opus.
+**Recomendación:** Gemini Flash free como principal, Groq como respaldo automático ante error/límite, y Claude Haiku 5.5 si aparece presupuesto o créditos del hackathon (preguntar a la organización). Para el volumen de una demo (decenas a cientos de facturas) los free tiers alcanzan.
 
-**Opción A (simple)**: todo con Opus 5.5 y esfuerzo bajo. Un solo modelo, menos código.
-**Opción B (escalonada)**: Haiku primero; si la confianza es baja, se reintenta con Opus. Más barato y además da una métrica linda para el pitch: "el 90% se resuelve con el modelo barato".
-→ Recomendación: **empezar con A, medir con `/evaluar-agente` y pasar a B si sobra tiempo.**
+**Sigue igual:** el LLM solo lee y explica. Como la decisión es código, cambiar a un modelo más barato **no afecta la seguridad**, solo la calidad de extracción, y la baja confianza termina en ESCALAR.
 
-Alternativa a considerar: **JEV** (reto de 30X) como clasificador ultra barato de "¿es factura? sí/no" con probabilidad. Solo sirve para clasificar, no para extraer.
+Explicaciones: generarlas con **plantillas** a partir de las reglas evaluadas (gratis y siempre correctas). LLM para pulir la redacción es opcional.
 
 ## 5. Tres canales unificados (y solo tres)
 
@@ -133,7 +142,7 @@ Demo: una empresa ficticia precargada y usuarios demo por rol (entrada en 1 clic
 
 ## 9. Stack sugerido (decidir en #1)
 
-Next.js + TypeScript (portal, panel y API en uno) · Supabase (Postgres + auth magic link + storage de archivos) · Claude API (SDK `@anthropic-ai/sdk`) · bot de Telegram vía webhook · deploy en Vercel o Railway (necesita URL pública para los webhooks de Telegram y correo).
+Next.js + TypeScript (portal, panel y API en uno) · Supabase free (Postgres + auth magic link + storage de archivos) · LLM detrás de interfaz: Gemini Flash free → Groq free → Claude Haiku 5.5 si hay presupuesto · bot de Telegram vía webhook · deploy en Vercel o Railway (necesita URL pública para los webhooks de Telegram y correo).
 
 ## 10. Contexto real: qué falta preguntarle a la compañera
 
@@ -154,7 +163,7 @@ Archivos reales: solo en `contexto-privado/` (ignorado por git). Hallazgos anoni
 ## 11. Decisiones abiertas
 
 - [ ] Confirmar: el LLM lee y explica; el código decide (sección 3).
-- [ ] Modelo: opción A (solo Opus) o B (Haiku → Opus) (sección 4).
+- [ ] LLM: Gemini free principal + Groq respaldo; ¿ponemos $5 para Claude Haiku 5.5? ¿El hackathon da créditos? (sección 4).
 - [ ] Confirmar los 3 canales y el orden de construcción (sección 5).
 - [ ] Roles para la demo: ¿los 5 o solo proveedor + aprobador + tesorería?
 - [ ] Stack (#1).
