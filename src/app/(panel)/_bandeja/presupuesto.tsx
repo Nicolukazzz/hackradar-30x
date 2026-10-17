@@ -8,7 +8,7 @@ const pct = (parte: number, total: number) => (total <= 0 ? 0 : Math.max(0, (par
 export function Presupuesto({ datos, mes: mesLote }: { datos: RespuestaBandeja["presupuesto"]; mes: string }) {
   const { monto_usd, pagado_antes, pagado_en_lote, reservado, disponible } = datos;
   const tramos = [
-    { etiqueta: "Pagado antes del lote", valor: pagado_antes, barra: "bg-[#a7b1ac]", muestra: "bg-[#a7b1ac]" },
+    { etiqueta: "Pagado antes del lote", valor: pagado_antes, barra: "bg-punto-neutro", muestra: "bg-punto-neutro" },
     { etiqueta: "Pagado en este lote", valor: pagado_en_lote, barra: "bg-pagada-punto", muestra: "bg-pagada-punto" },
     {
       etiqueta: "Reservado por escalados",

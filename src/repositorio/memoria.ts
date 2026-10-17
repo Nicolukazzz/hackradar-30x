@@ -97,7 +97,7 @@ export async function crearRepositorioMemoria(
       const a = s.archivos.get(ref);
       if (!a) return null;
       if ("bytes" in a) return a;
-      return { nombre: a.nombre, mime: a.mime, bytes: await readFile(a.ruta) };
+      return { nombre: a.nombre, mime: a.mime, bytes: await readFile(/*turbopackIgnore: true*/ a.ruta) };
     },
     async leerAdjunto(ref, indice) {
       return leerAdjuntoDe(s.documentos.get(ref), indice, s.carpeta);
