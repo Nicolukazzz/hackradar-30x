@@ -1,28 +1,51 @@
 // Repositorio fresco del lote demo por test, y helpers para entradas sintéticas.
 
 import type { EntradaRegistro } from "@/dominio/tipos";
-import type { Sesion } from "@/lib/auth/permisos";
+import { fijarAlmacenEquipo } from "@/equipo";
+import { crearAlmacenEquipoMemoria, type AlmacenEquipoMemoria } from "@/equipo/memoria";
+import { EMPRESA_ID } from "@/equipo/tipos";
+import { relojFijo } from "@/dominio/reloj";
+import type { Rol, Sesion } from "@/lib/auth/permisos";
 import { fijarRepositorio } from "@/repositorio";
 import { crearRepositorioMemoria } from "@/repositorio/memoria";
 import type { Repositorio } from "@/repositorio/repositorio";
 import { procesarPendientes } from "@/servicios/lote";
 
 /**
- * Sesión simulada para las rutas (`conSesion`, #49: sin roles). Cada archivo de test que llama rutas declara:
+ * Sesión simulada para las rutas (`conSesion`, #51: rol por membresía). Cada archivo de test que llama rutas declara:
  *   vi.mock("server-only", () => ({}));
  *   vi.mock("@/lib/auth/sesion", async () => (await import("./ayuda")).sesionFalsa);
  *   vi.mock("@/lib/auth/auditoria", () => ({ auditar: () => undefined }));
- * Por defecto actúa una cuenta (Ana); `comoCuenta("Beto")` cambia a otra cuenta.
+ * Por defecto actúa una cuenta admin (Ana); `comoCuenta("Beto", "aprobador")` cambia a otra cuenta y la hace
+ * miembro del equipo en memoria (las firmas de §10 se buscan ahí).
  */
-export const CUENTA: Sesion = { usuario_id: "u-ana", correo: "ana@nebula.example", nombre: "Ana Torres" };
+export const CUENTA: Sesion = { usuario_id: "u-ana", correo: "ana@nebula.example", nombre: "Ana Torres", rol: "admin", limite_aprobacion_usd: null };
 let sesionActual: Sesion | null = CUENTA;
+let equipo: AlmacenEquipoMemoria = nuevoEquipo();
 export const sesionFalsa = { obtenerSesion: async () => sesionActual };
+
+function nuevoEquipo(): AlmacenEquipoMemoria {
+  const a = crearAlmacenEquipoMemoria(relojFijo("2026-10-16T09:00:00-05:00"));
+  fijarAlmacenEquipo(a);
+  return a;
+}
+
+/** Almacén del equipo en memoria del test actual. */
+export function equipoActual(): AlmacenEquipoMemoria {
+  return equipo;
+}
+
+/** Fija la sesión y, si tiene rol, la deja como miembro del equipo (como si hubiera aceptado una invitación). */
 export function comoSesion(s: Sesion | null) {
   sesionActual = s;
+  if (!s) return;
+  equipo.agregarCuenta({ usuario_id: s.usuario_id, nombre: s.nombre, correo: s.correo });
+  if (s.rol) equipo.agregarMiembro(EMPRESA_ID, s.usuario_id, s.rol, s.limite_aprobacion_usd);
 }
-export function comoCuenta(nombre: string) {
+
+export function comoCuenta(nombre: string, rol: Rol | null = "admin", limite_aprobacion_usd: number | null = null) {
   const id = nombre.toLowerCase().replaceAll(/\s+/g, "-");
-  sesionActual = { usuario_id: `u-${id}`, correo: `${id}@nebula.example`, nombre };
+  comoSesion({ usuario_id: `u-${id}`, correo: `${id}@nebula.example`, nombre, rol, limite_aprobacion_usd });
 }
 
 /** Petición del mismo origen (la guardia rechaza escrituras sin Origin, CSRF). */
@@ -34,6 +57,7 @@ export async function repoProcesado(): Promise<Repositorio> {
   const repo = await crearRepositorioMemoria("lote-demo-oct");
   await procesarPendientes(repo);
   fijarRepositorio(repo);
+  equipo = nuevoEquipo();
   comoSesion(CUENTA);
   return repo;
 }
