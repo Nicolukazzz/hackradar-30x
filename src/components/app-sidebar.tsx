@@ -65,9 +65,12 @@ function BadgePendientes({ pendientes }: { pendientes: Promise<number | null> })
 
 export function AppSidebar({
   usuario,
+  empresa,
   pendientes,
 }: {
   usuario: { nombre: string; correo: string; rol: Rol };
+  /** #84: de la base (Ajustes → Datos de la empresa); null si no se pudo leer */
+  empresa: { nombre: string; resumen: string } | null;
   pendientes: Promise<number | null>;
 }) {
   const ruta = usePathname();
@@ -80,13 +83,15 @@ export function AppSidebar({
       </SidebarHeader>
 
       <SidebarContent className="gap-0 px-2 pt-5">
-        <SidebarGroup className="pb-5">
-          <div className="flex flex-col gap-1 rounded-xl border border-sidebar-border px-3.5 py-3">
-            <span className="text-[11px] tracking-[0.08em] text-sidebar-muted uppercase">Empresa</span>
-            <span className="text-sm font-semibold">Nébula Studio Inc.</span>
-            <span className="text-xs text-sidebar-muted">Delaware, EE. UU. · opera en 5 países</span>
-          </div>
-        </SidebarGroup>
+        {empresa ? (
+          <SidebarGroup className="pb-5">
+            <div className="flex flex-col gap-1 rounded-xl border border-sidebar-border px-3.5 py-3">
+              <span className="text-[11px] tracking-[0.08em] text-sidebar-muted uppercase">Empresa</span>
+              <span className="text-sm font-semibold">{empresa.nombre}</span>
+              <span className="text-xs text-sidebar-muted">{empresa.resumen}</span>
+            </div>
+          </SidebarGroup>
+        ) : null}
 
         <SidebarGroup className="pt-0">
           <SidebarGroupContent>

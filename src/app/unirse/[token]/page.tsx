@@ -12,6 +12,7 @@ import { vistaInvitacion } from "@/equipo/servicio";
 import { DESCRIPCION_ROL, NOMBRE_ROL } from "@/lib/auth/permisos";
 import { obtenerSesion } from "@/lib/auth/sesion";
 import { relojSistema } from "@/lib/reloj-sistema";
+import { obtenerEmpresa } from "@/app/_datos/empresa";
 
 import { unirme } from "./acciones";
 import { FormularioCrearCuenta } from "./formulario";
@@ -46,7 +47,8 @@ function SalirBoton({ texto }: { texto: string }) {
 }
 
 export default async function PaginaUnirse({ params, searchParams }: PageProps<"/unirse/[token]">) {
-  const [{ token }, sp, sesion] = await Promise.all([params, searchParams, obtenerSesion()]);
+  const [{ token }, sp, sesion, empresa] = await Promise.all([params, searchParams, obtenerSesion(), obtenerEmpresa()]);
+  const nombreEmpresa = empresa?.nombre ?? "la empresa";
   const resultado = typeof sp.resultado === "string" ? sp.resultado : null;
 
   if (sesion?.rol) {
@@ -58,7 +60,7 @@ export default async function PaginaUnirse({ params, searchParams }: PageProps<"
           </EmptyMedia>
           <EmptyTitle>Ya eres parte del equipo</EmptyTitle>
           <EmptyDescription>
-            Tu cuenta ({sesion.correo}) está en Nébula Studio como {NOMBRE_ROL[sesion.rol]}. Este enlace no cambia tu rol.
+            Tu cuenta ({sesion.correo}) está en {nombreEmpresa} como {NOMBRE_ROL[sesion.rol]}. Este enlace no cambia tu rol.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
@@ -119,7 +121,7 @@ export default async function PaginaUnirse({ params, searchParams }: PageProps<"
         <EmptyMedia variant="icon">
           <UserPlusIcon />
         </EmptyMedia>
-        <EmptyTitle>Te invitaron a Nébula Studio Inc.</EmptyTitle>
+        <EmptyTitle>Te invitaron a {nombreEmpresa}</EmptyTitle>
         <EmptyDescription>
           Rol: <strong className="font-semibold text-foreground">{NOMBRE_ROL[vista.rol]}</strong>
           {limite ? `, ${limite}` : ""}. {DESCRIPCION_ROL[vista.rol]}

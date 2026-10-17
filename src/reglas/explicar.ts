@@ -142,7 +142,7 @@ export function explicar(x: EntradaExplicacion): string {
   const frenan = fallas.filter((e) => e.si_falla === "FRENAR" && e.resultado === "FALLA");
   const resto = fallas.filter((e) => !frenan.includes(e));
   const frases: string[] = [];
-  // Reenvío interno (carga manual, empleado de Nébula): R11 falla solo porque falló R3; sería repetir la misma causa.
+  // Reenvío interno (carga manual, empleado de la empresa): R11 falla solo porque falló R3; sería repetir la misma causa.
   const r3Falla = fallas.some((e) => e.id === "R3" && e.resultado === "FALLA");
   const interno = x.doc.remitente.tipo === "interno";
   // LLM sin respuesta y sin nombre legible (#103): R3 y R11 fallan solo porque no se leyó nada; la traza las conserva.

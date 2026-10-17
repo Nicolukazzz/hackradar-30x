@@ -100,6 +100,12 @@ export function contratoRepositorio(crear: () => Promise<Repositorio>, opciones:
     await expect(repo.vincularTelegram("ben-no-existe", "1")).rejects.toThrow(/no existe/);
   });
 
+  it("datos de la empresa (#84): arrancan como data/empresa.json y se editan", async () => {
+    expect(await repo.empresa()).toMatchObject({ id: "nebula", nombre: "Nébula Studio Inc.", jurisdiccion: "Delaware, EE. UU.", paises_operacion: ["US", "CO", "MX", "AR", "BR"], moneda_base: "USD" });
+    const nueva = await repo.guardarEmpresa({ nombre: "Orbita Labs Inc.", jurisdiccion: "Texas, EE. UU.", paises_operacion: ["US", "CL"] });
+    expect(nueva).toMatchObject({ id: "nebula", nombre: "Orbita Labs Inc.", jurisdiccion: "Texas, EE. UU.", paises_operacion: ["US", "CL"], moneda_base: "USD" });
+    expect((await repo.datosComunes()).empresa.nombre).toBe("Orbita Labs Inc.");
+  });
 
   if (opciones.persistente) {
     it("después de un reinicio (otra instancia) todo sigue ahí", async () => {
@@ -110,6 +116,7 @@ export function contratoRepositorio(crear: () => Promise<Repositorio>, opciones:
       expect((await otro.datosComunes()).beneficiarios.map((b) => b.id)).toContain("ben-prueba-contrato");
       expect(await otro.siguienteRef(2026)).toBe("INT-2026-000016");
       expect((await otro.leerArchivo("INT-2026-000099"))?.mime).toBe("application/pdf");
+      expect((await otro.empresa()).nombre).toBe("Orbita Labs Inc.");
     });
   }
 
@@ -141,6 +148,7 @@ export function contratoRepositorio(crear: () => Promise<Repositorio>, opciones:
     expect(bs.find((b) => b.id === "ben-juan-pablo-ortiz")?.canales.telegram_chat_id).toBe("700100004");
     expect(bs.find((b) => b.id === "ben-diego-herrera")?.canales.telegram_chat_id).toBe("700100003");
     expect(await repo.tokenVinculoUsado(HUELLA)).toBe(true); // un enlace ya usado no vuelve a valer
+    expect((await repo.empresa()).nombre).toBe("Orbita Labs Inc."); // la empresa no es parte de la corrida (#84)
   });
 
   it("después de reiniciar, el lote da los mismos números que el prototipo", async () => {

@@ -6,6 +6,7 @@ import type { DatosComunes, Escenario } from "@/dominio/cargar";
 import type {
   Beneficiario,
   DecisionAgente,
+  Empresa,
   DecisionHumana,
   DocumentoRecibido,
   EntradaRegistro,
@@ -20,6 +21,9 @@ export type FiltroRegistro = {
   actor?: "agente" | "humano";
   ref_interna?: string;
 };
+
+/** Lo que se edita en Ajustes → Datos de la empresa (#84). */
+export type CambiosEmpresa = Pick<Empresa, "nombre" | "jurisdiccion" | "paises_operacion">;
 
 export type ResumenVersion = { version: number; editada_por: string; editada_en: string };
 
@@ -37,6 +41,13 @@ export type EscenarioCargado = {
 
 export interface Repositorio {
   datosComunes(): Promise<DatosComunes>;
+  /**
+   * Datos de la empresa (#84): en Supabase, la fila de `empresas`; en memoria, `data/empresa.json` más lo editado.
+   * No es parte de una corrida de demo: "Reiniciar demo" no la cambia. `datosComunes().empresa` es lo mismo.
+   */
+  empresa(): Promise<Empresa>;
+  /** Guarda nombre, jurisdicción y países (el id, la moneda y la zona horaria no cambian aquí). */
+  guardarEmpresa(cambios: CambiosEmpresa): Promise<Empresa>;
   reglasVigentes(): Promise<Reglas>;
   reglasVersion(version: number): Promise<Reglas | null>;
   historialReglas(): Promise<ResumenVersion[]>;

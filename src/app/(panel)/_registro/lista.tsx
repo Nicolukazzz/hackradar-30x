@@ -17,6 +17,7 @@ const SIN_DECISION: Record<EntradaRegistro["tipo"], string> = {
   DECISION_HUMANA: "1 de 2 aprobaciones",
   CAMBIO_REGLAS: "Cambio de reglas",
   CAMBIO_BENEFICIARIOS: "Cambio de beneficiarios",
+  CAMBIO_EMPRESA: "Cambio de datos de la empresa",
 };
 
 function Pildora({ e }: { e: EntradaRegistro }) {

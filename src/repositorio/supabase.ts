@@ -1,6 +1,6 @@
 // Repositorio en Supabase (#44): lo mismo que el de memoria, pero lo que cambia (registro, documentos,
-// reglas guardadas, beneficiarios agregados, archivos) sobrevive a los deploys. Lo fijo (empresa, los 14
-// beneficiarios base, tasas, escenario y sus documentos) sigue saliendo de data/.
+// reglas guardadas, beneficiarios agregados, archivos, datos de la empresa #84) sobrevive a los deploys. Lo fijo
+// (los 14 beneficiarios base, tasas, escenario y sus documentos) sigue saliendo de data/.
 // Corridas de demo (#76): cada tabla de la demo tiene corrida_id (por defecto, la vigente, resuelta en la base).
 // Se lee de las vistas `*_vigente(s)` y se escribe en las tablas; "Reiniciar demo" abre una corrida nueva y las
 // anteriores quedan intactas.
@@ -12,13 +12,14 @@ import path from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { DIR_DATA_POR_DEFECTO } from "@/dominio/cargar";
-import type { Beneficiario, DocumentoRecibido, EntradaRegistro, Reglas } from "@/dominio/tipos";
+import { EmpresaSchema } from "@/dominio/esquemas";
+import type { Beneficiario, DocumentoRecibido, Empresa, EntradaRegistro, Reglas } from "@/dominio/tipos";
 import { cargarGolden } from "@/evaluacion/escenario";
 import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
 
 import { coincideFiltro, conVinculosTelegram, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
-import type { Repositorio, ResumenVersion } from "./repositorio";
+import type { CambiosEmpresa, Repositorio, ResumenVersion } from "./repositorio";
 
 export type ConfigSupabase = { url: string; claveSecreta: string; escenario: string; dir?: string };
 
@@ -128,10 +129,32 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
     return new Set(filas.map((r) => r.ref_interna));
   }
 
+  /**
+   * Fila de `empresas` (#84) sobre los valores de data/empresa.json. Si la fila falta, está a medio llenar o no valida,
+   * se usan los de data/ (la app nunca queda sin nombre de empresa).
+   */
+  async function empresa(): Promise<Empresa> {
+    const base = g.datos.empresa;
+    const { data, error } = await db.from("empresas").select("nombre, jurisdiccion, paises_operacion, moneda_base, zona_horaria").eq("id", base.id).maybeSingle();
+    fallar("leer empresa", error);
+    if (!data || !data.jurisdiccion) return structuredClone(base);
+    const leida = EmpresaSchema.safeParse({ id: base.id, ...data });
+    return leida.success ? leida.data : structuredClone(base);
+  }
+
   return {
     async datosComunes() {
-      const [vs, bs] = await Promise.all([versiones(), beneficiarios()]);
-      return { ...g.datos, beneficiarios: bs, reglas: { vigente: versionVigente(vs), versiones: vs } };
+      const [vs, bs, emp] = await Promise.all([versiones(), beneficiarios(), empresa()]);
+      return { ...g.datos, empresa: emp, beneficiarios: bs, reglas: { vigente: versionVigente(vs), versiones: vs } };
+    },
+    empresa,
+    async guardarEmpresa(cambios: CambiosEmpresa) {
+      const actual = await empresa();
+      const { error } = await db
+        .from("empresas")
+        .upsert({ ...actual, ...cambios, actualizada_en: new Date().toISOString() }, { onConflict: "id" });
+      fallar("guardar empresa", error);
+      return empresa();
     },
     async reglasVigentes() {
       return versionVigente(await versiones());
