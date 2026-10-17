@@ -58,6 +58,14 @@ const MENSAJE_PERMISO: Record<Permiso, string> = {
   administrar: "Solo un administrador puede hacer esto.",
 };
 
+/** Para las pantallas: si la sesión puede hacer algo y, si no, el motivo para mostrar al lado del botón. */
+export type PermisoUI = { ok: true } | { ok: false; motivo: string };
+
+export function permisoPara(sesion: Sesion | null, permiso: Permiso): PermisoUI {
+  if (!sesion) return { ok: false, motivo: MENSAJE_401 };
+  return puede(sesion, permiso) ? { ok: true } : { ok: false, motivo: MENSAJE_PERMISO[permiso] };
+}
+
 export class ErrorAuth extends Error {
   constructor(
     readonly status: 401 | 403,
