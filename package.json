@@ -17,6 +17,7 @@
     "test:supabase": "bash scripts/test-supabase.sh"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.135.0",
     "@base-ui/react": "^1.9.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.117.2",

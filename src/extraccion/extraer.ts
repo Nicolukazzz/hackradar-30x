@@ -31,6 +31,9 @@ export type DependenciasExtraccion = {
 /** Confianza que queda cuando parser y LLM no coinciden en un campo: obliga a R1 a escalar. */
 export const CONFIANZA_DISCREPANCIA = 0.5;
 
+/** Doble lectura (#58): confianza de un campo en el que coinciden 2 de los 3 lectores (parser, LLM A, LLM B). */
+export const CONFIANZA_DOS_DE_TRES = 0.92;
+
 function mismoValor(a: unknown, b: unknown): boolean {
   if (typeof a === "string" && typeof b === "string") {
     const limpio = (s: string) => normalizarTexto(s).replace(/\s+/g, " ").trim();
@@ -102,18 +105,43 @@ function aportaAlgo(p: ExtraccionParcial): boolean {
   return NOMBRES_CAMPOS.some((k) => p[k] !== undefined) || (p.instrucciones_sospechosas?.length ?? 0) > 0;
 }
 
-async function consultarLlm(n: DocumentoNormalizado, faltantes: NombreCampo[], deps: DependenciasExtraccion): Promise<ExtraccionParcial> {
-  const clave = deps.cache ? claveCache(n, faltantes, `${deps.llm.nombre}:${deps.llm.modelo ?? ""}`) : null;
+async function consultarLlm(
+  n: DocumentoNormalizado,
+  faltantes: NombreCampo[],
+  deps: DependenciasExtraccion,
+  llm: ProveedorLLM = deps.llm,
+): Promise<ExtraccionParcial> {
+  const clave = deps.cache ? claveCache(n, faltantes, `${llm.nombre}:${llm.modelo ?? ""}`) : null;
   if (clave && deps.cache) {
     const guardado = await deps.cache.leer(clave);
     if (guardado) return guardado;
   }
-  const r = await deps.llm.extraer(n, faltantes);
+  const r = await llm.extraer(n, faltantes);
   // Solo se cachea una respuesta real con contenido: si no hubo LLM o vino vacía, la próxima corrida reintenta.
   if (clave && deps.cache && r.proveedor_llm && r.proveedor_llm !== "ninguno" && aportaAlgo(r)) {
     await deps.cache.guardar(clave, r).catch(() => undefined); // una caché que no escribe no detiene la extracción
   }
   return r;
+}
+
+/**
+ * Doble lectura (#58), un campo: vale solo si coinciden al menos 2 de los 3 lectores. El parser vota solo si no
+ * marcó el campo como ambiguo (≤ 0,5: coincidir con una de sus opciones no lo desambigua). Sin 2 que coincidan, el
+ * primer valor disponible con confianza ≤ 0,5: R1 escala.
+ */
+export function votar(
+  parser: Campo<unknown> | undefined,
+  a: Campo<unknown> | undefined,
+  b: Campo<unknown> | undefined,
+  confianzaAcuerdo = CONFIANZA_DOS_DE_TRES,
+): Campo<unknown> | undefined {
+  const p = parser && parser.valor !== null && parser.confianza > CONFIANZA_DISCREPANCIA ? parser : undefined;
+  const llmA = a?.valor !== null ? a : undefined;
+  const llmB = b?.valor !== null ? b : undefined;
+  if (llmA && llmB && mismoValor(llmA.valor, llmB.valor)) return { ...llmA, confianza: confianzaAcuerdo };
+  for (const l of [llmA, llmB]) if (p && l && mismoValor(p.valor, l.valor)) return { ...p, confianza: Math.max(p.confianza, confianzaAcuerdo) };
+  const unico = parser?.valor !== null && parser ? parser : (llmA ?? llmB);
+  return unico ? { ...unico, confianza: Math.min(unico.confianza, CONFIANZA_DISCREPANCIA) } : undefined;
 }
 
 const vacio = (): Campo<never> => ({ valor: null, confianza: 0, fuente: "parser" });
@@ -123,7 +151,16 @@ export async function extraer(doc: DocumentoRecibido, deps: DependenciasExtracci
   const n = await normalizarDocumento(doc, { dirBase: deps.dirBase });
   const parser = parsearSinIa(n);
   const faltantes = camposPorConsultar(parser, minima);
-  const llm: ExtraccionParcial = faltantes.length > 0 ? await consultarLlm(n, faltantes, deps) : {};
+  const lectores = deps.llm.lectores;
+  // Doble lectura (#58): los dos lectores en paralelo; si uno falla del todo, cuenta como si no hubiera leído nada.
+  const [llm, otro]: [ExtraccionParcial, ExtraccionParcial | null] =
+    faltantes.length === 0
+      ? [{}, null]
+      : lectores
+        ? await Promise.all(lectores.map((l) => consultarLlm(n, faltantes, deps, l).catch((): ExtraccionParcial => ({})))).then(([x = {}, y = {}]) => [x, y])
+        : [await consultarLlm(n, faltantes, deps), null];
+  // 2 de 3 da al menos el umbral de R1 (si el umbral sube por encima de 0,95, ni el acuerdo alcanza: escala).
+  const acuerdo = Math.min(0.95, Math.max(CONFIANZA_DOS_DE_TRES, minima));
 
   const ext: Extraccion = {
     es_factura: vacio(),
@@ -134,14 +171,17 @@ export async function extraer(doc: DocumentoRecibido, deps: DependenciasExtracci
     fecha_vencimiento: vacio(),
     cuenta_destino_ultimos4: vacio(),
     concepto: vacio(),
-    idioma: parser.idioma ?? llm.idioma ?? "es",
+    idioma: parser.idioma ?? llm.idioma ?? otro?.idioma ?? "es",
     texto_crudo: textoCrudo(n),
-    senales_llm: { instrucciones_sospechosas: llm.instrucciones_sospechosas ?? [] },
-    proveedor_llm: faltantes.length > 0 ? (llm.proveedor_llm ?? "ninguno") : "ninguno",
+    // Señales de R10 de cualquiera de los dos lectores cuentan.
+    senales_llm: { instrucciones_sospechosas: [...new Set([...(llm.instrucciones_sospechosas ?? []), ...(otro?.instrucciones_sospechosas ?? [])])] },
+    proveedor_llm: faltantes.length > 0 ? (llm.proveedor_llm ?? otro?.proveedor_llm ?? "ninguno") : "ninguno",
   };
   for (const k of NOMBRES_CAMPOS) {
+    const p = parser[k] as Campo<unknown> | undefined;
     // El LLM solo puede aportar los campos que se le pidieron.
-    const c = cruzar(parser[k] as Campo<unknown> | undefined, faltantes.includes(k) ? (llm[k] as Campo<unknown> | undefined) : undefined);
+    const pedido = faltantes.includes(k);
+    const c = !pedido ? p : otro ? votar(p, llm[k] as Campo<unknown> | undefined, otro[k] as Campo<unknown> | undefined, acuerdo) : cruzar(p, llm[k] as Campo<unknown> | undefined);
     if (c) (ext as Record<string, unknown>)[k] = c;
   }
   return ext;

@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-17 — Doble lectura implementada (#58)
+- Estado: propuesta
+- Decisión: `LLM_PROVIDER=doble` aplica la decisión "Doble lectura LLM (Gemini + Haiku)": para los campos que el parser no resolvió, Gemini y Claude Haiku 5.5 (`src/extraccion/llm/anthropic.ts`, SDK oficial `@anthropic-ai/sdk`) leen en paralelo y `votar()` (`src/extraccion/extraer.ts`) da 0,92 solo si coinciden 2 de 3 lectores (parser, A, B; el parser no vota si marcó el campo como ambiguo); si no, ≤ 0,5 y R1 escala. Si un lector cae del todo, nada llega a 2 de 3: escala (nunca paga con una sola lectura). Sin llave de Anthropic (o de Gemini), Groq toma ese lugar; si están las tres, Groq respalda solo al primer lector (si respaldara a los dos, podría "coincidir consigo mismo"). Con un solo proveedor, cadena simple de siempre. Señales de R10 de cualquiera de los dos cuentan. Haiku 5.5 no acepta `temperature` (400) y piensa por defecto: se pide `effort: "low"`. `anthropic` también entra a la cadena simple (`LLM_PROVIDER=anthropic`). Los demás modos no cambian; el CI sigue sin llaves.
+- Por qué: un dato falso (cuenta, monto) necesita que dos modelos de proveedores distintos se equivoquen igual. Costo ~USD 0,001 por factura que el parser no resuelve.
+- Quién: J
+
 ## 2026-10-17 — Login abierto con correo + contraseña, sin roles (#49)
 - Estado: aceptada
 - Decisión: `/entrar` es un login de app normal: **cualquiera crea su cuenta** (nombre, correo, contraseña ≥ 8), confirma el correo con un código de 6 dígitos y después entra con correo + contraseña; "¿Olvidaste tu contraseña?" por código. **Sin roles** por ahora: toda cuenta ve y hace todo; al aprobar o guardar reglas actúa con su propio nombre como aprobador principal sin límite (`aprobadorDeLaCuenta`), y la doble firma > USD 10.000 sigue pidiendo dos cuentas. `conRol` pasa a `conSesion`. `perfiles` queda con `nombre` y `activo` (un trigger lo crea al registrarse; `rol`/`aprobador_id`/`beneficiario_id` quedan sin uso y opcionales para no romper el deploy anterior). Se retiran `/portal`, `/api/portal/facturas`, `src/servicios/portal.ts`, la semilla `scripts/auth/` y `npm run auth:sembrar`. Reemplaza la parte de roles de #25 y la decisión de #46 (usuarios por alias) y deja sin login el portal de #12.

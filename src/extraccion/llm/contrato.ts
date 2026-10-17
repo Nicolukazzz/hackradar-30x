@@ -14,6 +14,11 @@ export interface ProveedorLLM {
   modelo?: string;
   /** Lee solo `faltantes`. Devuelve los campos con fuente "llm" y `proveedor_llm` = quién respondió. */
   extraer(doc: DocumentoNormalizado, faltantes: readonly NombreCampo[]): Promise<ExtraccionParcial>;
+  /**
+   * Doble lectura (#58): dos lectores independientes que `extraer()` (extraer.ts) consulta en paralelo y cruza con
+   * el parser, 2 de 3. Si existe, `extraer` de este objeto no se usa para los campos.
+   */
+  lectores?: readonly [ProveedorLLM, ProveedorLLM];
 }
 
 /** 429, 5xx, timeout, red caída o llave inválida: se prueba con el siguiente proveedor. */
