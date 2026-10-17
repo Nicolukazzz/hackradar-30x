@@ -202,6 +202,14 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
       if (error?.code === "23505") throw new Error(`el beneficiario ${b.id} ya existe`);
       fallar("guardar beneficiario", error);
     },
+    async actualizarBeneficiario(b) {
+      if (comunes.beneficiarios.some((x) => x.id === b.id)) throw new Error(`el beneficiario ${b.id} es del escenario de prueba y no se edita`);
+      const corrida = await db.rpc("corrida_vigente");
+      fallar("corrida vigente", corrida.error);
+      const { data, error } = await db.from("beneficiarios_agregados").update({ beneficiario: b }).eq("id", b.id).eq("corrida_id", Number(corrida.data)).select("id");
+      fallar("actualizar beneficiario", error);
+      if ((data ?? []).length === 0) throw new Error(`no existe el beneficiario ${b.id}`);
+    },
     async vincularTelegram(beneficiario_id, chat_id) {
       const existe = comunes.beneficiarios.some((b) => b.id === beneficiario_id) || (await agregados()).some((b) => b.id === beneficiario_id);
       if (!existe) throw new Error(`no existe el beneficiario ${beneficiario_id}`);

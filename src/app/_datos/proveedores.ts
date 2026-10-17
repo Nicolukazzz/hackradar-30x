@@ -1,8 +1,11 @@
 // Pantalla `/proveedores` (#85): portales de proveedor (mismos servicios que GET /api/proveedores/enlaces).
 // Cualquier miembro ve la lista; crear, cambiar código y revocar es solo de administradores.
 
+import type { Beneficiario } from "@/dominio/tipos";
 import { permisoPara, type PermisoUI } from "@/lib/auth/permisos";
 import { relojSistema } from "@/lib/reloj-sistema";
+import { obtenerRepositorio } from "@/repositorio";
+import { listarProveedores } from "@/servicios/proveedores";
 import { obtenerAlmacenEnlaces } from "@/vinculos";
 import { listarEnlaces, type EnlaceConEstado } from "@/vinculos/servicio";
 
@@ -10,8 +13,11 @@ import { exigirMiembro } from "./sesion";
 
 export type { EnlaceConEstado } from "@/vinculos/servicio";
 
-export async function obtenerProveedores(): Promise<{ enlaces: EnlaceConEstado[]; crear: PermisoUI }> {
+export async function obtenerProveedores(): Promise<{ proveedores: Beneficiario[]; enlaces: EnlaceConEstado[]; crear: PermisoUI }> {
   const sesion = await exigirMiembro();
-  const enlaces = await listarEnlaces(await obtenerAlmacenEnlaces(), relojSistema().ahora());
-  return { enlaces, crear: permisoPara(sesion, "administrar") };
+  const [proveedores, enlaces] = await Promise.all([
+    listarProveedores(await obtenerRepositorio()),
+    obtenerAlmacenEnlaces().then((a) => listarEnlaces(a, relojSistema().ahora())),
+  ]);
+  return { proveedores, enlaces, crear: permisoPara(sesion, "administrar") };
 }

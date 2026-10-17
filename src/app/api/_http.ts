@@ -7,6 +7,7 @@ import { z } from "zod";
 import { ErrorDecision } from "@/aprobaciones/decidir";
 import { ErrorEquipo } from "@/equipo/tipos";
 import { ErrorVinculo } from "@/vinculos/tipos";
+import { ErrorProveedor } from "@/servicios/proveedores";
 import { ErrorReglas } from "@/servicios/reglas";
 import { ErrorSubida } from "@/servicios/subida";
 
@@ -50,6 +51,7 @@ export function manejar(e: unknown): NextResponse {
   if (e instanceof ErrorSubida) return error(e.estado, e.message);
   if (e instanceof ErrorEquipo) return error(e.estado, e.message);
   if (e instanceof ErrorVinculo) return error(e.estado, e.message);
+  if (e instanceof ErrorProveedor) return error(e.estado, e.message);
   if (e instanceof ErrorReglas) return error(e.estado, e.message, e.reporte ? { reporte: e.reporte } : undefined);
   console.error(e);
   return error(500, "Error interno. Nada se pagó ni se registró a medias.");

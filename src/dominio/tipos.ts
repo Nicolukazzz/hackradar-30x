@@ -72,6 +72,8 @@ export type TipoCuenta = "CLABE" | "cuenta" | "PIX" | "CBU" | "ACH";
 export type Beneficiario = {
   id: string;
   nombre: string;
+  /** NIT, RUT, RFC, CUIT, CNPJ o Tax ID tal como lo escribe el proveedor (#107); null o ausente = no registrado */
+  identificacion_fiscal?: string | null;
   pais: string;
   categoria: string;
   tipo: "contratista" | "proveedor";

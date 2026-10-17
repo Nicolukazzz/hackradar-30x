@@ -111,6 +111,11 @@ export async function crearRepositorioMemoria(
       if (i >= 0) throw new Error(`el beneficiario ${b.id} ya existe`);
       s.datos.beneficiarios.push(structuredClone(b));
     },
+    async actualizarBeneficiario(b: Beneficiario) {
+      const i = s.datos.beneficiarios.findIndex((x) => x.id === b.id);
+      if (i < 0) throw new Error(`no existe el beneficiario ${b.id}`);
+      s.datos.beneficiarios[i] = structuredClone(b);
+    },
     async vincularTelegram(beneficiario_id, chat_id) {
       if (!s.datos.beneficiarios.some((b) => b.id === beneficiario_id)) throw new Error(`no existe el beneficiario ${beneficiario_id}`);
       for (const [b, c] of vinculos) if (b === beneficiario_id || c === chat_id) vinculos.delete(b);

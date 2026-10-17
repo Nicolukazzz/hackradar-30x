@@ -46,3 +46,13 @@ export function normalizarNombre(nombre: string): string {
 export function normalizarNumeroFactura(numero: string): string {
   return sinTildes(numero).toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean).join("-");
 }
+
+/** Identificador legible para urls e ids (`ben-mesa-legal`): sin tildes, minúsculas, guiones. */
+export function slug(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replace(/\p{Mn}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}

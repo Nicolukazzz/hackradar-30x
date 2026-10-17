@@ -110,6 +110,7 @@ export const AcuerdoSchema = z.strictObject({
 export const BeneficiarioSchema = z.strictObject({
   id: texto,
   nombre: texto,
+  identificacion_fiscal: texto.nullable().optional(),
   pais: z.string().length(2),
   categoria: texto,
   tipo: z.enum(["contratista", "proveedor"]),
