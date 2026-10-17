@@ -17,6 +17,11 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        // Variantes del prototipo (§13 "Comunes"), usadas por <Boton> de src/app/_componentes.
+        primaria: "bg-primary font-semibold text-primary-foreground hover:bg-primary/85",
+        secundaria: "border-borde-fuerte bg-card text-foreground hover:bg-muted",
+        acento: "bg-brand font-semibold text-brand-foreground hover:bg-brand/85",
+        peligro: "border-frenada-punto/40 bg-card text-frenada-foreground hover:bg-frenada",
       },
       size: {
         default:
@@ -30,6 +35,8 @@ const buttonVariants = cva(
         "icon-sm":
           "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-9",
+        // ≥ 44 px de alto (objetivo táctil de §13).
+        tactil: "min-h-11 gap-2 rounded-[10px] px-4 [&_svg:not([class*='size-'])]:size-4",
       },
     },
     defaultVariants: {

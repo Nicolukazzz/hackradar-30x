@@ -1,7 +1,8 @@
 "use client";
 
-import { InboxIcon, ScrollTextIcon, SlidersHorizontalIcon, UserCheckIcon } from "lucide-react";
+import { CircleCheckIcon, InboxIcon, ListIcon, ShieldCheckIcon, SlidersHorizontalIcon } from "lucide-react";
 import Link from "next/link";
+import { Suspense, use } from "react";
 import { usePathname } from "next/navigation";
 
 import {
@@ -14,68 +15,116 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
-// Navegación de especificación §13. Los conteos (badge de Aprobaciones) los agrega #6.
+// Barra lateral de especificación §13 "Comunes", con el aspecto del prototipo.
 const navegacion = [
   { titulo: "Bandeja", href: "/", icono: InboxIcon },
-  { titulo: "Aprobaciones", href: "/aprobaciones", icono: UserCheckIcon },
+  { titulo: "Aprobaciones", href: "/aprobaciones", icono: CircleCheckIcon },
   { titulo: "Reglas", href: "/reglas", icono: SlidersHorizontalIcon },
-  { titulo: "Registro", href: "/registro", icono: ScrollTextIcon },
+  { titulo: "Registro", href: "/registro", icono: ListIcon },
 ] as const;
 
-export function AppSidebar() {
+/** Logo + rol. Lo comparten la barra lateral y la cabecera móvil. */
+export function MarcaTesorero({ className }: { className?: string }) {
+  return (
+    <div className={cn("flex items-center gap-3", className)}>
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-sidebar-primary text-sidebar-primary-foreground">
+        <ShieldCheckIcon className="size-5" aria-hidden />
+      </span>
+      <span className="flex flex-col gap-0.5">
+        <span className="text-[17px] leading-tight font-semibold tracking-tight">Tesorero</span>
+        <span className="text-xs text-sidebar-muted">Agente de cuentas por pagar</span>
+      </span>
+    </div>
+  );
+}
+
+/** Badge ámbar con el conteo. Lee la promesa del layout: la página no espera a la API para pintarse. */
+function BadgePendientes({ pendientes }: { pendientes: Promise<number | null> }) {
+  const n = use(pendientes);
+  if (!n) return null;
+  return (
+    <>
+      <span className="sr-only">, {n} pendientes</span>
+      <span
+        aria-hidden
+        className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-aviso px-1.5 font-mono text-xs font-bold text-aviso-foreground"
+      >
+        {n}
+      </span>
+    </>
+  );
+}
+
+export function AppSidebar({ pendientes }: { pendientes: Promise<number | null> }) {
   const ruta = usePathname();
   const { setOpenMobile } = useSidebar();
 
   return (
     <Sidebar>
-      <SidebarHeader className="gap-1 px-4 pt-6">
-        <span className="text-xs font-medium tracking-wide text-sidebar-foreground/60 uppercase">
-          Tesorero
-        </span>
-        <span className="text-base font-semibold tracking-tight">Agente de cuentas por pagar</span>
+      <SidebarHeader className="px-4 pt-6 pb-0">
+        <MarcaTesorero className="px-2" />
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent className="flex flex-col gap-0.5 rounded-xl bg-sidebar-accent px-3 py-3 text-sm">
-            <span className="font-medium">Nébula Studio Inc.</span>
-            <span className="text-sidebar-foreground/60">Delaware, EE. UU. · opera en 5 países</span>
-          </SidebarGroupContent>
+      <SidebarContent className="gap-0 px-2 pt-5">
+        <SidebarGroup className="pb-5">
+          <div className="flex flex-col gap-1 rounded-xl border border-sidebar-border px-3.5 py-3">
+            <span className="text-[11px] tracking-[0.08em] text-sidebar-muted uppercase">Empresa</span>
+            <span className="text-sm font-semibold">Nébula Studio Inc.</span>
+            <span className="text-xs text-sidebar-muted">Delaware, EE. UU. · opera en 5 países</span>
+          </div>
         </SidebarGroup>
 
-        <SidebarGroup>
+        <SidebarGroup className="pt-0">
           <SidebarGroupContent>
-            <SidebarMenu>
-              {navegacion.map(({ titulo, href, icono: Icono }) => (
-                <SidebarMenuItem key={href}>
-                  <SidebarMenuButton
-                    size="lg"
-                    isActive={href === "/" ? ruta === "/" : ruta.startsWith(href)}
-                    render={<Link href={href} onClick={() => setOpenMobile(false)} />}
-                  >
-                    <Icono />
-                    <span>{titulo}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            <nav aria-label="Principal">
+              <SidebarMenu className="gap-1">
+                {navegacion.map(({ titulo, href, icono: Icono }) => {
+                  const activa = href === "/" ? ruta === "/" : ruta.startsWith(href);
+                  return (
+                    <SidebarMenuItem key={href}>
+                      <SidebarMenuButton
+                        isActive={activa}
+                        className="h-11 gap-3 rounded-[10px] px-3 text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-sidebar-accent-foreground [&_svg]:size-[18px]"
+                        render={
+                          <Link
+                            href={href}
+                            aria-current={activa ? "page" : undefined}
+                            onClick={() => setOpenMobile(false)}
+                          />
+                        }
+                      >
+                        <Icono aria-hidden />
+                        <span className="flex-1">{titulo}</span>
+                        {activa ? <span aria-hidden className="size-1.5 rounded-full bg-sidebar-primary" /> : null}
+                        {href === "/aprobaciones" ? (
+                          <Suspense fallback={null}>
+                            <BadgePendientes pendientes={pendientes} />
+                          </Suspense>
+                        ) : null}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </nav>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="gap-3 px-4 pb-6">
-        <span className="flex items-center gap-2 text-sm">
-          <span aria-hidden className="size-2 rounded-full bg-sidebar-primary" />
-          <span>Agente activo</span>
-        </span>
-        <SidebarSeparator className="mx-0" />
-        <p className="text-xs leading-relaxed text-sidebar-foreground/60">
-          Reglas v7 · solo decide, nunca mueve dinero. Prototipo para el Reto Blinka.
-        </p>
+      <SidebarFooter className="px-4 pb-6">
+        <div className="flex flex-col gap-2.5 rounded-xl bg-sidebar-card p-3.5">
+          <span className="flex items-center gap-2 text-[13px] font-semibold">
+            <span aria-hidden className="size-2 rounded-full bg-sidebar-primary" />
+            Agente activo
+          </span>
+          <p className="text-xs leading-normal text-sidebar-muted">
+            Reglas v7 · solo decide, nunca mueve dinero. Prototipo para el Reto Blinka.
+          </p>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
