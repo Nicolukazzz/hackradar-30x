@@ -11,7 +11,8 @@ import { cargarGolden, cargarSinDocumentos, type DocGolden } from "@/evaluacion/
 import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
 
-import type { ArchivoGuardado, EscenarioCargado, FiltroRegistro, Repositorio, ResumenVersion } from "./repositorio";
+import { coincideFiltro, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
+import type { ArchivoGuardado, EscenarioCargado, Repositorio, ResumenVersion } from "./repositorio";
 
 
 type Estado = {
@@ -61,21 +62,10 @@ export async function crearRepositorioMemoria(
     const ruta = path.join(s.carpeta, d.esperado.documento);
     s.archivos.set(d.doc.ref_interna, { ruta, nombre: path.basename(ruta), mime: mimeDeArchivo(ruta) });
   }
-  // Cola de escrituras: cada operación exclusiva espera a que termine la anterior.
-  let cola: Promise<unknown> = Promise.resolve();
-
-  // cargarDatosComunes garantiza al menos una versión; se parte de la primera para no depender de eso aquí.
-  const vigente = (): Reglas => {
-    const [primera, ...resto] = s.versiones;
-    if (!primera) throw new Error("no hay ninguna versión de reglas cargada");
-    return resto.reduce((a, b) => (b.version > a.version ? b : a), primera);
-  };
-  const coincide = (e: EntradaRegistro, f?: FiltroRegistro) =>
-    !f ||
-    ((!f.tipo || f.tipo.includes(e.tipo)) &&
-      (!f.decision || (e.decision !== null && f.decision.includes(e.decision))) &&
-      (!f.actor || e.actor.tipo === f.actor) &&
-      (!f.ref_interna || e.ref_interna === f.ref_interna));
+  const enExclusiva = crearCola();
+  const reservadas = new Set<string>();
+  const vigente = (): Reglas => versionVigente(s.versiones);
+  const coincide = coincideFiltro;
 
   return {
     async datosComunes() {
@@ -110,23 +100,15 @@ export async function crearRepositorioMemoria(
       return { nombre: a.nombre, mime: a.mime, bytes: await readFile(a.ruta) };
     },
     async leerAdjunto(ref, indice) {
-      const adj = s.documentos.get(ref)?.adjuntos[indice];
-      if (!adj) return null;
-      if (adj.bytes_base64 !== undefined) return { nombre: adj.nombre, mime: adj.mime, bytes: Buffer.from(adj.bytes_base64, "base64") };
-      if (adj.ruta === undefined) return null;
-      const base = path.resolve(s.carpeta);
-      const ruta = path.resolve(base, adj.ruta);
-      if (!ruta.startsWith(base + path.sep)) return null; // nunca fuera de la carpeta del escenario
-      return { nombre: adj.nombre, mime: adj.mime, bytes: await readFile(ruta) };
+      return leerAdjuntoDe(s.documentos.get(ref), indice, s.carpeta);
     },
     async siguienteRef(anio) {
-      // Las refs del escenario ya están reservadas para sus documentos (aunque aún no se procesen).
-      const usadas = [...s.documentos.keys(), ...s.golden.map((d) => d.doc.ref_interna), ...s.registro.map((e) => e.ref_interna)];
-      const max = usadas.reduce((m, ref) => {
-        const x = new RegExp(String.raw`^INT-${anio}-(\d{6})$`).exec(ref);
-        return x ? Math.max(m, Number(x[1])) : m;
-      }, 0);
-      return `INT-${anio}-${String(max + 1).padStart(6, "0")}`;
+      // Las refs del escenario ya están reservadas para sus documentos (aunque aún no se procesen), y cada
+      // ref entregada queda reservada aunque no se llegue a guardar: nunca se reutiliza (igual que Supabase).
+      const usadas = [...reservadas, ...s.documentos.keys(), ...s.golden.map((d) => d.doc.ref_interna), ...s.registro.map((e) => e.ref_interna)];
+      const ref = formatoRef(anio, maxRef(usadas, anio) + 1);
+      reservadas.add(ref);
+      return ref;
     },
     async siguienteIdRegistro(anio) {
       return siguienteIdRegistro(s.registro, String(anio));
@@ -153,11 +135,7 @@ export async function crearRepositorioMemoria(
     async documentosEscenario() {
       return [...s.golden];
     },
-    enExclusiva<T>(fn: () => Promise<T>): Promise<T> {
-      const turno = cola.then(fn, fn);
-      cola = turno.catch(() => undefined);
-      return turno;
-    },
+    enExclusiva,
     async pendientes() {
       return s.golden.filter((d) => !s.documentos.has(d.doc.ref_interna));
     },
