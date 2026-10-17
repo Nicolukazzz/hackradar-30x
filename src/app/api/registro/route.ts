@@ -1,9 +1,11 @@
 import { z } from "zod";
 
 import { obtenerRepositorio } from "@/repositorio";
+import { conRol } from "@/lib/auth/ruta";
 import { obtenerRegistro } from "@/servicios/registro";
 
 import { error, manejar, ok } from "../_http";
+import { PANEL } from "../_identidad";
 
 const Consulta = z.object({
   decision: z.enum(["todas", "pagar", "frenar", "escalar", "humanas"]).optional(),
@@ -12,7 +14,7 @@ const Consulta = z.object({
 });
 
 /** GET /api/registro?decision=&actor=agente|humano&q= (§12): entradas agrupadas por día, más nuevas primero. */
-export async function GET(req: Request) {
+export const GET = conRol(PANEL, async (req: Request) => {
   try {
     const c = Consulta.safeParse(Object.fromEntries(new URL(req.url).searchParams));
     if (!c.success) return error(400, "Parámetros inválidos: decision todas|pagar|frenar|escalar|humanas, actor agente|humano.");
@@ -20,4 +22,4 @@ export async function GET(req: Request) {
   } catch (e) {
     return manejar(e);
   }
-}
+});

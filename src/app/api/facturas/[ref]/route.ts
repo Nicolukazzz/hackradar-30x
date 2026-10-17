@@ -1,10 +1,12 @@
+import { conRol } from "@/lib/auth/ruta";
 import { obtenerRepositorio } from "@/repositorio";
 import { obtenerFactura } from "@/servicios/facturas";
 
 import { error, manejar, ok } from "../../_http";
+import { PANEL } from "../../_identidad";
 
 /** GET /api/facturas/:ref (§12): traza completa de una factura. */
-export async function GET(_req: Request, ctx: RouteContext<"/api/facturas/[ref]">) {
+export const GET = conRol(PANEL, async (_req: Request, ctx: RouteContext<"/api/facturas/[ref]">) => {
   try {
     const { ref } = await ctx.params;
     const factura = await obtenerFactura(await obtenerRepositorio(), ref);
@@ -12,4 +14,4 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/facturas/[ref]"
   } catch (e) {
     return manejar(e);
   }
-}
+});

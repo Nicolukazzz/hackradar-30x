@@ -33,13 +33,14 @@ function mismoOrigen(req: Request): boolean {
 
 export function crearGuardia({ obtenerSesion, auditar }: DependenciasGuardia) {
   function conRol<C>(roles: Rol[], manejador: Manejador<C>) {
-    return async (req: Request, ctx: C): Promise<Response> => {
+    // ctx opcional: las rutas sin parámetros (`/api/bandeja`) se llaman solo con la petición.
+    return async (req: Request, ctx?: C): Promise<Response> => {
       const ruta = new URL(req.url).pathname;
       let sesion: Sesion | null = null;
       try {
         if (!METODOS_SEGUROS.has(req.method) && !mismoOrigen(req)) throw new ErrorAuth(403);
         sesion = await obtenerSesion();
-        return await manejador(req, ctx, exigirRol(sesion, ...roles));
+        return await manejador(req, ctx as C, exigirRol(sesion, ...roles));
       } catch (e) {
         if (!(e instanceof ErrorAuth)) throw e;
         const evento: EventoAuditoria = { tipo: e.status === 401 ? "401" : "403", usuario_id: sesion?.usuario_id ?? null, ruta };

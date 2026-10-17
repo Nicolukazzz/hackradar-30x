@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { ErrorDecision } from "@/aprobaciones/decidir";
 import { ErrorReglas } from "@/servicios/reglas";
+import { ErrorSubida } from "@/servicios/subida";
 
 export function ok<T>(datos: T, init?: ResponseInit): NextResponse<T> {
   return NextResponse.json(datos, init);
@@ -44,6 +45,7 @@ export class ErrorEntrada extends Error {
 export function manejar(e: unknown): NextResponse {
   if (e instanceof ErrorEntrada) return error(400, e.message);
   if (e instanceof ErrorDecision) return error(e.estado, e.message);
+  if (e instanceof ErrorSubida) return error(e.estado, e.message);
   if (e instanceof ErrorReglas) return error(e.estado, e.message, e.reporte ? { reporte: e.reporte } : undefined);
   console.error(e);
   return error(500, "Error interno. Nada se pagó ni se registró a medias.");

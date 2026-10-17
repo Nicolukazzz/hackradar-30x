@@ -1490,3 +1490,17 @@ Cuerpo `{ "extraccion": Extraccion, "beneficiario_id"?: string }` → `Resultado
 ## POST /api/demo/reiniciar · POST /api/demo/actuar-como
 
 Solo demo (REPOSITORIO=memoria): vuelve al estado inicial / elige con qué aprobador se actúa.
+
+## POST /api/documentos
+
+Multipart con un solo campo `archivo` (PDF, PNG, JPG o XML, ≤ 10 MB). Roles: `proveedor` (canal portal) o panel (carga manual). El remitente sale de la sesión. → 201:
+
+```json
+{
+  "ref_interna": "INT-2026-000013",
+  "estado": "PAGAR",
+  "mensaje": "Recibimos tu factura FAC-1041. Ref INT-2026-000013. Estado: aprobada para pago."
+}
+```
+
+`mensaje` es el aviso al proveedor (sin reglas internas) o, para el panel, la explicación completa del agente. Errores `{ error }`: 400 (sin multipart, más de un archivo, vacío), 401, 403, 413 (> 10 MB), 415 (tipo real no permitido), 422 (PDF cifrado o sin páginas), 429 (más de 20 por minuto).

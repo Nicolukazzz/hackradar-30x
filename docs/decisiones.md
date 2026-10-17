@@ -12,6 +12,14 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-16 — Subida segura (#26) y todas las rutas de API con `conRol`
+- Estado: propuesta
+- Decisión: `POST /api/documentos` (multipart, campo `archivo`, un archivo) para portal (proveedor) y panel (tesorería/aprobador, canal `carga_manual`, remitente `interno` = correo de la sesión). El tipo se decide por magic bytes (`src/ingesta/validar-archivo.ts`: PDF, PNG, JPG, XML; PDF cifrado o sin páginas → 422; > 10 MB → 413, cortando el cuerpo al pasar el límite; otro tipo → 415). El remitente del proveedor sale de la sesión (`portal_usuario` de su beneficiario), nunca del cuerpo. Se guarda como `{sha256}.{ext}`; el nombre original queda saneado como metadato del adjunto. 20 subidas/min por usuario (en memoria del proceso). Entra por `ingerir` + `procesarDocumento` (#11). Componente `SubirDocumento` en `src/components/subir-documento.tsx` (lo montan #12 y #6).
+- Rutas: todas las de `src/app/api/**` pasan por `conRol` (el test de arquitectura vuelve a ser estricto). Panel (`tesoreria`, `aprobador`): bandeja, facturas, registro y exportes, reglas GET, simular, procesar, evaluar, aprobaciones GET, reiniciar demo. Solo `aprobador`: decidir y guardar reglas; quién decide sale de `sesion.aprobador_id` (`aprobadorDeLaSesion`). Archivo original: panel, o el proveedor dueño (subido por él por el portal); para el resto 404. XML y otros tipos se descargan (`attachment`), PDF/imagen se muestran con CSP. Se elimina `POST /api/demo/actuar-como` y la cookie `actuar_como` (coherente con #25, que quitó el modo demo).
+- Pendiente cuando exista el repositorio Supabase: bucket privado `documentos/{ref}/{sha256}.{ext}` con URL firmada de 5 min. Con `REPOSITORIO=memoria` los archivos viven en memoria del proceso y se sirven solo por la ruta protegida.
+- Por qué: un solo camino para archivos evita que cada canal valide distinto, y sin `conRol` un proveedor logueado podía leer el registro de todos y llamar a `/api/procesar`.
+- Quién: J
+
 ## 2026-10-16 — Ingesta única (#11): contrato para los canales
 - Estado: propuesta
 - Decisión: todo canal llama a `ingerir(entrada: DocumentoEntrante, { repo, reloj, dirBase?, original? })` (`src/ingesta/ingerir.ts`: zod, sha256 del adjunto principal o del texto, formato por canal/mime, ref `INT-AAAA-NNNNNN` reservada en exclusiva, remitente→beneficiario con correo exacto en minúsculas) y después a `procesarDocumento(ref, { repo, ahora, extractor })` (`src/ingesta/pipeline.ts`), que devuelve la `EntradaRegistro` para responder con `textoRespuesta(entrada, idioma, { urlPortal })` (`src/ingesta/respuesta.ts`). El extractor se inyecta: `extractorReal(deps)` (#4) o `extractorGolden(id)` (demo sin LLM, por hash). La decisión pasa por `procesarLote` con un lote de uno, así presupuesto, ids y momento son los mismos que en "Procesar facturas nuevas".
