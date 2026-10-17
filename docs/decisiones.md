@@ -12,6 +12,18 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-16 — Reglas de UI: componentes primero, estilo premium
+- Estado: aceptada
+- Decisión: antes de escribir UI se busca el componente (MCP `shadcn` con registros gratis `@react-bits`, `@skiper-ui`, `@magicui`, `@aceternity`, `@kibo-ui`; MCP `21st`). Estilo profesional premium tipo Apple, Geist sin cursiva, interacción por pasos (máx. 3–5 campos visibles), nada de formularios largos. Reglas completas en `CLAUDE.md` "Reglas de UI".
+- Por qué: menos tiempo en UI, aspecto consistente y una demo que transmita confianza en un producto de pagos.
+- Quién: N
+
+## 2026-10-16 — Infra: Railway Hobby + Supabase en cuenta del equipo
+- Estado: aceptada
+- Decisión: deploy en Railway plan Hobby (USD 5/mes, proyecto `hackradar-30x`, dueño N; el resto se invita). Persistencia de deploy en Supabase free, en una cuenta creada para el equipo con un correo dedicado, nunca en cuentas personales. MCP `supabase` del repo se autentica por OAuth con esa cuenta.
+- Por qué: Railway da URL pública estable para webhooks de Telegram y correo sin apagarse en la demo. Supabase aporta auth por enlace mágico y storage para el portal de proveedores, que Postgres solo de Railway no da. Cuenta separada para no mezclar con proyectos personales.
+- Quién: N
+
 ## 2026-10-16 — Dataset v1 generado y verificado (#3)
 - Estado: propuesta
 - Decisión: `data/` completo (comunes + `lote-demo-oct` + `trampas-extra`) lo genera `scripts/dataset/generar.py` desde `mundo.py` y `escenarios.py`; nadie edita `data/` a mano. Cada decisión esperada se escribe a mano y la recalcula un oráculo independiente (`oraculo.py`); el generador falla si no coinciden o si la aritmética del lote demo no da la del prototipo. Ajustes de especificación que salieron de construirlo (§4.3, §10, §11, §16 punto 6): campos afectados por R1 → reglas dependientes NO_APLICA; hitos repetidos sin ventana; doble aprobación con al menos una firma con límite suficiente; trampa nueva `fecha-invalida`; líneas `VR-SOP` y `OC-126`; `.meta.json` con `archivo_original` y adjuntos extraídos.
@@ -43,7 +55,7 @@ Una entrada por decisión, la más nueva arriba. Formato:
 - Quién: J
 
 ## 2026-10-16 — Stack propuesto
-- Estado: propuesta (se acepta en #1)
+- Estado: aceptada (#1). Versiones reales: Next.js 16.4.2, React 19.3, Tailwind v4, shadcn/ui `base-nova` (Base UI), Vitest 5, zod 4. `cacheComponents` apagado para mantener el renderizado dinámico clásico.
 - Decisión: Next.js App Router + TypeScript estricto + Vitest + fast-check; persistencia detrás de interfaz `Repositorio` (memoria/JSON para tests y demo local, Supabase free para deploy); generador de dataset en Python (reportlab + Pillow). Carpetas y comandos en especificación §2.
 - Por qué: una sola app para portal, panel y API (como proponía `producto.md` §9); el motor queda como código puro independiente del framework, así la evaluación corre sin base de datos ni LLM.
 - Quién: J

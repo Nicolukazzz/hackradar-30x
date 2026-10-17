@@ -9,7 +9,13 @@
     "claude-md-management@claude-plugins-official": true
   },
   "enableAllProjectMcpServers": false,
-  "enabledMcpjsonServers": ["playwright"],
+  "enabledMcpjsonServers": [
+    "playwright",
+    "shadcn",
+    "next-devtools",
+    "21st",
+    "supabase"
+  ],
   "permissions": {
     "allow": [
       "Bash(git status*)",
@@ -41,7 +47,27 @@
       "Bash(grep *)",
       "WebSearch",
       "WebFetch",
-      "mcp__playwright__*"
+      "mcp__playwright__*",
+      "mcp__railway__fetch-docs",
+      "mcp__railway__search-docs",
+      "mcp__railway__get-deployment-diagnosis",
+      "mcp__railway__environment-status",
+      "mcp__railway__get-status",
+      "mcp__railway__get-logs",
+      "mcp__railway__list-domains",
+      "mcp__railway__list-deployments",
+      "mcp__railway__list-services",
+      "mcp__railway__list-projects",
+      "mcp__railway__whoami",
+      "mcp__next-devtools__*",
+      "mcp__shadcn__*",
+      "mcp__21st__*",
+      "mcp__supabase__search_docs",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__list_extensions",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__get_logs",
+      "mcp__supabase__get_advisors"
     ],
     "deny": [
       "Read(./.env)",
@@ -51,7 +77,8 @@
       "Bash(git push --force*)",
       "Bash(git push -f*)",
       "Bash(git reset --hard*)",
-      "Bash(rm -rf *)"
+      "Bash(rm -rf *)",
+      "mcp__claude_ai_Supabase"
     ]
   },
   "hooks": {

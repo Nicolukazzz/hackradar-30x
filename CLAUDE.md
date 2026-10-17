@@ -6,7 +6,7 @@ Plataforma: https://hackradar.30x.com/recursos
 ## Estado actual
 
 - **Reto confirmado: Blinka — Agentes que pagan por la empresa** (pago automático de facturas). Todo el trabajo va a este reto. Brief completo: @docs/retos/blinka.md
-- Fase: **especificación v1 → construcción**. Qué y por qué: @docs/producto.md. **Contrato técnico (tipos, reglas R1–R11, dataset, API, pantallas, evaluación): @docs/especificacion.md** — fuente de verdad para escribir código. Prototipo visual navegable: `docs/diseno/prototipo-ui.html` (5 pantallas). Stack propuesto, aún no aceptado (#1).
+- Fase: **especificación v1 → construcción**. Qué y por qué: @docs/producto.md. **Contrato técnico (tipos, reglas R1–R11, dataset, API, pantallas, evaluación): @docs/especificacion.md** — fuente de verdad para escribir código. Prototipo visual navegable: `docs/diseno/prototipo-ui.html` (5 pantallas). Stack aceptado en #1 (ver "Stack y comandos").
 - Cada issue (#1–#14) cita secciones de la especificación (`§4.3`) y trae un prompt listo para Claude Code. Antes de implementar: `gh issue view <n>` + leer las secciones citadas.
 
 ## Producto en una frase
@@ -53,9 +53,33 @@ Frenar si falla: R2 duplicado · R5 no cuadra con lo acordado (±2 %) · R6 sobr
 
 ## Stack y comandos
 
-_Pendiente de aceptar en #1._ Propuesta (especificación §2): Next.js App Router + TypeScript estricto + Vitest + fast-check; persistencia detrás de interfaz `Repositorio` (memoria/JSON para tests y demo local, Supabase free para deploy); generador de dataset en Python (reportlab + Pillow); bot Telegram por webhook. Carpetas: `src/dominio`, `src/reglas`, `src/extraccion`, `src/ingesta`, `src/registro`, `src/aprobaciones`, `src/repositorio`, `src/evaluacion`, `src/app`, `scripts/`, `tests/`.
+Aceptado en #1: **Next.js 16.4 (App Router, Turbopack) + React 19 + TypeScript estricto** (`strict`, `noUncheckedIndexedAccess`) + **Tailwind v4 + shadcn/ui** (estilo `base-nova`, Base UI, iconos `lucide-react`) + **Vitest + fast-check** + `zod` + `decimal.js` + fuentes `geist`. Persistencia detrás de interfaz `Repositorio` (memoria/JSON para tests y demo local, Supabase para deploy). Generador de dataset en Python (`scripts/dataset/requirements.txt`: reportlab + Pillow). Alias `@/` → `src/`.
 
-Comandos propuestos (confirmar cuando exista el esqueleto): `npm run dev` · `npm test` · `npm run evaluar -- --escenario lote-demo-oct --extraccion golden|real` · `npm run dataset`.
+Next 16.4 cambia APIs respecto a versiones anteriores: antes de usar una API de Next, leer `AGENTS.md` y la guía en `node_modules/next/dist/docs/` (o MCP `next-devtools`). `cacheComponents` está apagado a propósito (renderizado dinámico clásico, más simple para el equipo).
+
+| Comando | Hace |
+|---|---|
+| `npm run dev` | App en `localhost:3000` |
+| `npm run build` / `npm start` | Build y servidor de producción (Railway) |
+| `npm test` / `npm run test:watch` | Vitest (`tests/**/*.test.ts`) |
+| `npm run typecheck` | `next typegen && tsc --noEmit` |
+| `npm run lint` | ESLint (incluye prohibición de `Date.now()` / `new Date()` en `src/dominio` y `src/reglas`) |
+| `npm run evaluar -- --escenario lote-demo-oct --extraccion golden\|real` | Evaluación §14 (stub hasta #7) |
+| `npm run dataset` | `.venv/bin/python scripts/dataset/generar.py` (requiere `python3 -m venv .venv && .venv/bin/pip install -r scripts/dataset/requirements.txt`) |
+
+CI (`.github/workflows/ci.yml`): `npm ci` → `typecheck` → `lint` → `test` en cada PR. Componentes UI en `src/components/ui/` (shadcn, agregar con `npx shadcn@4.22.0 add …`), layout del panel en `src/app/(panel)/`, barra lateral en `src/components/app-sidebar.tsx`. Tokens §15 en `src/app/globals.css` (`bg-pagada`, `text-frenada-foreground`, `bg-brand`, etc.).
+
+Infra: deploy en **Railway** (plan Hobby USD 5, proyecto `hackradar-30x`, dueño N). Persistencia en deploy: **Supabase** en cuenta del equipo, nunca cuentas personales.
+
+## Reglas de UI (obligatorias)
+
+- **Componentes antes que código a mano.** Antes de escribir un componente, buscarlo con MCP `shadcn` (registros `@shadcn`, `@react-bits`, `@skiper-ui`, `@magicui`, `@aceternity`, `@kibo-ui`; ya están en el índice oficial, no requieren config) o MCP `21st`. Solo generar desde cero si no hay nada que sirva, y decir por qué. Solo componentes gratis (Skiper UI tiene "pro": no usarlos).
+- **Estilo profesional premium, tipo Apple**: mucho espacio en blanco, jerarquía clara, bordes suaves, sombras sutiles, animaciones cortas y con propósito (no decorativas). Sobrio: es un producto de pagos, la confianza vende más que los efectos.
+- **Tipografía**: Geist / Geist Mono (spec §15, cercana a SF Pro). **Nada de cursiva** en ningún lado. Montos e ids en Geist Mono con cifras tabulares.
+- **Intuitivo**: cada pantalla responde una pregunta; la acción principal es obvia; estados vacíos, de carga y de error siempre diseñados.
+- **Interacción por pasos, no formularios largos.** Máximo 3–5 campos visibles a la vez; dividir en pasos/wizard, edición en línea, valores por defecto inteligentes, confirmaciones claras. Prohibido un formulario de 20 campos.
+- Mucho feedback al usuario: hover, foco visible, toasts al guardar, confirmación antes de acciones irreversibles, explicación al lado de cada decisión.
+- Tokens de color y radios: especificación §15. Revisar con skill `web-design-guidelines` y capturas con MCP `playwright` (1440 px y 390 px) antes de entregar UI.
 
 **Presupuesto LLM: $0.** El equipo tiene Claude Pro (sirve para construir con Claude Code, NO incluye API; nunca usar su token en el backend). En runtime: parsear XML/PDF sin IA primero; LLM solo para fotos/escaneados/texto desordenado, detrás de interfaz intercambiable (`LLM_PROVIDER`): Gemini Flash free tier → Groq free tier como respaldo → Claude Haiku 5.5 (`claude-haiku-5-5`) solo si aparece presupuesto. Explicaciones con plantillas desde las reglas evaluadas. Detalle: `docs/producto.md` §4. Si se usa Claude API, consultar skill `claude-api` antes de escribir código.
 
@@ -82,3 +106,7 @@ Equipo GitHub: `Nicolukazzz`, `juandatiner`, `Siftings`. Los agentes de distinta
 - `/registrar-decision <decisión>` — agregar entrada a `docs/decisiones.md`.
 - `/generar-facturas` — crear facturas simuladas + reglas de empresa ficticia en `data/`.
 - `/evaluar-agente` — correr agente sobre dataset y medir autonomía / seguridad / explicabilidad.
+
+Externas (instaladas con `npx skills`, lock en `skills-lock.json`): `shadcn`, `supabase`, `supabase-postgres-best-practices`, `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines`, `use-railway`, `test-driven-development` (usar en motor de reglas), `systematic-debugging`, `verification-before-completion` (correr `npm test` + `typecheck` antes de decir "listo").
+
+MCPs: `playwright` (probar UI), `shadcn` (componentes + registros gratis), `21st` (buscar ideas; free = 2 descargas/día, necesita `API_KEY_21ST` en la shell), `next-devtools` (errores del `next dev`), `supabase` (OAuth con la cuenta del equipo, nunca personal). Railway MCP va por persona, no en repo. Versiones de MCP fijadas: subirlas a propósito, no con `@latest`. Detalle: `docs/research/herramientas-claude-code.md`.
