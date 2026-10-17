@@ -1,28 +1,22 @@
 "use client";
 
-import { CheckIcon, CopyIcon, Loader2Icon, SendIcon } from "lucide-react";
+import { Loader2Icon, SendIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Boton } from "@/app/_componentes";
+import { BotonCopiar, EnlaceGenerado, SelectorOpciones, VIGENCIAS, type Opcion } from "@/app/_componentes/invitacion";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { llamar } from "../../equipo/_equipo/api";
 
 // "Invitar proveedor" (#28), en 3 pasos: quién (2 campos opcionales) → vigencia y envíos → enlace para copiar.
 // El enlace lleva el token en claro y solo existe en esta respuesta.
 
-const VIGENCIAS = [
-  { value: "1", label: "1 día" },
-  { value: "7", label: "7 días" },
-  { value: "14", label: "14 días" },
-  { value: "30", label: "30 días" },
-];
-const USOS = [
+const USOS: Opcion[] = [
   { value: "1", label: "1 factura" },
   { value: "3", label: "3 facturas" },
   { value: "5", label: "5 facturas" },
@@ -41,7 +35,6 @@ export function InvitarProveedor() {
   const [dias, setDias] = useState("7");
   const [usos, setUsos] = useState("5");
   const [enlace, setEnlace] = useState<string | null>(null);
-  const [copiado, setCopiado] = useState(false);
   const [ocupado, iniciar] = useTransition();
   const correoInvalido = correo.trim() !== "" && !CORREO.test(correo.trim());
 
@@ -52,7 +45,6 @@ export function InvitarProveedor() {
     setDias("7");
     setUsos("5");
     setEnlace(null);
-    setCopiado(false);
   }
 
   function cambiarAbierto(a: boolean) {
@@ -78,17 +70,6 @@ export function InvitarProveedor() {
         toast.error("No se creó el enlace", { description: e instanceof Error ? e.message : undefined });
       }
     });
-  }
-
-  async function copiar() {
-    if (!enlace) return;
-    try {
-      await navigator.clipboard.writeText(enlace);
-      setCopiado(true);
-      toast.success("Enlace copiado", { description: "Envíaselo al proveedor por correo, WhatsApp o el medio que prefieras." });
-    } catch {
-      toast.error("No se pudo copiar", { description: "Selecciona el enlace y cópialo a mano." });
-    }
   }
 
   const titulo = paso === "quien" ? "¿A quién invitas?" : paso === "limites" ? "¿Por cuánto tiempo?" : "Enlace listo";
@@ -141,46 +122,22 @@ export function InvitarProveedor() {
             <FieldGroup className="gap-4">
               <Field>
                 <FieldLabel htmlFor="prov-vigencia">Vence en</FieldLabel>
-                <Select items={VIGENCIAS} value={dias} onValueChange={(v) => v && setDias(v)}>
-                  <SelectTrigger id="prov-vigencia" className="w-full data-[size=default]:h-11">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VIGENCIAS.map((v) => (
-                      <SelectItem key={v.value} value={v.value}>
-                        {v.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SelectorOpciones id="prov-vigencia" opciones={VIGENCIAS} valor={dias} onCambio={setDias} />
               </Field>
               <Field>
                 <FieldLabel htmlFor="prov-usos">Puede enviar hasta</FieldLabel>
-                <Select items={USOS} value={usos} onValueChange={(v) => v && setUsos(v)}>
-                  <SelectTrigger id="prov-usos" className="w-full data-[size=default]:h-11">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {USOS.map((v) => (
-                      <SelectItem key={v.value} value={v.value}>
-                        {v.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SelectorOpciones id="prov-usos" opciones={USOS} valor={usos} onCambio={setUsos} />
                 <FieldDescription>Todo lo que llegue por el enlace lo revisa una persona antes de pagar.</FieldDescription>
               </Field>
             </FieldGroup>
           ) : null}
 
           {paso === "enlace" && enlace ? (
-            <div className="flex flex-col gap-2">
-              <Input readOnly value={enlace} aria-label="Enlace para el proveedor" onFocus={(e) => e.target.select()} className="h-11 font-mono text-xs" />
-              <p className="text-[13px] text-muted-foreground">
-                {nombre.trim() || "Proveedor nuevo"} · vence en {VIGENCIAS.find((v) => v.value === dias)?.label} · hasta {USOS.find((v) => v.value === usos)?.label}
-                {correo.trim() ? ` · solo ${correo.trim().toLowerCase()}` : ""}
-              </p>
-            </div>
+            <EnlaceGenerado
+              enlace={enlace}
+              etiqueta="Enlace para el proveedor"
+              resumen={`${nombre.trim() || "Proveedor nuevo"} · vence en ${VIGENCIAS.find((v) => v.value === dias)?.label} · hasta ${USOS.find((v) => v.value === usos)?.label}${correo.trim() ? ` · solo ${correo.trim().toLowerCase()}` : ""}`}
+            />
           ) : null}
 
           <DialogFooter className="-mx-6 -mb-6 px-6">
@@ -205,10 +162,7 @@ export function InvitarProveedor() {
                 <Boton variante="secundaria" onClick={() => cambiarAbierto(false)}>
                   Listo
                 </Boton>
-                <Boton variante="primaria" onClick={copiar}>
-                  {copiado ? <CheckIcon aria-hidden /> : <CopyIcon aria-hidden />}
-                  {copiado ? "Copiado" : "Copiar enlace"}
-                </Boton>
+                <BotonCopiar enlace={enlace ?? ""} descripcion="Envíaselo al proveedor por correo, WhatsApp o el medio que prefieras." />
               </>
             ) : null}
           </DialogFooter>
