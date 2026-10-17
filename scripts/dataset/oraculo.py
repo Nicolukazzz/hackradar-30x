@@ -133,11 +133,17 @@ class Caso:
     def monto_ok(self) -> bool:
         return "monto_total" not in self.afectados
 
+    @property
+    def r3_falla(self) -> bool:
+        return self.ben is None or self.ben["estado"] != "activo"
 
-def _campos_afectados(ext: dict, hoy: str) -> set[str]:
-    """R1: obligatorios faltantes + campos que participan en una validación fallida."""
+
+def _campos_afectados(ext: dict, hoy: str, tasas: dict[str, str]) -> set[str]:
+    """R1: obligatorios faltantes + campos que participan en una validación fallida (§4.3)."""
     afectados = {k for k in CAMPOS_OBLIGATORIOS if ext.get(k) is None}
     subtotal, impuestos, total = ext.get("subtotal"), ext.get("impuestos"), ext.get("monto_total")
+    if total and (total["centavos"] <= 0 or total["moneda"] not in tasas):
+        afectados.add("monto_total")
     if subtotal and impuestos and total and subtotal["centavos"] + impuestos["centavos"] != total["centavos"]:
         afectados.add("monto_total")
     emision, vence = ext.get("fecha_emision"), ext.get("fecha_vencimiento")
@@ -152,22 +158,25 @@ def _es_duplicado(caso: Caso, f: dict, dup: dict) -> bool:
     """R2 contra una factura vigente del mismo beneficiario (§4.3)."""
     ext = caso.ext
     mismo_hash = bool(caso.doc["sha256"]) and f["sha256"] == caso.doc["sha256"]
-    mismo_numero = f["numero"] == caso.numero and _dias(f["emision"], ext["fecha_emision"]) <= dup["ventana_dias"]
-    parecida = (caso.monto_ok and "fecha_emision" not in caso.afectados
+    emision = None if "fecha_emision" in caso.afectados else ext["fecha_emision"]
+    fechas = emision is not None and f["emision"] is not None
+    mismo_numero = bool(caso.numero) and f["numero"] == caso.numero and (
+        not fechas or _dias(f["emision"], emision) <= dup["ventana_dias"])
+    parecida = (caso.monto_ok and fechas
                 and abs(Decimal(f["usd"] - caso.usd)) <= Decimal(caso.usd) * dup["tolerancia_monto_pct"] / 100
-                and _dias(f["emision"], ext["fecha_emision"]) <= dup["tolerancia_fecha_dias"])
+                and _dias(f["emision"], emision) <= dup["tolerancia_fecha_dias"])
     hito_pagado = bool(ext.get("hito_numero")) and f["hito"] == ext["hito_numero"] and f["estado"] == "pagada"
     return mismo_hash or mismo_numero or parecida or hito_pagado
 
 
 def _r4(caso: Caso) -> str:
-    if caso.ben is None or "cuenta_destino_ultimos4" in caso.afectados:
+    if caso.r3_falla or "cuenta_destino_ultimos4" in caso.afectados:
         return "NO_APLICA"
     return _falla_si(caso.ext["cuenta_destino_ultimos4"] != caso.ben["cuenta"]["ultimos4"])
 
 
 def _r5(caso: Caso, tolerancia_pct: int) -> str:
-    if caso.ben is None:
+    if caso.r3_falla:
         return "NO_APLICA"
     linea, _ = _linea_acordada(caso.ben, caso.ext)
     total = caso.ext.get("monto_total")
@@ -186,10 +195,12 @@ def _reglas_de_monto(caso: Caso, libro: "Libro", periodo: str, lim: dict, dispon
          "R6": _falla_si(usd > lim["maximo_absoluto_usd"]),
          "R7": _falla_si(usd > disponible),
          "R9": _falla_si(usd > lim["pago_automatico_usd"])}
-    if caso.ben is None:
+    if caso.r3_falla:
         r["R8"] = "NO_APLICA"
     else:
-        tope = caso.ben["limite_mensual_usd"] or lim["mensual_por_beneficiario_default_usd"]
+        tope = caso.ben["limite_mensual_usd"]
+        if tope is None:
+            tope = lim["mensual_por_beneficiario_default_usd"]
         acumulado = libro.total(periodo, "pagada", caso.ben_norm) + libro.total(periodo, "reservada", caso.ben_norm)
         r["R8"] = _falla_si(acumulado + usd > tope)
     return r
@@ -199,6 +210,8 @@ def _r11(caso: Caso) -> str:
     if caso.ben is None:
         return "FALLA"
     rem, canales = caso.doc["remitente"], caso.ben["canales"]
+    if rem["tipo"] == "interno":  # empleado de la empresa reenviando: vale solo si R3 cumple
+        return _falla_si(caso.r3_falla)
     vinculado = {
         "portal": rem["valor"] == canales["portal_usuario"],
         "correo": rem["valor"].lower() in [x.lower() for x in canales["correos"]],
@@ -214,14 +227,32 @@ def _combinar(r: dict[str, str]) -> tuple[str, list[str]]:
     return ("ESCALAR" if fallan else "PAGAR"), fallan
 
 
-def _asignacion(r: dict[str, str], caso: Caso, ahora: str) -> tuple[str, str]:
-    """Aprobador y plazo de respuesta (§10)."""
-    asignado = "lm" if r["R9"] == "FALLA" or r["R10"] == "FALLA" or (caso.usd or 0) > 500000 else "ap"
+def _asignacion(r: dict[str, str], caso: Caso, ahora: str, aprobadores: list[dict]) -> tuple[str, str]:
+    """Aprobador y plazo de respuesta (§10): al principal si falla R9 o R10 o el monto supera al otro aprobador."""
+    principal = next(a for a in aprobadores if a["principal"])
+    otro = next(a for a in aprobadores if not a["principal"])
+    supera_otro = otro["limite_usd"] is not None and (caso.usd or 0) > otro["limite_usd"]
+    asignado = principal["id"] if r["R9"] == "FALLA" or r["R10"] == "FALLA" or supera_otro else otro["id"]
     hoy, zona = ahora[:10], ahora[19:]
-    limite = date.fromisoformat(caso.ext["fecha_vencimiento"]) - timedelta(days=3)
+    vence = None if "fecha_vencimiento" in caso.afectados else caso.ext.get("fecha_vencimiento")
+    limite = date.fromisoformat(vence) - timedelta(days=3) if vence else date.fromisoformat(hoy)
     if limite <= date.fromisoformat(hoy):
         return asignado, f"{hoy}T18:00:00{zona}"
     return asignado, f"{limite.isoformat()}T12:00:00{zona}"
+
+
+_NO_ES_FACTURA = {"decision": "RECHAZADA_NO_FACTURA", "reglas_que_fallan": [], "asignado_a": None,
+                  "responder_antes_de": None, "usd": None, "disponible_antes": None}
+
+
+def _armar_caso(d: dict, por_nombre: dict[str, dict], tasas: dict[str, str], hoy: str) -> Caso:
+    ext = d["ext"]
+    afectados = _campos_afectados(ext, hoy, tasas)
+    total = ext.get("monto_total")
+    ben_norm = normalizar_nombre(ext["beneficiario_nombre"] or "")
+    usd = dinero.a_usd(total["centavos"], total["moneda"], tasas) if "monto_total" not in afectados else None
+    return Caso(doc=d, ext=ext, ben=por_nombre.get(ben_norm) if ben_norm else None, ben_norm=ben_norm,
+                numero=normalizar_numero(ext["numero"] or ""), usd=usd, afectados=afectados)
 
 
 def evaluar(escenario: dict, documentos: list[dict], historial: list[dict], datos: dict) -> list[dict]:
@@ -234,28 +265,22 @@ def evaluar(escenario: dict, documentos: list[dict], historial: list[dict], dato
     resultados = []
 
     for d in documentos:
-        ext = d["ext"]
-        if not ext["es_factura"]:
-            resultados.append({"decision": "RECHAZADA_NO_FACTURA", "reglas_que_fallan": [], "asignado_a": None,
-                               "responder_antes_de": None, "usd": None, "disponible_antes": None})
+        if not d["ext"]["es_factura"]:
+            resultados.append(dict(_NO_ES_FACTURA))
             continue
-        total = ext.get("monto_total")
-        ben_norm = normalizar_nombre(ext["beneficiario_nombre"])
-        caso = Caso(doc=d, ext=ext, ben=por_nombre.get(ben_norm), ben_norm=ben_norm,
-                    numero=normalizar_numero(ext["numero"]),
-                    usd=dinero.a_usd(total["centavos"], total["moneda"], tasas) if total else None,
-                    afectados=_campos_afectados(ext, ahora[:10]))
+        caso = _armar_caso(d, por_nombre, tasas, ahora[:10])
+        ext, ben_norm = caso.ext, caso.ben_norm
         disponible = reglas["presupuesto"]["monto_usd"] - libro.total(periodo, "pagada") - libro.total(periodo, "reservada")
 
         r = {"R1": _falla_si(bool(caso.afectados)),
              "R2": _falla_si(any(_es_duplicado(caso, f, reglas["duplicados"]) for f in libro.facturas if f["ben"] == ben_norm)),
-             "R3": _falla_si(caso.ben is None or caso.ben["estado"] != "activo"),
+             "R3": _falla_si(caso.r3_falla),
              "R4": _r4(caso),
              **_reglas_de_monto(caso, libro, periodo, reglas["limites"], disponible),
              "R10": _falla_si(bool(detectar_instrucciones(d["texto_crudo"]))),
              "R11": _r11(caso)}
         decision, fallan = _combinar(r)
-        asignado, plazo = _asignacion(r, caso, ahora) if decision == "ESCALAR" else (None, None)
+        asignado, plazo = _asignacion(r, caso, ahora, datos["aprobadores"]) if decision == "ESCALAR" else (None, None)
         resultados.append({"decision": decision, "reglas_que_fallan": fallan, "asignado_a": asignado,
                            "responder_antes_de": plazo, "usd": caso.usd, "disponible_antes": disponible, "detalle": r})
 

@@ -144,3 +144,87 @@ def test_detecta_dominio_y_banco_reales(tmp_path):
 def test_acepta_dominios_example_y_bancos_de_la_lista(tmp_path):
     (tmp_path / "x.json").write_text('{"de": "billing@cloudnorte.example.", "banco": "Banco Nopal"}', encoding="utf-8")
     assert verificar.datos_ficticios(tmp_path) == []
+
+
+# ---------------------------------------------------------------------------
+# Regresiones de la revisión del PR #18
+# ---------------------------------------------------------------------------
+
+def _tinta(imagen, caja) -> int:
+    """Píxeles de tinta oscura (luminancia < 100) en la zona: el texto legible los tiene, el difuminado no."""
+    return sum(imagen.crop(caja).convert("L").histogram()[:100])
+
+
+def test_foto_ilegible_no_deja_leer_ningun_monto():
+    """RV-1188: ni la fila del concepto ni el total pueden quedar nítidos (si no, el agente pagaría)."""
+    import render
+    fac = next(d for d in E.TRAMPAS_EXTRA if d["slug"] == "rv-1188")["factura"]
+    legible, zonas = render.hoja_factura(fac, "pt", legible=True)
+    borrosa, _ = render.hoja_factura(fac, "pt", legible=False)
+    assert len(zonas) >= 2  # fila del concepto + total
+    for caja in zonas:
+        assert _tinta(legible, caja) > 200, caja  # control: en la versión legible hay texto
+        assert _tinta(borrosa, caja) < _tinta(legible, caja) * 0.05, caja
+
+
+def _evaluar_uno(ext, remitente, beneficiarios=None):
+    esc = E.ESCENARIOS["lote-demo-oct"]
+    datos = {**generar.datos_comunes()}
+    if beneficiarios is not None:
+        datos["beneficiarios"] = beneficiarios
+    doc_ = {"recibido_en": esc["ahora"], "canal": "correo", "remitente": remitente, "sha256": None,
+            "texto_crudo": "", "ext": ext}
+    return oraculo.evaluar(esc, [doc_], [], datos)[0]
+
+
+def _ext(**cambios):
+    base = {"es_factura": True, "beneficiario_nombre": "CloudNorte S.A.S.", "numero": "INV-9999",
+            "monto_total": {"centavos": 124000, "moneda": "USD"}, "fecha_emision": "2026-10-10",
+            "fecha_vencimiento": "2026-10-25", "cuenta_destino_ultimos4": "5530",
+            "concepto": "Hosting and CDN (PO OC-118)", "referencia_acuerdo": "OC-118", "idioma": "en"}
+    return {**base, **cambios}
+
+
+CLOUDNORTE = {"tipo": "correo", "valor": "billing@cloudnorte.example"}
+
+
+def test_control_factura_normal_paga():
+    assert _evaluar_uno(_ext(), CLOUDNORTE)["decision"] == "PAGAR"
+
+
+@pytest.mark.parametrize("campo", ["numero", "beneficiario_nombre", "fecha_emision", "fecha_vencimiento",
+                                   "cuenta_destino_ultimos4", "concepto", "monto_total"])
+def test_campo_faltante_escala_sin_romper(campo):
+    r = _evaluar_uno(_ext(**{campo: None}), CLOUDNORTE)
+    assert r["decision"] == "ESCALAR"
+    assert "R1" in r["reglas_que_fallan"]
+
+
+@pytest.mark.parametrize("monto", [{"centavos": 0, "moneda": "USD"}, {"centavos": 100000, "moneda": "BOB"}])
+def test_monto_cero_o_moneda_sin_tasa_falla_r1(monto):
+    r = _evaluar_uno(_ext(monto_total=monto), CLOUDNORTE)
+    assert r["decision"] == "ESCALAR"
+    assert r["reglas_que_fallan"] == ["R1"]
+
+
+def test_remitente_interno_vale_solo_si_beneficiario_permitido():
+    interno = {"tipo": "interno", "valor": "laura@nebula.example"}
+    assert _evaluar_uno(_ext(), interno)["decision"] == "PAGAR"
+    r = _evaluar_uno(_ext(beneficiario_nombre="Desconocido S.A."), interno)
+    assert r["reglas_que_fallan"] == ["R3", "R11"]
+
+
+def test_beneficiario_inactivo_solo_falla_r3_y_no_aplica_r4_r5_r8():
+    inactivos = copy.deepcopy(mundo.BENEFICIARIOS)
+    next(b for b in inactivos if b["id"] == "ben-cloudnorte")["estado"] = "inactivo"
+    r = _evaluar_uno(_ext(cuenta_destino_ultimos4="0000", monto_total={"centavos": 200000, "moneda": "USD"}),
+                     CLOUDNORTE, inactivos)
+    assert r["reglas_que_fallan"] == ["R3"]
+    assert r["decision"] == "ESCALAR"
+    assert {r["detalle"][k] for k in ("R4", "R5", "R8")} == {"NO_APLICA"}
+
+
+def test_limite_mensual_cero_no_cae_al_default():
+    sin_cupo = copy.deepcopy(mundo.BENEFICIARIOS)
+    next(b for b in sin_cupo if b["id"] == "ben-cloudnorte")["limite_mensual_usd"] = 0
+    assert _evaluar_uno(_ext(), CLOUDNORTE, sin_cupo)["reglas_que_fallan"] == ["R8"]
