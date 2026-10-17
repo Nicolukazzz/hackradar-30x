@@ -37,10 +37,10 @@ export function facturasVigentes(historial: readonly EntradaRegistro[]): Factura
   return vigentes;
 }
 
-type Resolucion = "APROBADA_HUMANO" | "RECHAZADA_HUMANO";
+export type Resolucion = "APROBADA_HUMANO" | "RECHAZADA_HUMANO";
 
-/** Decisión humana final de cada DECISION_AGENTE (por id de origen). */
-function resoluciones(historial: readonly EntradaRegistro[]): Map<string, Resolucion> {
+/** Decisión humana final de cada DECISION_AGENTE (por id de origen). La usa también el portal (#12). */
+export function resoluciones(historial: readonly EntradaRegistro[]): Map<string, Resolucion> {
   const mapa = new Map<string, Resolucion>();
   for (const e of historial) {
     const final = e.decision === "APROBADA_HUMANO" || e.decision === "RECHAZADA_HUMANO";
