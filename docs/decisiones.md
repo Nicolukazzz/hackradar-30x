@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-16 — Motor de reglas R1–R11 implementado (#5)
+- Estado: propuesta
+- Decisión: `src/reglas/` (una regla por archivo, `evaluarFactura`, `procesarLote`, presupuesto, explicaciones) y `src/registro/registro.ts` (solo crear entradas). Reproduce el lote demo (5/3/4, disponible final 2.277,30) y las 14 trampas de noviembre con `extraccion_esperada`. Ajustes al contrato en especificación §16 punto 7: detector R10 vive en `src/reglas/inyeccion.ts` (el motor no importa `src/extraccion`; #4 puede re-exportarlo), try/catch por regla y global → ESCALAR, guardas extra para PAGAR (R6/R7/R9 CUMPLE y monto no nulo), USD que redondea a 0 cuenta como monto no confiable, `momento` de la entrada = `recibido_en`, explicaciones nombran al beneficiario y ESCALAR dice cuánto reserva.
+- Por qué: el motor tiene que defenderse solo aunque el extractor falle o lo engañen. Los invariantes de §5 corren con 10.000 facturas aleatorias (fast-check) y encontraron un caso real (COP 1 → USD 0,00 se pagaba). Nombrar al beneficiario y el monto en cada explicación cumple el criterio de explicabilidad sin abrir la traza.
+- Quién: N
+
 ## 2026-10-16 — Extracción: parser por etiquetas primero, LLM solo para faltantes (#4)
 - Estado: propuesta
 - Decisión: `src/extraccion/` expone `extraer(doc: DocumentoRecibido, { llm, cache?, dirBase?, confianzaMinima? }): Promise<Extraccion>` (lo usan #11 y #7), `detectarInstrucciones(texto)` para R10 (#5) y `proveedorDesdeEntorno()` para elegir LLM. Parser sin IA por etiquetas ES/EN/PT (PDF con `unpdf`, `.eml` crudo con `mailparser`, chat, XML CFDI/UBL): 0,99 con etiqueta, 0,6 inferido. Solo si un obligatorio queda < 0,90 se llama al LLM (Gemini → Groq → ninguno, REST sin SDK) y solo para esos campos; si parser y LLM discrepan la confianza baja a ≤ 0,5 (R1 escala); lo mismo entre fuentes del mismo documento (XML, PDF y cuerpo del correo: "cambiamos de cuenta" en el cuerpo con otra cuenta en el PDF escala). Un adjunto ilegible no lanza: deja campos vacíos y R1 escala. Respuesta del LLM validada con zod: si no valida, se descarta entera. La caché (`.cache/extraccion/`) guarda solo la respuesta del LLM por hash de lo enviado; `texto_crudo` siempre se recalcula, para que R10 nunca vea el cuerpo de otro correo. Anthropic queda sin implementar (opcional). Sin LLM, los 24 documentos PDF/EML/TXT del dataset extraen igual a `extraccion_esperada`.

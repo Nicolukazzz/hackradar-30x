@@ -6,7 +6,7 @@ Plataforma: https://hackradar.30x.com/recursos
 ## Estado actual
 
 - **Reto confirmado: Blinka — Agentes que pagan por la empresa** (pago automático de facturas). Todo el trabajo va a este reto. Brief completo: @docs/retos/blinka.md
-- Fase: **especificación v1 → construcción**. Qué y por qué: @docs/producto.md. **Contrato técnico (tipos, reglas R1–R11, dataset, API, pantallas, evaluación): @docs/especificacion.md** — fuente de verdad para escribir código. Prototipo visual navegable: `docs/diseno/prototipo-ui.html` (5 pantallas). Stack aceptado y esqueleto listo en #1 (ver "Stack y comandos"). Dataset generado en #3 (`data/`).
+- Fase: **especificación v1 → construcción**. Qué y por qué: @docs/producto.md. **Contrato técnico (tipos, reglas R1–R11, dataset, API, pantallas, evaluación): @docs/especificacion.md** — fuente de verdad para escribir código. Prototipo visual navegable: `docs/diseno/prototipo-ui.html` (5 pantallas). Stack aceptado y esqueleto listo en #1 (ver "Stack y comandos"). Dataset generado en #3 (`data/`). Tipos y carga de datos en #2 (`src/dominio/`). **Motor listo en #5**: `procesarLote(docs, { datos, reglas, historial, ahora })` de `@/reglas/motor` decide un lote y devuelve resultados, entradas de registro (`REG-2026-…`) y presupuesto final; `evaluarFactura` decide una sola. Modo golden (extracción esperada) para tests y evaluación: `cargarGolden` en `tests/reglas/escenario.ts`.
 - Cada issue (#1–#14) cita secciones de la especificación (`§4.3`) y trae un prompt listo para Claude Code. Antes de implementar: `gh issue view <n>` + leer las secciones citadas.
 
 ## Producto en una frase

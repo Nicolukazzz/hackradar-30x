@@ -71,16 +71,21 @@ src/
     reloj.ts              # tipo Reloj + relojFijo; prohibido Date.now() en dominio
   reglas/
     r01-extraccion.ts … r11-remitente.ts   # una regla por archivo, firma §4.1
-    motor.ts              # evaluarFactura(): corre R1–R11 en orden y combina (§5)
-    combinar.ts
+    motor.ts              # evaluarFactura() + procesarLote(): corre R1–R11 en orden y combina (§5)
+    combinar.ts           # §5 + guardas de PAGAR
+    contexto.ts           # ContextoRegla, campos afectados por R1, monto USD
+    libro.ts              # facturas vigentes (pagadas/reservadas) derivadas del registro
     presupuesto.ts        # disponible, reservas (§6)
+    asignacion.ts         # aprobador y plazo (§10)
+    inyeccion.ts          # detector determinista R10 (el motor no depende de extraccion/)
+    catalogo.ts fechas.ts # nombres de reglas · fechas sin reloj
     explicar.ts           # plantillas (§7)
   extraccion/
     normalizar.ts         # eml / pdf / imagen / chat → DocumentoNormalizado
     parsers/              # sin IA: pdf-texto.ts, eml.ts, chat.ts, xml-factura.ts
     llm/proveedor.ts      # interfaz ProveedorLLM + selección por LLM_PROVIDER
     llm/gemini.ts groq.ts anthropic.ts ninguno.ts
-    inyeccion.ts          # detector determinista para R10
+    inyeccion.ts          # puede re-exportar reglas/inyeccion.ts (#4)
     extraer.ts            # orquesta: parser → (LLM) → Extraccion
   ingesta/
     ingerir.ts            # DocumentoEntrante → ref interna, remitente, hash
@@ -314,7 +319,7 @@ type Regla = (ctx: ContextoRegla) => EvaluacionRegla;   // función pura. Sin I/
 - **R7 Presupuesto.** FALLA si `monto_usd > disponible` (§6). Comparación: `4.000,00 > 2.277,30 USD disponibles al evaluar`.
 - **R8 Mensual por beneficiario.** NO_APLICA si R3 falla. `pagado_y_reservado_del_beneficiario_en_periodo + monto_usd > limite` → FALLA. Comparación: `2.054,05 + 648,65 = 2.702,70 ≤ 6.000,00 USD`.
 - **R9 Pago automático.** FALLA si `monto_usd > pago_automatico_usd`. Comparación: `4.500,00 > 3.000,00 USD`.
-- **R10 Instrucciones al agente.** FALLA si el detector determinista (`extraccion/inyeccion.ts`) encuentra un patrón en `texto_crudo` **o** si `senales_llm.instrucciones_sospechosas` no está vacío. Patrones mínimos (normalizar tildes/mayúsculas): `nota para el sistema`, `sistema de pagos`, `ignora|ignorar (las|todas) (reglas|instrucciones)`, `sin revisi[oó]n`, `ya (fue|est[aá]) aprobad`, `aprobar autom[aá]ticamente`, `procesar (sin|de inmediato)`, `ignore (previous|all) instructions`, `approved by`, `do not (review|escalate)`, `system:`, `assistant:`, `ignore as regras`, `pagamento aprovado`. Comparación: `detectado: «procesar sin revisión» en el cuerpo`. El texto **jamás** se pasa al LLM como instrucción (§8 paso 4).
+- **R10 Instrucciones al agente.** FALLA si el detector determinista (`reglas/inyeccion.ts`) encuentra un patrón en `texto_crudo`, `asunto` o `texto_mensaje` **o** si `senales_llm.instrucciones_sospechosas` no está vacío. Patrones mínimos (normalizar tildes/mayúsculas): `nota para el sistema`, `sistema de pagos`, `ignora|ignorar (las|todas) (reglas|instrucciones)`, `sin revisi[oó]n`, `ya (fue|est[aá]) aprobad`, `aprobar autom[aá]ticamente`, `procesar (sin|de inmediato)`, `ignore (previous|all) instructions`, `approved by`, `do not (review|escalate)`, `system:`, `assistant:`, `ignore as regras`, `pagamento aprovado`. Comparación: `detectado: «procesar sin revisión» en el cuerpo`. El texto **jamás** se pasa al LLM como instrucción (§8 paso 4).
 - **R11 Remitente verificado.** Canal `portal` con sesión del beneficiario → CUMPLE. Canal `correo`/`telegram`: CUMPLE si el remitente está en `canales` **del mismo beneficiario** que nombra la factura. Remitente `interno` (empleado de Nébula reenviando) → CUMPLE solo si R3 cumple. Comparación: `facturacion@omicron-pagos.example no está vinculado a ningún beneficiario`. Reemplaza la CUARENTENA de `producto.md` §5 (ver §16).
 
 ### 4.4 Tests obligatorios por regla
@@ -356,18 +361,18 @@ Regla: la frase sale de las evaluaciones, **nunca del LLM**. Una plantilla por d
 | PAGAR | `Pagada: {motivo_acuerdo}. {cuenta_ok}. Bajo el límite automático ({monto} ≤ {limite}).` |
 | FRENAR R2 | `Frenada: {beneficiario} ya cobró la factura {numero} y se pagó a las {hora}. No se paga dos veces.` |
 | FRENAR R5 | `Frenada: {beneficiario} cobra {monto}, pero {referencia} acordó {acordado} ({dif}; la tolerancia es {tol}).` |
-| FRENAR R6 | `Frenada: {monto} supera el máximo absoluto por pago de {max}.` |
+| FRENAR R6 | `Frenada: la factura de {beneficiario} ({monto}) supera el máximo absoluto por pago de {max}.` |
 | FRENAR R7 | `Frenada: el pago ({monto}) supera el presupuesto disponible de {disp}, que ya descuenta lo reservado por escalados.` |
-| ESCALAR R1 | `Escalada: el agente no está seguro de lo que leyó ({detalle}). Una persona debe confirmar los datos.` |
+| ESCALAR R1 | `Escalada: el agente no está seguro de lo que leyó en la factura de {beneficiario} ({detalle}). Una persona debe confirmar los datos.` |
 | ESCALAR R3 | `Escalada: {beneficiario} no está en la lista de beneficiarios permitidos.` |
 | ESCALAR R4 | `Escalada: la cuenta de la factura (•••• {nueva}) no es la registrada para {beneficiario} (•••• {registrada}).` |
 | ESCALAR R5 indeterminado | `Escalada: no se pudo asociar la factura a lo acordado con {beneficiario} ({motivo}).` |
 | ESCALAR R8 | `Escalada: con este pago {beneficiario} llegaría a {total} en el mes, sobre su límite de {limite}.` |
-| ESCALAR R9 | `Escalada: {monto} supera el límite de pago automático de {limite}.` |
-| ESCALAR R10 | `El {canal} traía instrucciones para el agente («{fragmento}»); se ignoraron y la factura quedó marcada.` |
+| ESCALAR R9 | `Escalada: la factura de {beneficiario} ({monto}) supera el límite de pago automático de {limite}.` |
+| ESCALAR R10 | `El {canal} de {beneficiario} traía instrucciones para el agente («{fragmento}»); se ignoraron y la factura quedó marcada.` |
 | ESCALAR R11 | `El remitente ({remitente}) no está vinculado a {beneficiario}.` |
 
-Varias fallas: se unen con "Además," (ej. OMI-3381 §11.4). Observaciones (no deciden): `El monto está a {dif} del límite automático.` cuando `limite − monto ≤ 1 %` del límite.
+Varias fallas: se unen con "Además," (ej. OMI-3381 §11.4). El beneficiario se nombra una sola vez: si una frase anterior ya lo nombró, R1/R6/R9/R10 usan la forma corta (`{monto} supera…`). ESCALAR cierra con `Se reservan {monto} del presupuesto mientras una persona decide.` (o `Monto por decidir: {monto}.` si no se reserva). RECHAZADA_NO_FACTURA: `Rechazada: el documento no es una factura (confianza {n}%); no entra a las reglas de pago.` Error: `Error interno al evaluar: se escala por seguridad.` Observaciones (no deciden): `El monto está a {dif} del límite automático.` cuando `limite − monto ≤ 1 %` del límite.
 
 ## 8. Pipeline por documento y estados
 
@@ -682,3 +687,4 @@ CLI escribe `docs/research/eval-AAAA-MM-DD-HHMM.md` (formato de la skill `/evalu
 4. **Ids de registro** `REG-2026-NNNNNN` y ref interna `INT-2026-NNNNNN` reemplazan `dec_20261016_omi-3381` (había colisión con la factura duplicada INV-2210).
 5. Ref interna se asigna al **recibir** (no tras validar, como decía `producto.md` §3 paso 7): todo documento es rastreable, incluso los rechazados.
 6. **Ajustes al construir el dataset (#3)**, todos comprobados por el oráculo de `scripts/dataset/oraculo.py`: campos afectados por R1 vuelven `NO_APLICA` las reglas que dependen de ellos (§4.3); hitos repetidos se buscan sin ventana; doble aprobación exige que al menos una firma tenga límite suficiente (§10); Valeria Ruiz tiene dos líneas (`VR-QA`, `VR-SOP`) y Pampa la OC-126 para que cada trampa de §11.6 falle por una sola causa; se agregó la trampa `fecha-invalida`; ES-4410 lista R7 y R9.
+7. **Ajustes al construir el motor (#5)**: (a) detector R10 en `src/reglas/inyeccion.ts` y el motor re-escanea asunto + mensaje + `texto_crudo` sin confiar en el extractor; (b) cada regla corre en su propio try/catch (excepción → INDETERMINADO → escala) y el motor entero también (→ ESCALAR); (c) `combinar` exige además R6, R7, R9 en CUMPLE y monto no nulo para PAGAR; (d) R1 marca el monto si su equivalente en USD redondea a 0 (contraejemplo de fast-check: COP 1); (e) `momento` de la entrada del agente = `recibido_en` del documento (así R2 dice "pagada 09:14:10"), salvo que haya llegado en otro periodo: entonces `ahora`, para que presupuesto y R8 la cuenten en el lote; (f) RECHAZADA_NO_FACTURA guarda R1–R11 en NO_APLICA; (g) R6/R9/R1/R10 nombran al beneficiario y ESCALAR cierra con la reserva (§7); (h) el detector R10 colapsa espacios, saltos de línea y NBSP e ignora caracteres invisibles, y reporta hallazgos del mensaje y del documento por separado; (i) R8 siempre suma por mes calendario aunque el presupuesto sea quincenal o trimestral; (j) R5 compara referencias normalizadas (`oc 121` = `OC-121`); (k) una escalada sin nombre legible sigue reservando presupuesto; (l) R2 criterio (a) también cuenta como duplicado el mismo número si la previa se registró hace ≤ `ventana_dias` (la fecha de emisión la controla quien cobra); (m) el detector R10 pliega Unicode (NFKC, sin marcas ni caracteres de formato, homoglifos cirílicos/griegos comunes, guiones y guion bajo como espacio).
