@@ -23,6 +23,8 @@ export type DependenciasCorreo = {
   urlPortal: string;
   /** buzón real: true (sin dmarc=pass el remitente no se verifica). /simular: false. */
   exigirAutenticacion?: boolean;
+  /** false: las cabeceras del .eml las escribió quien lo sube; el remitente nunca se verifica (ver correoAEntrada). */
+  confiarCabeceras?: boolean;
   /** dirección del propio buzón: lo que manda él mismo no se procesa (evita bucles) */
   buzonPropio?: string | null;
 };
@@ -32,6 +34,7 @@ export async function recibirCorreo(eml: Buffer, deps: DependenciasCorreo): Prom
     recibido_en: deps.ahora,
     exigirAutenticacion: deps.exigirAutenticacion ?? true,
     buzonPropio: deps.buzonPropio ?? null,
+    confiarCabeceras: deps.confiarCabeceras ?? true,
   });
   // Rebotes y respuestas automáticas no son facturas: ni se ingieren ni se responden (sin bucles).
   if (correo.automatico) return { ignorado: correo.automatico };
