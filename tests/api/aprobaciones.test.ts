@@ -178,6 +178,19 @@ describe("POST /api/aprobaciones/:ref — roles (#51)", () => {
     expect((await post(grande, { accion: "rechazar", comentario: "No corresponde" })).status).toBe(201);
   });
 
+  it("agregar a la lista permitida (TD-001, R3) es solo de admin: un aprobador recibe 403 y no se escribe nada", async () => {
+    const repo = await repoProcesado();
+    const td = await entradaDe(repo, "TD-001");
+    comoCuenta("Andrea Paz", "aprobador", 500_000);
+    const r = await post(td.ref_interna, { accion: "aprobar", comentario: "Proveedor validado", agregar_a_lista: true });
+    expect(r.status).toBe(403);
+    expect((await r.json()).error).toContain("Solo un administrador");
+    expect(await repo.registro({ tipo: ["DECISION_HUMANA", "CAMBIO_BENEFICIARIOS"], ref_interna: td.ref_interna })).toHaveLength(0);
+    comoSesion(CUENTA);
+    expect((await post(td.ref_interna, { accion: "aprobar", comentario: "Proveedor validado", agregar_a_lista: true })).status).toBe(201);
+    expect(await repo.registro({ tipo: ["CAMBIO_BENEFICIARIOS"] })).toHaveLength(1);
+  });
+
   it("doble firma: aprobador limitado firma primero (control) y el admin cubre el monto con la segunda", async () => {
     const repo = await repoProcesado();
     const ref = await escaladaSintetica(repo, 1_200_000);
