@@ -12,6 +12,11 @@ import { asignacionDe } from "@/servicios/facturas";
 export type Aviso = {
   ref_interna: string;
   asunto: string;
+  /** todo menos el enlace: lleva texto que escribió quien cobra (ya limpio, ver `limpiar`) */
+  cuerpo: string;
+  /** enlace real a la traza: lo arma el sistema, va aparte */
+  enlace: string;
+  /** cuerpo + enlace, para el correo en texto plano */
   texto: string;
   /** el plazo es hoy a las 18:00 (§10) */
   urgente: boolean;
@@ -26,20 +31,37 @@ export type OpcionesAviso = {
   enlace: string;
 };
 
+/**
+ * Beneficiario, número, explicación (cita la frase de R10) y comparaciones salen de la factura: los escribe
+ * quien cobra. Sin caracteres de control ni saltos de línea, con las URL desactivadas (`https[:]//…`, para
+ * que ningún cliente las vuelva enlace) y cortado a `max`. El único enlace del aviso es el de la traza.
+ */
+export function limpiar(texto: string, max = 400): string {
+  const plano = texto
+    .replace(/[\p{Cc}\p{Cf}\u2028\u2029]+/gu, " ")
+    .replace(/:\/\//g, "[:]//")
+    .replace(/\bwww\./gi, "www[.]")
+    .replace(/\s+/g, " ")
+    .trim();
+  return plano.length > max ? `${plano.slice(0, max - 1)}…` : plano;
+}
+
 const momentoLegible = (iso: string) => `${fechaLegible(fechaDe(iso))} ${iso.slice(11, 16)}`;
 
 export function armarAviso(e: EntradaRegistro, o: OpcionesAviso): Aviso {
   const asignacion = asignacionDe(e, o.aprobadores, o.decidido_en);
   const monto = e.monto_usd_centavos === null ? "monto por confirmar" : `USD ${formatearUsd(e.monto_usd_centavos)}`;
   const urgente = asignacion?.urgente ?? false;
-  const asunto = `${urgente ? "Urgente · " : ""}Escalada: ${e.factura_numero ?? e.ref_interna} · ${e.beneficiario ?? "beneficiario sin leer"} · ${monto}`;
+  const numero = e.factura_numero ? limpiar(e.factura_numero, 40) : e.ref_interna;
+  const beneficiario = e.beneficiario ? limpiar(e.beneficiario, 80) : "beneficiario sin leer";
+  const asunto = `${urgente ? "Urgente · " : ""}Escalada: ${numero} · ${beneficiario} · ${monto}`;
 
   const lineas = [
     "El agente escaló una factura y espera la decisión de una persona.",
     "",
-    e.explicacion,
+    limpiar(e.explicacion, 600),
     "",
-    ...(e.comparaciones.length ? ["Reglas que no se cumplieron:", ...e.comparaciones.map((c) => `  · ${c}`), ""] : []),
+    ...(e.comparaciones.length ? ["Reglas que no se cumplieron:", ...e.comparaciones.map((c) => `  · ${limpiar(c, 160)}`), ""] : []),
     `Referencia interna: ${e.ref_interna}`,
     ...(asignacion
       ? [
@@ -48,11 +70,10 @@ export function armarAviso(e: EntradaRegistro, o: OpcionesAviso): Aviso {
         ]
       : []),
     "",
-    `Decidir: ${o.enlace}`,
-    "",
     "El agente no pagó esta factura: espera a que alguien con permiso de aprobar la apruebe o la rechace en el panel.",
   ];
-  return { ref_interna: e.ref_interna, asunto, texto: lineas.join("\n"), urgente };
+  const cuerpo = lineas.join("\n");
+  return { ref_interna: e.ref_interna, asunto, cuerpo, enlace: o.enlace, texto: `${cuerpo}\n\nDecidir: ${o.enlace}`, urgente };
 }
 
 /**

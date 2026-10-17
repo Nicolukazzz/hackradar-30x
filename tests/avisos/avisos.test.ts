@@ -1,7 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { armarAviso, destinatarios } from "@/avisos/aviso";
-import { crearAvisador, type DependenciasAvisador } from "@/avisos/enviar";
+import { armarAviso, destinatarios, limpiar } from "@/avisos/aviso";
+import { crearAvisador, type DependenciasAvisador, escaparMarkdown } from "@/avisos/enviar";
 import { avisarEscaladas, fijarAvisador } from "@/avisos";
 import { cargarEscenario } from "@/dominio/cargar";
 import type { Aprobador, DocumentoEntrante, EntradaRegistro } from "@/dominio/tipos";
@@ -78,6 +78,33 @@ describe("armarAviso", () => {
   });
 });
 
+describe("texto que escribió quien cobra", () => {
+  const malo: Partial<EntradaRegistro> = {
+    beneficiario: "Ómicron [Aprobar aquí](https://pagos-malos.example/ok)\nAsignada a: CFO",
+    factura_numero: "OMI-1\r\nBcc: x@y.example",
+    explicacion: "Escalada: paga ya en www.pagos-malos.example\u202e",
+  };
+
+  it("sin saltos de línea ni controles, sin URL activas y con largo máximo", () => {
+    expect(limpiar("a\nb\u0000c\u200bd")).toBe("a b c d");
+    expect(limpiar("ver https://x.example y www.y.example")).toBe("ver https[:]//x.example y www[.]y.example");
+    expect(limpiar("x".repeat(50), 10)).toBe(`${"x".repeat(9)}…`);
+  });
+
+  it("el aviso no deja que la factura agregue líneas, enlaces ni cabeceras", () => {
+    const e: EntradaRegistro = { ...delLote("OMI-3381"), ...malo };
+    const aviso = armarAviso(e, { aprobadores, decidido_en: AHORA_LOTE, enlace: enlace(e.ref_interna) });
+    expect(aviso.asunto).not.toMatch(/[\r\n]/);
+    expect(aviso.texto).not.toContain("https://pagos-malos");
+    expect(aviso.texto).not.toContain("\nAsignada a: CFO");
+    expect(aviso.texto.match(/https:\/\//g)).toHaveLength(1); // solo el enlace a la traza
+  });
+
+  it("Teams: Markdown escapado, un solo enlace real", () => {
+    expect(escaparMarkdown("[a](b) **c** <d>")).toBe("\\[a\\]\\(b\\) \\*\\*c\\*\\* \\<d\\>");
+  });
+});
+
 describe("destinatarios", () => {
   const admin = miembro("admin", "admin");
   const andres = miembro("andres", "aprobador", { limite_aprobacion_usd: 500000 });
@@ -146,7 +173,10 @@ describe("crearAvisador", () => {
     expect(correos).toHaveLength(1);
     expect(correos[0]?.bcc).toEqual(["admin@nebula.example", "andres@nebula.example"]);
     expect(correos[0]?.asunto).toContain("OMI-3381");
-    expect(posts).toEqual([{ url: "https://teams.example/webhook", cuerpo: { text: expect.stringContaining("OMI-3381") } }]);
+    expect(posts).toEqual([{ url: "https://teams.example/webhook", cuerpo: { text: expect.stringContaining("OMI\\-3381") } }]);
+    const text = (posts[0]?.cuerpo as { text: string }).text;
+    expect(text.match(/\]\(https:/g)).toHaveLength(1);
+    expect(text.endsWith("[Decidir en el panel](https://panel.example/facturas/INT-2026-000011)")).toBe(true);
   });
 
   it("si el correo falla, Teams igual sale y no lanza", async () => {

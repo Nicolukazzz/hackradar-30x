@@ -36,7 +36,8 @@ export function crearAvisador(d: DependenciasAvisador): Avisador {
       const aviso = armarAviso(entrada, { aprobadores: await d.aprobadores(), decidido_en, enlace: d.enlace(ref) });
       const envios: Promise<void>[] = [];
       if (d.enviarCorreo) envios.push(porCorreo(d, d.enviarCorreo, entrada, aviso.asunto, aviso.texto));
-      if (d.teams) envios.push(porTeams(d.teams, `**${aviso.asunto}**\n\n${aviso.texto}`));
+      // Teams interpreta Markdown: todo lo que viene de la factura va escapado; el único enlace es el de la traza.
+      if (d.teams) envios.push(porTeams(d.teams, `**${escaparMarkdown(aviso.asunto)}**\n\n${escaparMarkdown(aviso.cuerpo)}\n\n[Decidir en el panel](${aviso.enlace})`));
       const canales = [...(d.enviarCorreo ? ["correo"] : []), ...(d.teams ? ["teams"] : [])];
       const resultados = await Promise.allSettled(envios);
       resultados.forEach((r, i) => {
@@ -52,6 +53,11 @@ async function porCorreo(d: DependenciasAvisador, enviar: (m: CorreoAviso) => Pr
   const bcc = destinatarios(await d.miembros(), e.monto_usd_centavos).map((m) => m.correo.trim());
   if (bcc.length === 0) throw new Error("nadie del equipo puede aprobar esta factura");
   await enviar({ bcc, asunto, texto });
+}
+
+/** Escapa lo que Markdown de Teams interpretaría (enlaces, énfasis, código, HTML, títulos, listas). */
+export function escaparMarkdown(texto: string): string {
+  return texto.replace(/[\\`*_{}[\]()<>#+\-!|~]/g, "\\$&");
 }
 
 async function porTeams(teams: { url: string; fetch?: typeof fetch }, text: string) {
