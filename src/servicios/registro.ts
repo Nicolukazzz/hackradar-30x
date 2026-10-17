@@ -1,11 +1,20 @@
 // GET /api/registro y exportes JSON/CSV (§9, §12, pantalla §13.5). Solo lectura.
 
+import { z } from "zod";
+
 import { formatearNumero } from "@/dominio/dinero";
 import { normalizarTexto } from "@/dominio/normalizar";
 import type { EntradaRegistro } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
 
-export type FiltroDecisionRegistro = "todas" | "pagar" | "frenar" | "escalar" | "humanas";
+/** Filtros de GET /api/registro y de la pantalla `/registro` (una sola definición para las dos). */
+export const ConsultaRegistro = z.object({
+  decision: z.enum(["todas", "pagar", "frenar", "escalar", "humanas"]).optional(),
+  actor: z.enum(["agente", "humano"]).optional(),
+  q: z.string().max(100).optional(),
+});
+
+export type FiltroDecisionRegistro = NonNullable<z.infer<typeof ConsultaRegistro>["decision"]>;
 
 export type DiaRegistro = { fecha: string; entradas: EntradaRegistro[] };
 
@@ -19,11 +28,14 @@ export async function obtenerRegistro(
   const q = normalizarTexto(f.q ?? "").trim();
   const pasa = (e: EntradaRegistro) => {
     if (f.actor && e.actor.tipo !== f.actor) return false;
-    if (f.decision === "pagar" && e.decision !== "PAGAR") return false;
+    // Pagadas: las que pagó el agente y las que aprobó una persona.
+    if (f.decision === "pagar" && e.decision !== "PAGAR" && e.decision !== "APROBADA_HUMANO") return false;
     if (f.decision === "frenar" && e.decision !== "FRENAR") return false;
     if (f.decision === "escalar" && e.decision !== "ESCALAR") return false;
     if (f.decision === "humanas" && e.tipo !== "DECISION_HUMANA") return false;
-    if (q && !normalizarTexto(`${e.id} ${e.ref_interna} ${e.factura_numero ?? ""} ${e.beneficiario ?? ""} ${e.explicacion}`).includes(q)) return false;
+    // También por regla ("R4"): las que fallaron y las comparaciones que muestran los chips.
+    const texto = `${e.id} ${e.ref_interna} ${e.factura_numero ?? ""} ${e.beneficiario ?? ""} ${e.explicacion} ${e.reglas_que_fallaron.join(" ")} ${e.comparaciones.join(" ")}`;
+    if (q && !normalizarTexto(texto).includes(q)) return false;
     return true;
   };
   // Más nuevas primero; agrupadas por día local del momento (YYYY-MM-DD).
