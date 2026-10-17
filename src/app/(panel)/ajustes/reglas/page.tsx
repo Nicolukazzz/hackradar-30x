@@ -1,11 +1,12 @@
+import { VolverAjustes } from "@/app/_componentes/ajustes";
+import { exigirMiembro } from "@/app/_datos/sesion";
 import { obtenerReglasConSimulacion } from "@/app/_datos/reglas";
 import { formatear, formatearUsd } from "@/dominio/dinero";
 import type { Beneficiario } from "@/dominio/tipos";
 import { permisoPara } from "@/lib/auth/permisos";
-import { obtenerSesion } from "@/lib/auth/sesion";
 import { descripcionBeneficiario } from "@/servicios/comun";
 
-import { EditorReglas, type FilaBeneficiario } from "../_reglas/editor";
+import { EditorReglas, type FilaBeneficiario } from "../../_reglas/editor";
 
 // Reglas de pago (especificación §13.4, prototipo pantalla 4). Lee en el servidor (reglas vigentes +
 // simulación inicial) y edita en el cliente. Roles (#51): cualquiera puede simular, pero "Guardar como v{n}"
@@ -26,9 +27,13 @@ function fila(b: Beneficiario, limiteDefault: number): FilaBeneficiario {
 }
 
 export default async function ReglasPage() {
-  const [r, sesion] = await Promise.all([obtenerReglasConSimulacion(), obtenerSesion()]);
+  // Puerta propia: obtenerReglasConSimulacion no la tiene y una petición RSC directa se salta el layout.
+  const sesion = await exigirMiembro();
+  const r = await obtenerReglasConSimulacion();
   return (
-    <EditorReglas
+    <>
+      <VolverAjustes />
+      <EditorReglas
       // key: tras guardar, el editor arranca de cero con la versión nueva.
       key={r.vigente.version}
       permisoGuardar={permisoPara(sesion, "editar_reglas")}
@@ -38,6 +43,7 @@ export default async function ReglasPage() {
       usoTasas={r.uso_tasas}
       aprobadores={r.aprobadores}
       beneficiarios={r.beneficiarios.map((b) => fila(b, r.vigente.limites.mensual_por_beneficiario_default_usd))}
-    />
+      />
+    </>
   );
 }

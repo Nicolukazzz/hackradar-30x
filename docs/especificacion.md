@@ -654,7 +654,7 @@ Comunes a las 5 (layout del prototipo, ancho de diseño 1440 px, usable a 390 px
 - Tarjeta por factura: id, canal · hora, beneficiario, país · condición, USD y original, chips de reglas fallidas, "Por qué se escaló", "Si apruebas", "{n} de 11 reglas cumplen o no aplican", asignada a, responder antes de (rojo si urgente), link a traza, casilla agregar a lista (R3), Rechazar / Aprobar pago, estado resultante + Deshacer.
 - Pie: "Montos sobre USD 10.000 requieren dos aprobaciones…"
 
-### 13.4 Reglas de pago — `/reglas` (pantalla 4)
+### 13.4 Reglas de pago — `/ajustes/reglas` (pantalla 4; `/reglas` redirige, #83)
 - Encabezado "Versión 7 · editada el 14 oct 2026 por Laura Méndez", "Historial de versiones", "Guardar como v8".
 - Caja "Prueba las reglas antes de guardar": resultado de `POST /api/reglas/simular` (coinciden 12/12 · pagos fuera de reglas 0 · autonomía 66,7 %) + "Simular de nuevo". Si pagos fuera de reglas > 0 → bloquear "Guardar" con mensaje rojo.
 - Límites por pago: R9, R6, R8 default, R5 tolerancia (inputs numéricos con validación: R9 ≤ R6).

@@ -1,13 +1,12 @@
 import { MailIcon, UsersIcon } from "lucide-react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { Tarjeta, TarjetaEncabezado } from "@/app/_componentes";
+import { VolverAjustes } from "@/app/_componentes/ajustes";
+import { exigirMiembro } from "@/app/_datos/sesion";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { obtenerAlmacenEquipo } from "@/equipo";
 import { obtenerEquipo } from "@/equipo/servicio";
-import { puede } from "@/lib/auth/permisos";
-import { obtenerSesion } from "@/lib/auth/sesion";
 import { relojSistema } from "@/lib/reloj-sistema";
 
 import { Invitaciones } from "./_equipo/invitaciones";
@@ -18,13 +17,13 @@ export const metadata: Metadata = { title: "Equipo · Agente de cuentas por paga
 
 // Equipo (#51): quién entra al panel y qué puede hacer. Solo administradores.
 export default async function EquipoPage() {
-  const sesion = await obtenerSesion();
-  if (!sesion || !puede(sesion, "administrar")) redirect("/sin-permiso");
+  const sesion = await exigirMiembro("administrar");
   const { miembros, invitaciones } = await obtenerEquipo(await obtenerAlmacenEquipo(), relojSistema().ahora());
   const activas = invitaciones.filter((i) => i.estado === "activa").length;
 
   return (
     <>
+      <VolverAjustes />
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div className="flex max-w-[620px] flex-col gap-1.5">
           <span className="text-[13px] text-muted-foreground">Nébula Studio Inc.</span>

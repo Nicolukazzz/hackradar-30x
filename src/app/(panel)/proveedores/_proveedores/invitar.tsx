@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
-import { llamar } from "../../equipo/_equipo/api";
+import { llamar } from "../../ajustes/equipo/_equipo/api";
 
 // "Invitar proveedor" (#28), en 3 pasos: quién (2 campos opcionales) → vigencia y envíos → enlace para copiar.
 // El enlace lleva el token en claro y solo existe en esta respuesta.
