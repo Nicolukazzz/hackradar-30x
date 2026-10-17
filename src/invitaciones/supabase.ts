@@ -6,7 +6,7 @@ import { z } from "zod";
 import type { AlmacenInvitaciones } from "./almacen";
 import type { InvitacionProveedor } from "./tipos";
 
-// Invitaciones de proveedor en Supabase (migración 20261017100000_invitaciones_proveedor.sql). Llave secreta: la
+// Invitaciones de proveedor en Supabase (migración 20261017154504_invitaciones_proveedor.sql). Llave secreta: la
 // tabla no tiene acceso desde el cliente. Usar el enlace es atómico en la base (`usar_invitacion_proveedor`).
 
 const COLUMNAS = "id, nombre_esperado, correo_esperado, creada_por, creada_en, expira_en, usos_max, usos, revocada_en";

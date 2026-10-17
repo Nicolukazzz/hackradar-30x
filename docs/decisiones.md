@@ -26,7 +26,6 @@ Una entrada por decisión, la más nueva arriba. Formato:
 - Por qué: un dato falso (cuenta, monto) necesita que dos modelos de proveedores distintos se equivoquen igual. Costo ~USD 0,001 por factura que el parser no resuelve.
 - Quién: J
 
-## 2026-10-17 — Login abierto con correo + contraseña, sin roles (#49)
 ## 2026-10-17 — Aviso a aprobadores cuando el agente escala (#68)
 - Estado: propuesta
 - Decisión: `src/avisos/`. Después de **registrar** una `DECISION_AGENTE` con `ESCALAR` (en `procesarDocumento`, que usan correo, panel y Telegram, y en "Procesar facturas nuevas"), `avisarEscaladas` manda en segundo plano un aviso armado con plantilla desde la entrada (sin LLM): factura, beneficiario, USD, explicación §7, chips de reglas, asignada a y plazo (§10, `asignacionDe`) y enlace a la traza (`urlPublica`). Destinatarios: los miembros que hoy pueden aprobar (`firmantes()`) cuyo límite cubre el monto; sin monto confiable, todos los firmantes; si nadie lo cubre, los admins. Correo por el SMTP del buzón del equipo (`CORREO_IMAP_*`, #14) con los aprobadores en **Bcc**; Teams opcional (`TEAMS_WEBHOOK_URL`, webhook de Workflows con `{ text }`). Sin buzón ni Teams (dev, tests, CI, CLI) no se avisa; `AVISOS=0` lo apaga. Cada canal falla por su lado y queda en el log: un aviso **nunca** cambia, frena ni retrasa la decisión. Telegram (#13) no debe avisar por su cuenta: ya lo hace `procesarDocumento`.
