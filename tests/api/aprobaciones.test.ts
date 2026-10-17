@@ -50,7 +50,7 @@ describe("decidir() — reglas de §10", () => {
     const r = await decidir({ ref: antes.ref_interna, accion: "aprobar", comentario: "Hito final entregado y revisado.", aprobador_id: "ap" }, { repo, ahora: AHORA });
     expect(r.entrada).toMatchObject({ tipo: "DECISION_HUMANA", decision: "APROBADA_HUMANO", entrada_origen: antes.id, actor: { aprobador_id: "ap" } });
     expect(r.entrada.explicacion).toBe("Aprobada por Andrés Pardo: «Hito final entregado y revisado.».");
-    expect((await repo.registro()).length).toBe(largo + 1);
+    expect(await repo.registro()).toHaveLength(largo + 1);
     expect(await entradaDe(repo, "LF-2026-10")).toEqual(antes);
     const b = await obtenerBandeja(repo);
     expect(b.presupuesto).toMatchObject({ pagado_en_lote: 744405 + 450000, reservado: 927865 - 450000, disponible: 227730 });

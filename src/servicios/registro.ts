@@ -47,7 +47,7 @@ function celda(v: string | number | null): string {
   const t = v === null ? "" : String(v);
   // Evita inyección de fórmulas al abrir en Excel/Sheets (=, +, -, @ al inicio).
   const seguro = /^[=+\-@\t\r]/.test(t) ? `'${t}` : t;
-  return /[",\n\r;]/.test(seguro) ? `"${seguro.replace(/"/g, '""')}"` : seguro;
+  return /[",\n\r;]/.test(seguro) ? `"${seguro.replaceAll('"', '""')}"` : seguro;
 }
 
 /** CSV con las 15 columnas de §9, en orden de inserción. Montos en formato de la UI (es-CO). */

@@ -15,7 +15,9 @@ export const galletas = new Map<string, string>();
 export function cookiesFalsas() {
   return {
     get: (k: string) => (galletas.has(k) ? { name: k, value: galletas.get(k) } : undefined),
-    set: (k: string, v: string) => void galletas.set(k, v),
+    set: (k: string, v: string) => {
+      galletas.set(k, v);
+    },
   };
 }
 
@@ -28,7 +30,7 @@ export async function repoProcesado(): Promise<Repositorio> {
 }
 
 export async function entradaDe(repo: Repositorio, numero: string): Promise<EntradaRegistro> {
-  const e = (await repo.registro({ tipo: ["DECISION_AGENTE"] })).filter((x) => x.factura_numero === numero).at(-1);
+  const e = (await repo.registro({ tipo: ["DECISION_AGENTE"] })).findLast((x) => x.factura_numero === numero);
   if (!e) throw new Error(`sin entrada para ${numero}`);
   return e;
 }

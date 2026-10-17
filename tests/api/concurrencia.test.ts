@@ -51,7 +51,7 @@ describe("hallazgos de /code-review en #17", () => {
     await expect(
       decidir({ ref: td.ref_interna, accion: "aprobar", comentario: "Proveedor validado", aprobador_id: "lm", agregar_a_lista: true }, { repo, ahora: AHORA }),
     ).rejects.toMatchObject({ estado: 409 });
-    expect((await repo.registro()).length).toBe(largo);
+    expect(await repo.registro()).toHaveLength(largo);
   });
 
   it("en producción sin DEMO=1, 'actuar como' y 'reiniciar' no existen (404)", async () => {

@@ -58,7 +58,12 @@ export async function crearRepositorioMemoria(idEscenario: string, dir: string =
   // Cola de escrituras: cada operación exclusiva espera a que termine la anterior.
   let cola: Promise<unknown> = Promise.resolve();
 
-  const vigente = () => s.versiones.reduce((a, b) => (b.version > a.version ? b : a));
+  // cargarDatosComunes garantiza al menos una versión; se parte de la primera para no depender de eso aquí.
+  const vigente = (): Reglas => {
+    const [primera, ...resto] = s.versiones;
+    if (!primera) throw new Error("no hay ninguna versión de reglas cargada");
+    return resto.reduce((a, b) => (b.version > a.version ? b : a), primera);
+  };
   const coincide = (e: EntradaRegistro, f?: FiltroRegistro) =>
     !f ||
     ((!f.tipo || f.tipo.includes(e.tipo)) &&
@@ -112,7 +117,7 @@ export async function crearRepositorioMemoria(idEscenario: string, dir: string =
       // Las refs del escenario ya están reservadas para sus documentos (aunque aún no se procesen).
       const usadas = [...s.documentos.keys(), ...s.golden.map((d) => d.doc.ref_interna), ...s.registro.map((e) => e.ref_interna)];
       const max = usadas.reduce((m, ref) => {
-        const x = new RegExp(`^INT-${anio}-(\\d{6})$`).exec(ref);
+        const x = new RegExp(String.raw`^INT-${anio}-(\d{6})$`).exec(ref);
         return x ? Math.max(m, Number(x[1])) : m;
       }, 0);
       return `INT-${anio}-${String(max + 1).padStart(6, "0")}`;

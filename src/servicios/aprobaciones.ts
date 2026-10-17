@@ -54,7 +54,8 @@ function siApruebas(usd: number | null, beneficiario: string | null, reglas: IdR
     reglas.includes("R4") ? "a una cuenta que no es la registrada" : null,
     reglas.includes("R3") ? "a alguien que no está en la lista permitida" : null,
   ].filter(Boolean);
-  return `Se paga ${monto} a ${a}${extra.length ? `, ${extra.join(" y ")}` : ""}. La reserva pasa a pagado y queda en el registro con tu comentario.`;
+  const riesgo = extra.length ? ", " + extra.join(" y ") : "";
+  return `Se paga ${monto} a ${a}${riesgo}. La reserva pasa a pagado y queda en el registro con tu comentario.`;
 }
 
 export async function obtenerAprobaciones(repo: Repositorio, orden: OrdenAprobaciones = "vencimiento"): Promise<RespuestaAprobaciones> {

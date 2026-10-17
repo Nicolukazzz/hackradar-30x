@@ -49,7 +49,7 @@ export function estadoHumano(registro: readonly EntradaRegistro[], origen: Entra
 
 /** Última decisión del agente para una ref (si se reprocesó, manda la más nueva). */
 export function decisionAgente(registro: readonly EntradaRegistro[], ref: string): EntradaRegistro | null {
-  return registro.filter((e) => e.tipo === "DECISION_AGENTE" && e.ref_interna === ref).at(-1) ?? null;
+  return registro.findLast((e) => e.tipo === "DECISION_AGENTE" && e.ref_interna === ref) ?? null;
 }
 
 function cubre(a: Aprobador, usd: number): boolean {
@@ -70,15 +70,10 @@ export async function decidir(input: EntradaDecision, deps: { repo: Repositorio;
   return deps.repo.enExclusiva(() => decidirEnExclusiva(input, deps));
 }
 
-async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Repositorio; ahora: string }): Promise<ResultadoDecision> {
-  const { repo, ahora } = deps;
-  const [registro, datos, reglas, documento] = await Promise.all([
-    repo.registro(),
-    repo.datosComunes(),
-    repo.reglasVigentes(),
-    repo.documento(input.ref),
-  ]);
+type Validado = { origen: EntradaRegistro; firmas: Firma[]; comentario: string; aprobador: Aprobador; agregar: boolean };
 
+/** 404/409/400/403 antes de escribir nada. */
+function validar(input: EntradaDecision, registro: readonly EntradaRegistro[], aprobadores: readonly Aprobador[]): Validado {
   const origen = decisionAgente(registro, input.ref);
   if (!origen) throw new ErrorDecision(404, `No existe la factura ${input.ref}.`);
   if (origen.decision !== "ESCALAR") {
@@ -87,26 +82,29 @@ async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Reposito
   const { final, firmas } = estadoHumano(registro, origen);
   if (final) {
     const quien = final.actor.tipo === "humano" ? final.actor.nombre : "otra persona";
-    throw new ErrorDecision(409, `Esta factura ya fue ${final.decision === "APROBADA_HUMANO" ? "aprobada" : "rechazada"} por ${quien}.`);
+    const verbo = final.decision === "APROBADA_HUMANO" ? "aprobada" : "rechazada";
+    throw new ErrorDecision(409, `Esta factura ya fue ${verbo} por ${quien}.`);
   }
-
   const comentario = input.comentario.trim();
   if (comentario.length < MINIMO_COMENTARIO) {
     throw new ErrorDecision(400, `El comentario es obligatorio (mínimo ${MINIMO_COMENTARIO} caracteres): explica por qué decides así.`);
   }
-  const aprobador = datos.aprobadores.find((a) => a.id === input.aprobador_id);
+  const aprobador = aprobadores.find((a) => a.id === input.aprobador_id);
   if (!aprobador) throw new ErrorDecision(403, "Quien decide no está entre los aprobadores de la empresa.");
-
   const agregar = input.agregar_a_lista === true;
   if (agregar && (input.accion !== "aprobar" || !origen.reglas_que_fallaron.includes("R3"))) {
     throw new ErrorDecision(400, "Agregar a la lista solo es posible al aprobar una factura escalada por beneficiario fuera de la lista (R3).");
   }
+  return { origen, firmas, comentario, aprobador, agregar };
+}
 
-  const anio = Number(ahora.slice(0, 4));
-  const base = {
+/** Campos comunes de la DECISION_HUMANA: copia los datos de la factura y apunta a la entrada del agente. */
+function entradaBase(v: Validado, reglasVersion: number, ahora: string): Omit<EntradaRegistro, "id" | "decision" | "explicacion"> {
+  const { origen, aprobador, comentario } = v;
+  return {
     momento: ahora,
-    actor: { tipo: "humano" as const, aprobador_id: aprobador.id, nombre: aprobador.nombre },
-    tipo: "DECISION_HUMANA" as const,
+    actor: { tipo: "humano", aprobador_id: aprobador.id, nombre: aprobador.nombre },
+    tipo: "DECISION_HUMANA",
     ref_interna: origen.ref_interna,
     factura_numero: origen.factura_numero,
     beneficiario: origen.beneficiario,
@@ -115,7 +113,7 @@ async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Reposito
     monto_original: origen.monto_original,
     monto_usd_centavos: origen.monto_usd_centavos,
     tasa_usada: origen.tasa_usada,
-    reglas_version: reglas.version,
+    reglas_version: reglasVersion,
     evaluaciones: [],
     reglas_que_fallaron: origen.reglas_que_fallaron,
     comparaciones: [],
@@ -124,6 +122,54 @@ async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Reposito
     extraccion: null,
     sha256: null,
   };
+}
+
+/** Una firma o la primera/segunda de dos (§10). Lanza 403/409 si no corresponde. */
+function resolverAprobacion(v: Validado, usd: number, dobleDesde: number, aprobadores: readonly Aprobador[]): { parcial: boolean; explicacion: string } {
+  const { aprobador, comentario, firmas } = v;
+  const limite = aprobador.limite_usd === null ? null : `USD ${formatearUsd(aprobador.limite_usd)}`;
+  if (usd < dobleDesde) {
+    if (!cubre(aprobador, usd)) throw new ErrorDecision(403, `Supera tu límite de aprobación (${limite}). Pídele a un aprobador con límite suficiente que la apruebe.`);
+    return { parcial: false, explicacion: `Aprobada por ${aprobador.nombre}: «${comentario}».` };
+  }
+  const primera = firmas[0];
+  if (!primera) {
+    // Primera firma: puede ser de control (sin límite suficiente) si la segunda sí lo tiene (§10).
+    return { parcial: true, explicacion: `Primera aprobación (1 de 2) por ${aprobador.nombre}: «${comentario}». Falta una segunda firma.` };
+  }
+  if (primera.aprobador_id === aprobador.id) throw new ErrorDecision(409, "La segunda aprobación debe ser de otra persona.");
+  const primeraCubre = aprobadores.some((a) => a.id === primera.aprobador_id && cubre(a, usd));
+  if (!cubre(aprobador, usd) && !primeraCubre) {
+    throw new ErrorDecision(403, `Supera tu límite de aprobación (${limite}) y la primera firma tampoco lo cubre: al menos una de las dos debe tener límite suficiente.`);
+  }
+  return { parcial: false, explicacion: `Aprobada por ${aprobador.nombre} (segunda firma; la primera fue de ${primera.nombre}): «${comentario}».` };
+}
+
+/** Todo lo que puede fallar al agregar a la lista se valida ANTES de registrar la aprobación. */
+function beneficiarioAAgregar(
+  v: Validado,
+  parcial: boolean,
+  documento: Awaited<ReturnType<Repositorio["documento"]>>,
+  existentes: readonly Beneficiario[],
+): Beneficiario | null {
+  if (!v.agregar) return null;
+  if (parcial) throw new ErrorDecision(400, "El beneficiario se agrega a la lista con la segunda firma, no con la primera.");
+  const b = beneficiarioDesde(v.origen, documento);
+  if (existentes.some((x) => x.id === b.id)) throw new ErrorDecision(409, `${b.nombre} ya está en la lista permitida.`);
+  return b;
+}
+
+async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Repositorio; ahora: string }): Promise<ResultadoDecision> {
+  const { repo, ahora } = deps;
+  const [registro, datos, reglas, documento] = await Promise.all([
+    repo.registro(),
+    repo.datosComunes(),
+    repo.reglasVigentes(),
+    repo.documento(input.ref),
+  ]);
+  const v = validar(input, registro, datos.aprobadores);
+  const base = entradaBase(v, reglas.version, ahora);
+  const anio = Number(ahora.slice(0, 4));
 
   if (input.accion === "rechazar") {
     // Rechazar nunca paga: no exige límite. Libera la reserva (§6).
@@ -131,55 +177,23 @@ async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Reposito
       ...base,
       id: await repo.siguienteIdRegistro(anio),
       decision: "RECHAZADA_HUMANO",
-      explicacion: `Rechazada por ${aprobador.nombre}: «${comentario}». La reserva volvió al presupuesto.`,
+      explicacion: `Rechazada por ${v.aprobador.nombre}: «${v.comentario}». La reserva volvió al presupuesto.`,
     };
     await repo.agregarEntrada(entrada);
     return { entrada, parcial: false, beneficiario_agregado: null };
   }
 
-  const usd = origen.monto_usd_centavos;
+  const usd = v.origen.monto_usd_centavos;
   if (usd === null) {
     throw new ErrorDecision(409, "La factura no tiene un monto confiable (R1): corrige los datos y vuelve a enviarla antes de aprobar.");
   }
-  const limite = aprobador.limite_usd === null ? null : `USD ${formatearUsd(aprobador.limite_usd)}`;
-  const doble = usd >= reglas.aprobacion.doble_aprobacion_desde_usd;
+  const { parcial, explicacion } = resolverAprobacion(v, usd, reglas.aprobacion.doble_aprobacion_desde_usd, datos.aprobadores);
+  const nuevo = beneficiarioAAgregar(v, parcial, documento, datos.beneficiarios);
 
-  let parcial = false;
-  let explicacion = `Aprobada por ${aprobador.nombre}: «${comentario}».`;
-  if (!doble) {
-    if (!cubre(aprobador, usd)) throw new ErrorDecision(403, `Supera tu límite de aprobación (${limite}). Pídele a un aprobador con límite suficiente que la apruebe.`);
-  } else if (firmas.length === 0) {
-    // Primera firma: puede ser de control (sin límite suficiente) si la segunda sí lo tiene (§10).
-    parcial = true;
-    explicacion = `Primera aprobación (1 de 2) por ${aprobador.nombre}: «${comentario}». Falta una segunda firma.`;
-  } else {
-    const primera = firmas[0];
-    if (primera?.aprobador_id === aprobador.id) throw new ErrorDecision(409, "La segunda aprobación debe ser de otra persona.");
-    const primeraCubre = datos.aprobadores.some((a) => a.id === primera?.aprobador_id && cubre(a, usd));
-    if (!cubre(aprobador, usd) && !primeraCubre) {
-      throw new ErrorDecision(403, `Supera tu límite de aprobación (${limite}) y la primera firma tampoco lo cubre: al menos una de las dos debe tener límite suficiente.`);
-    }
-    explicacion = `Aprobada por ${aprobador.nombre} (segunda firma; la primera fue de ${primera?.nombre}): «${comentario}».`;
-  }
-
-  // Todo lo que puede fallar al agregar a la lista se valida ANTES de registrar la aprobación.
-  let nuevo: Beneficiario | null = null;
-  if (agregar) {
-    if (parcial) throw new ErrorDecision(400, "El beneficiario se agrega a la lista con la segunda firma, no con la primera.");
-    nuevo = beneficiarioDesde(origen, documento);
-    if (datos.beneficiarios.some((x) => x.id === nuevo?.id)) throw new ErrorDecision(409, `${nuevo.nombre} ya está en la lista permitida.`);
-  }
-
-  const entrada: EntradaRegistro = {
-    ...base,
-    id: await repo.siguienteIdRegistro(anio),
-    decision: parcial ? null : "APROBADA_HUMANO",
-    explicacion,
-  };
+  const entrada: EntradaRegistro = { ...base, id: await repo.siguienteIdRegistro(anio), decision: parcial ? null : "APROBADA_HUMANO", explicacion };
   await repo.agregarEntrada(entrada);
-  if (nuevo) await agregarALista(nuevo, origen, entrada, { repo, ahora, aprobador });
-  const beneficiario_agregado = nuevo;
-  return { entrada, parcial, beneficiario_agregado };
+  if (nuevo) await agregarALista(nuevo, v.origen, entrada, { repo, ahora, aprobador: v.aprobador });
+  return { entrada, parcial, beneficiario_agregado: nuevo };
 }
 
 /** Beneficiario nuevo con la cuenta de la factura y el canal por el que llegó (§10). Sin escribir nada. */

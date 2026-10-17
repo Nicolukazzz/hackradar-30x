@@ -35,20 +35,26 @@ async function main() {
       "Errores: `{ \"error\": \"…\" }` con 400/401/403/404/409.\n",
     "Identidad: `POST /api/aprobaciones/:ref` y `POST /api/reglas` toman al aprobador de la cookie demo `actuar_como` (`POST /api/demo/actuar-como { aprobador_id }`), nunca del body. #25 la reemplaza por la sesión de Supabase.\n",
   ];
-  partes.push(bloque("POST /api/procesar", "Procesa los documentos pendientes del escenario. Idempotente.", await procesarPendientes(repo)));
-  partes.push(bloque("GET /api/bandeja", "`?decision=todas|pagar|frenar|escalar&q=`.", await obtenerBandeja(repo)));
-  partes.push(bloque("GET /api/facturas/:ref", "Ejemplo: `INT-2026-000011` (OMI-3381).", await obtenerFactura(repo, "INT-2026-000011")));
-  partes.push("## GET /api/documentos/:ref/archivo\n\nEl archivo original (PDF, PNG, `.eml`, `.txt` de chat) con su `content-type`. `?adjunto=0` devuelve el PDF dentro de un correo.\n");
-  partes.push(bloque("GET /api/aprobaciones", "`?orden=vencimiento|monto`.", await obtenerAprobaciones(repo)));
+  const procesado = await procesarPendientes(repo);
+  partes.push(
+    bloque("POST /api/procesar", "Procesa los documentos pendientes del escenario. Idempotente.", procesado),
+    bloque("GET /api/bandeja", "`?decision=todas|pagar|frenar|escalar&q=`.", await obtenerBandeja(repo)),
+    bloque("GET /api/facturas/:ref", "Ejemplo: `INT-2026-000011` (OMI-3381).", await obtenerFactura(repo, "INT-2026-000011")),
+    "## GET /api/documentos/:ref/archivo\n\nEl archivo original (PDF, PNG, `.eml`, `.txt` de chat) con su `content-type`. `?adjunto=0` devuelve el PDF dentro de un correo.\n",
+    bloque("GET /api/aprobaciones", "`?orden=vencimiento|monto`.", await obtenerAprobaciones(repo)),
+  );
   const lf = await decidir(
     { ref: "INT-2026-000008", accion: "aprobar", comentario: "Hito final entregado y revisado.", aprobador_id: "lm" },
     { repo, ahora: "2026-10-16T15:10:00-05:00" },
   );
-  partes.push(bloque("POST /api/aprobaciones/:ref", "Cuerpo `{ \"accion\": \"aprobar\"|\"rechazar\", \"comentario\": \"…\", \"agregar_a_lista\"?: true }` → 201 con la `EntradaRegistro` nueva.", lf.entrada));
-  partes.push(bloque("GET /api/reglas", "", await obtenerReglas(repo)));
-  partes.push(bloque("POST /api/reglas/simular", "Cuerpo: `Reglas`. Sin registrar nada.", await simularReglas(repo, await repo.reglasVigentes())));
-  partes.push("## POST /api/reglas\n\nCuerpo: `Reglas` sin `version` (autoría y fecha las pone el servidor). Solo el aprobador principal. → 201 `{ \"version\": 8, \"reporte\": ReporteEvaluacion }`; 409 con `reporte` si la simulación da pagos fuera de reglas.\n");
-  partes.push(bloque("GET /api/registro", "`?decision=todas|pagar|frenar|escalar|humanas&actor=agente|humano&q=`. Más nuevas primero, agrupadas por día.", await obtenerRegistro(repo)));
+  const [reglas, simulacion, registro] = [await obtenerReglas(repo), await simularReglas(repo, await repo.reglasVigentes()), await obtenerRegistro(repo)];
+  partes.push(
+    bloque("POST /api/aprobaciones/:ref", "Cuerpo `{ \"accion\": \"aprobar\"|\"rechazar\", \"comentario\": \"…\", \"agregar_a_lista\"?: true }` → 201 con la `EntradaRegistro` nueva.", lf.entrada),
+    bloque("GET /api/reglas", "", reglas),
+    bloque("POST /api/reglas/simular", "Cuerpo: `Reglas`. Sin registrar nada.", simulacion),
+    "## POST /api/reglas\n\nCuerpo: `Reglas` sin `version` (autoría y fecha las pone el servidor). Solo el aprobador principal. → 201 `{ \"version\": 8, \"reporte\": ReporteEvaluacion }`; 409 con `reporte` si la simulación da pagos fuera de reglas.\n",
+    bloque("GET /api/registro", "`?decision=todas|pagar|frenar|escalar|humanas&actor=agente|humano&q=`. Más nuevas primero, agrupadas por día.", registro),
+  );
   const csv = registroACsv((await repo.registro()).slice(-2)).trim();
   partes.push(`## GET /api/registro/export.csv · export.json\n\nCSV con BOM y las 15 columnas de §9; JSON con el arreglo completo.\n\n\`\`\`csv\n${csv}\n\`\`\`\n`);
   const omi = (await repo.registro()).find((e) => e.factura_numero === "OMI-3381");

@@ -83,7 +83,7 @@ describe("registro (§9, §13.5)", () => {
     expect(humanas.dias.flatMap((d: { entradas: unknown[] }) => d.entradas).every((e: { tipo: string }) => e.tipo === "DECISION_HUMANA")).toBe(true);
     // la interfaz no tiene update ni delete; agregar una entrada con id repetido falla
     await expect(repo.agregarEntrada({ ...lf })).rejects.toThrow("no se sobrescribe");
-    expect((await repo.registro()).length).toBe(largo + 1);
+    expect(await repo.registro()).toHaveLength(largo + 1);
   });
 
   it("export.csv: 15 columnas de §9, BOM, sin inyección de fórmulas", async () => {

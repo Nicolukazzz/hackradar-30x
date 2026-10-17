@@ -63,7 +63,9 @@ function textoRecepcion(doc: DocumentoRecibido | null, e: EntradaRegistro): stri
   const canal = DESCRIPCION_CANAL[e.canal] ?? e.canal;
   const adjunto = doc?.adjuntos[0];
   if (!adjunto) return `${canal} con los datos en el texto.`;
-  const tipo = adjunto.mime.startsWith("image/") ? "una foto" : adjunto.mime === "application/pdf" ? "PDF adjunto" : adjunto.nombre;
+  let tipo = adjunto.nombre;
+  if (adjunto.mime.startsWith("image/")) tipo = "una foto";
+  else if (adjunto.mime === "application/pdf") tipo = "PDF adjunto";
   return `${canal} con ${tipo}.`;
 }
 
@@ -113,6 +115,62 @@ function confianzaMinima(ext: Extraccion | null): number | null {
   return Math.min(...CAMPOS_OBLIGATORIOS.map((k) => ext[k].confianza));
 }
 
+const TITULO_HUMANA: Record<string, string> = { APROBADA_HUMANO: "Aprobada por persona", RECHAZADA_HUMANO: "Rechazada por persona" };
+
+function hitoExtraccion(e: EntradaRegistro, hayInstrucciones: boolean): HitoLineaTiempo {
+  const ext = e.extraccion;
+  const minima = confianzaMinima(ext);
+  let texto = "No se pudieron extraer datos.";
+  if (minima !== null) {
+    const leidos = CAMPOS_OBLIGATORIOS.filter((k) => ext?.[k].valor !== null).length;
+    texto = `${leidos} campos, confianza mínima ${Math.floor(minima * 100)}%.`;
+    if (hayInstrucciones) texto += " El texto se trató como dato, no como orden.";
+  }
+  return { momento: e.momento, titulo: "Datos extraídos", texto, tono: "neutro" };
+}
+
+function hitoReglas(e: EntradaRegistro, r: ResumenReglas): HitoLineaTiempo {
+  const partes = [`${r.cumplen + r.no_aplican} cumplen o no aplican`];
+  if (r.frenan) partes.push(`${r.frenan} frenan`);
+  if (r.escalan) partes.push(`${r.escalan} escalan`);
+  const fallaron = e.reglas_que_fallaron.length ? ` (${e.reglas_que_fallaron.join(", ")}).` : ".";
+  return { momento: e.momento, titulo: `Reglas evaluadas (v${e.reglas_version})`, texto: partes.join(" · ") + fallaron, tono: "neutro" };
+}
+
+function hitoDecision(e: EntradaRegistro, quien: string): HitoLineaTiempo {
+  if (e.decision === "PAGAR") return { momento: e.momento, titulo: "Pagada", texto: "Cumple todas las reglas: el agente la aprobó solo.", tono: "pagada" };
+  if (e.decision === "FRENAR") return { momento: e.momento, titulo: "Frenada", texto: "No se paga. Para pagarla hay que corregir la factura y volver a enviarla.", tono: "frenada" };
+  if (e.decision === "RECHAZADA_NO_FACTURA") return { momento: e.momento, titulo: "No es una factura", texto: "Se registró y no entra a las reglas de pago.", tono: "neutro" };
+  const usd = e.monto_usd_centavos === null ? "el monto" : `USD ${formatearUsd(e.monto_usd_centavos)}`;
+  return { momento: e.momento, titulo: `Escalada a ${quien}`, texto: `${usd} reservados del presupuesto del periodo.`, tono: "escalada" };
+}
+
+/** Recibida → datos extraídos → reglas → decisión del agente → decisiones humanas → (esperando). */
+function lineaDeTiempo(x: {
+  e: EntradaRegistro;
+  documento: DocumentoRecibido | null;
+  resumen: ResumenReglas;
+  instrucciones: string[];
+  humanas: EntradaRegistro[];
+  pendiente: boolean;
+  quien: string;
+}): HitoLineaTiempo[] {
+  const linea: HitoLineaTiempo[] = [
+    { momento: x.e.momento, titulo: "Factura recibida", texto: textoRecepcion(x.documento, x.e), tono: "neutro" },
+    hitoExtraccion(x.e, x.instrucciones.length > 0),
+    hitoReglas(x.e, x.resumen),
+    hitoDecision(x.e, x.quien),
+    ...x.humanas.map((h): HitoLineaTiempo => ({
+      momento: h.momento,
+      titulo: (h.decision && TITULO_HUMANA[h.decision]) ?? "Primera firma (1 de 2)",
+      texto: h.explicacion,
+      tono: "humana",
+    })),
+  ];
+  if (x.pendiente) linea.push({ momento: null, titulo: "Esperando decisión humana", texto: "Nada se paga hasta que una persona responda.", tono: "pendiente" });
+  return linea;
+}
+
 export async function obtenerFactura(repo: Repositorio, ref: string): Promise<RespuestaFactura | null> {
   const [registro, datos, documento] = await Promise.all([repo.registro(), repo.datosComunes(), repo.documento(ref)]);
   const e = decisionAgente(registro, ref);
@@ -129,42 +187,8 @@ export async function obtenerFactura(repo: Repositorio, ref: string): Promise<Re
   const instrucciones = [...new Set(textos.flatMap((t) => detectarInstrucciones(t)))];
   const b = e.beneficiario ? datos.beneficiarios.find((x) => normalizarNombre(x.nombre) === normalizarNombre(e.beneficiario ?? "")) : undefined;
 
-  const minima = confianzaMinima(ext);
-  const linea: HitoLineaTiempo[] = [
-    { momento: e.momento, titulo: "Factura recibida", texto: textoRecepcion(documento, e), tono: "neutro" },
-    {
-      momento: e.momento,
-      titulo: "Datos extraídos",
-      texto:
-        minima === null
-          ? "No se pudieron extraer datos."
-          : `${CAMPOS_OBLIGATORIOS.filter((k) => ext?.[k].valor !== null).length} campos, confianza mínima ${Math.floor(minima * 100)}%.` +
-            (instrucciones.length > 0 ? " El texto se trató como dato, no como orden." : ""),
-      tono: "neutro",
-    },
-    {
-      momento: e.momento,
-      titulo: `Reglas evaluadas (v${e.reglas_version})`,
-      texto:
-        `${resumen.cumplen + resumen.no_aplican} cumplen o no aplican` +
-        (resumen.frenan ? ` · ${resumen.frenan} frenan` : "") +
-        (resumen.escalan ? ` · ${resumen.escalan} escalan` : "") +
-        (e.reglas_que_fallaron.length ? ` (${e.reglas_que_fallaron.join(", ")}).` : "."),
-      tono: "neutro",
-    },
-  ];
-  const usd = e.monto_usd_centavos === null ? "el monto" : `USD ${formatearUsd(e.monto_usd_centavos)}`;
-  if (e.decision === "PAGAR") linea.push({ momento: e.momento, titulo: "Pagada", texto: "Cumple todas las reglas: el agente la aprobó solo.", tono: "pagada" });
-  else if (e.decision === "FRENAR") linea.push({ momento: e.momento, titulo: "Frenada", texto: "No se paga. Para pagarla hay que corregir la factura y volver a enviarla.", tono: "frenada" });
-  else if (e.decision === "RECHAZADA_NO_FACTURA") linea.push({ momento: e.momento, titulo: "No es una factura", texto: "Se registró y no entra a las reglas de pago.", tono: "neutro" });
-  else {
-    const quien = asignacionDe(e, datos.aprobadores, cuando)?.aprobador.nombre ?? "una persona";
-    linea.push({ momento: e.momento, titulo: `Escalada a ${quien}`, texto: `${usd} reservados del presupuesto del periodo.`, tono: "escalada" });
-  }
-  for (const h of humanas) {
-    linea.push({ momento: h.momento, titulo: h.decision === "APROBADA_HUMANO" ? "Aprobada por persona" : h.decision === "RECHAZADA_HUMANO" ? "Rechazada por persona" : "Primera firma (1 de 2)", texto: h.explicacion, tono: "humana" });
-  }
-  if (pendiente) linea.push({ momento: null, titulo: "Esperando decisión humana", texto: "Nada se paga hasta que una persona responda.", tono: "pendiente" });
+  const quien = asignacionDe(e, datos.aprobadores, cuando)?.aprobador.nombre ?? "una persona";
+  const linea = lineaDeTiempo({ e, documento, resumen, instrucciones, humanas, pendiente, quien });
 
   return {
     entrada: e,

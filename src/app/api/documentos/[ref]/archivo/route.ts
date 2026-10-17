@@ -21,7 +21,7 @@ export async function GET(req: Request, ctx: RouteContext<"/api/documentos/[ref]
     return new Response(new Uint8Array(archivo.bytes), {
       headers: {
         "content-type": archivo.mime,
-        "content-disposition": `inline; filename="${archivo.nombre.replace(/[^\w.\-]/g, "_")}"`,
+        "content-disposition": `inline; filename="${archivo.nombre.replaceAll(/[^\w.-]/g, "_")}"`,
         "x-content-type-options": "nosniff",
         "content-security-policy": `default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'${visor ? "" : "; sandbox"}`,
         "cache-control": "private, max-age=300",
