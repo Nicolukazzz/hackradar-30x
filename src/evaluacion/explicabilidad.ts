@@ -5,7 +5,9 @@ import { normalizarTexto } from "@/dominio/normalizar";
 import type { DecisionAgente, IdRegla } from "@/dominio/tipos";
 import { CATALOGO } from "@/reglas/catalogo";
 
+/** Presupuesto de largo: 280 caracteres con hasta dos causas y 60 más por cada causa extra (una frase corta cada una). */
 export const LARGO_MAXIMO = 280;
+export const LARGO_POR_CAUSA_EXTRA = 60;
 
 /**
  * Cómo nombran las plantillas de §7 cada regla. Basta una: la explicación no repite el nombre
@@ -22,7 +24,7 @@ const MENCIONES: Record<IdRegla, string[]> = {
   R8: ["sobre su limite"],
   R9: ["limite de pago automatico"],
   R10: ["instrucciones para el agente"],
-  R11: ["no esta vinculado"],
+  R11: ["no esta vinculado", "tampoco esta vinculado"],
 };
 
 /** Reglas cuya comparación es numérica: la explicación debe traer al menos una cifra. */
@@ -54,6 +56,7 @@ export function problemasExplicacion(x: { decision: DecisionAgente; reglas: read
   // Lo citado entre «» es texto del proveedor (R10), no de la plantilla: no cuenta como jerga.
   const jerga = JERGA.exec(explicacion.replace(/«[^»]*»/g, "«»"));
   if (jerga) problemas.push(`jerga interna «${jerga[0]}»`);
-  if (explicacion.length > LARGO_MAXIMO) problemas.push(`${explicacion.length} caracteres (máximo ${LARGO_MAXIMO})`);
+  const maximo = LARGO_MAXIMO + LARGO_POR_CAUSA_EXTRA * Math.max(0, reglas.length - 2);
+  if (explicacion.length > maximo) problemas.push(`${explicacion.length} caracteres (máximo ${maximo})`);
   return problemas;
 }
