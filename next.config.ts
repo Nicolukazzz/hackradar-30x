@@ -23,6 +23,13 @@ const nextConfig: NextConfig = {
     // multipart pasa ese tope y llegaría truncada. 11 MB deja margen; POST /api/documentos corta en 10 MB + 64 KB.
     proxyClientMaxBodySize: "11mb",
   },
+  // #83: Reglas y Equipo viven dentro de Ajustes. Los enlaces viejos (correos, marcadores) siguen funcionando.
+  async redirects() {
+    return [
+      { source: "/reglas", destination: "/ajustes/reglas", permanent: false },
+      { source: "/equipo", destination: "/ajustes/equipo", permanent: false },
+    ];
+  },
   async headers() {
     return [
       { source: "/:path*", headers: cabecerasSeguridad },

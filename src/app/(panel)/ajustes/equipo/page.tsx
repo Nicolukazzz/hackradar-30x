@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { Tarjeta, TarjetaEncabezado } from "@/app/_componentes";
+import { VolverAjustes } from "@/app/_componentes/ajustes";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { obtenerAlmacenEquipo } from "@/equipo";
 import { obtenerEquipo } from "@/equipo/servicio";
@@ -10,9 +11,9 @@ import { puede } from "@/lib/auth/permisos";
 import { obtenerSesion } from "@/lib/auth/sesion";
 import { relojSistema } from "@/lib/reloj-sistema";
 
-import { Invitaciones } from "./_equipo/invitaciones";
-import { CrearEmpleado } from "./_equipo/invitar";
-import { Miembros } from "./_equipo/miembros";
+import { Invitaciones } from "../../equipo/_equipo/invitaciones";
+import { CrearEmpleado } from "../../equipo/_equipo/invitar";
+import { Miembros } from "../../equipo/_equipo/miembros";
 
 export const metadata: Metadata = { title: "Equipo · Agente de cuentas por pagar" };
 
@@ -25,6 +26,7 @@ export default async function EquipoPage() {
 
   return (
     <>
+      <VolverAjustes />
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div className="flex max-w-[620px] flex-col gap-1.5">
           <span className="text-[13px] text-muted-foreground">Nébula Studio Inc.</span>

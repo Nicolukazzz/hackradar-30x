@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheckIcon, InboxIcon, ListIcon, LogOutIcon, SendIcon, ShieldCheckIcon, SlidersHorizontalIcon, UsersIcon } from "lucide-react";
+import { CircleCheckIcon, InboxIcon, ListIcon, LogOutIcon, SendIcon, SettingsIcon, ShieldCheckIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense, use } from "react";
 import { usePathname } from "next/navigation";
@@ -22,16 +22,14 @@ import { NOMBRE_ROL, type Rol } from "@/lib/auth/permisos";
 import { cn } from "@/lib/utils";
 
 // Barra lateral de especificación §13 "Comunes", con el aspecto del prototipo.
+// #83: Reglas y Equipo pasan dentro de Ajustes.
 const navegacion = [
   { titulo: "Bandeja", href: "/", icono: InboxIcon },
   { titulo: "Aprobaciones", href: "/aprobaciones", icono: CircleCheckIcon },
-  { titulo: "Reglas", href: "/reglas", icono: SlidersHorizontalIcon },
   { titulo: "Registro", href: "/registro", icono: ListIcon },
-  { titulo: "Proveedores nuevos", href: "/proveedores", icono: SendIcon },
+  { titulo: "Proveedores", href: "/proveedores", icono: SendIcon },
+  { titulo: "Ajustes", href: "/ajustes", icono: SettingsIcon },
 ] as const;
-
-/** Solo administradores (#51). */
-const navegacionAdmin = [{ titulo: "Equipo", href: "/equipo", icono: UsersIcon }] as const;
 
 /** Logo + rol. Lo comparten la barra lateral y la cabecera móvil. */
 export function MarcaTesorero({ className }: { className?: string }) {
@@ -73,7 +71,7 @@ export function AppSidebar({
   pendientes: Promise<number | null>;
 }) {
   const ruta = usePathname();
-  const enlaces = usuario.rol === "admin" ? [...navegacion, ...navegacionAdmin] : navegacion;
+  const enlaces = navegacion;
   const { setOpenMobile } = useSidebar();
 
   return (
