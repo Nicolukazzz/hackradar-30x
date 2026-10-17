@@ -53,7 +53,7 @@ export function SubirDocumento({
 }: {
   alTerminar?: (r: ResultadoSubida) => void;
   className?: string;
-  /** a dónde se sube: el panel (por defecto) o el enlace de invitación de un proveedor (`/api/enviar/<token>`, #28) */
+  /** a dónde se sube (por defecto, el panel) */
   url?: string;
 }) {
   const entrada = useRef<HTMLInputElement>(null);

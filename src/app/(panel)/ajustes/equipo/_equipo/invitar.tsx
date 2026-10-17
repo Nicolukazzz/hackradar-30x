@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2Icon, Loader2Icon, MailIcon, UserPlusIcon } from "lucide-react";
+import { LinkIcon, Loader2Icon, UserPlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -10,22 +10,24 @@ import { BotonCopiar, EnlaceGenerado } from "@/app/_componentes/invitacion";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { fechaVencimiento } from "@/equipo/correo";
 import { NOMBRE_ROL, type Rol } from "@/lib/auth/permisos";
 
 import { llamar, usdACentavos } from "./api";
 import { ElegirRol } from "./elegir-rol";
 
-// "Crear empleado" (#80), en 3 pasos: rol → correo (y límite si aprueba) → confirmar. Al confirmar se envía a la persona
-// un correo formal con un enlace de un solo uso que vence en 72 horas; ahí elige su nombre y su contraseña.
-// Si el correo no sale (buzón sin configurar), se muestra el enlace para copiarlo: es la única vez que existe.
+// "Crear empleado" (#80), en 3 pasos: rol → correo (y límite si aprueba) → confirmar. Al confirmar se crea un enlace de un
+// solo uso, atado a ese correo, que vence en 72 horas; ahí la persona elige su nombre y su contraseña. No se envía correo:
+// el admin copia el enlace y se lo pasa por un medio seguro. Es la única vez que el enlace existe en claro.
 
 type Paso = "rol" | "correo" | "confirmar" | "listo";
-type Creado = { enlace: string; correo_enviado: boolean; invitacion: { expira_en: string } };
+type Creado = { enlace: string; invitacion: { expira_en: string } };
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const vence = fechaVencimiento;
+function vence(iso: string): string {
+  const f = new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" }).format(new Date(iso));
+  return `${f} (hora de Bogotá)`;
+}
 
 export function CrearEmpleado() {
   const router = useRouter();
@@ -58,13 +60,12 @@ export function CrearEmpleado() {
     }
   }
 
-  function enviar() {
+  function crear() {
     iniciar(async () => {
       try {
         const r = await llamar<Creado>("/api/equipo/invitaciones", "POST", { rol, limite_aprobacion_usd: centavos, correo_esperado: correoLimpio });
         setCreado(r);
         setPaso("listo");
-        if (r.correo_enviado) toast.success("Correo enviado", { description: `${correoLimpio} recibió el enlace para crear su cuenta.` });
       } catch (e) {
         toast.error("No se creó el empleado", { description: e instanceof Error ? e.message : undefined });
       }
@@ -72,14 +73,12 @@ export function CrearEmpleado() {
   }
 
   const numero = { rol: 1, correo: 2, confirmar: 3, listo: 3 }[paso];
-  const titulo = { rol: "¿Qué podrá hacer?", correo: "¿A qué correo le llega?", confirmar: "Revisa y envía", listo: creado?.correo_enviado ? "Correo enviado" : "Empleado creado" }[paso];
+  const titulo = { rol: "¿Qué podrá hacer?", correo: "¿A qué correo le llega?", confirmar: "Revisa y crea el enlace", listo: "Enlace listo" }[paso];
   const descripcion = {
     rol: "Elige el rol. Puedes cambiarlo después desde esta pantalla.",
-    correo: "Le enviaremos un correo con un enlace para que elija su nombre y su contraseña.",
+    correo: "Crearás un enlace para que elija su nombre y su contraseña. Solo esta dirección podrá usarlo.",
     confirmar: "El enlace sirve una sola vez y vence en 72 horas.",
-    listo: creado?.correo_enviado
-      ? `Cuando ${correoLimpio} abra el enlace y cree su contraseña, aparecerá en Miembros.`
-      : "No hay buzón de correo configurado: copia el enlace y envíaselo tú. Por seguridad no se vuelve a mostrar.",
+    listo: `Cópialo y envíaselo a ${correoLimpio} por un medio seguro. Por seguridad no se vuelve a mostrar; cuando cree su contraseña aparecerá en Miembros.`,
   }[paso];
 
   return (
@@ -157,16 +156,7 @@ export function CrearEmpleado() {
           ) : null}
 
           {paso === "listo" && creado ? (
-            creado.correo_enviado ? (
-              <p className="flex items-start gap-2.5 rounded-xl bg-pagada px-4 py-3 text-sm text-pagada-foreground">
-                <CheckCircle2Icon className="mt-0.5 size-4 flex-none" aria-hidden />
-                <span>
-                  Enviado a <strong className="font-semibold">{correoLimpio}</strong>. El enlace vence el {vence(creado.invitacion.expira_en)}.
-                </span>
-              </p>
-            ) : (
-              <EnlaceGenerado enlace={creado.enlace} etiqueta="Enlace para crear la cuenta" resumen={`${NOMBRE_ROL[rol]} · solo ${correoLimpio} · vence el ${vence(creado.invitacion.expira_en)}`} />
-            )
+            <EnlaceGenerado enlace={creado.enlace} etiqueta="Enlace para crear la cuenta" resumen={`${NOMBRE_ROL[rol]} · solo ${correoLimpio} · vence el ${vence(creado.invitacion.expira_en)}`} />
           ) : null}
 
           <DialogFooter className="-mx-6 -mb-6 px-6">
@@ -190,16 +180,16 @@ export function CrearEmpleado() {
                 <Boton variante="secundaria" onClick={() => setPaso("correo")} disabled={ocupado}>
                   Atrás
                 </Boton>
-                <Boton variante="primaria" onClick={enviar} disabled={ocupado}>
-                  {ocupado ? <Loader2Icon className="animate-spin" aria-hidden /> : <MailIcon aria-hidden />}
-                  {ocupado ? "Enviando…" : "Enviar correo"}
+                <Boton variante="primaria" onClick={crear} disabled={ocupado}>
+                  {ocupado ? <Loader2Icon className="animate-spin" aria-hidden /> : <LinkIcon aria-hidden />}
+                  {ocupado ? "Creando…" : "Crear enlace"}
                 </Boton>
               </>
             ) : null}
             {paso === "listo" ? (
               <>
-                {creado && !creado.correo_enviado ? <BotonCopiar enlace={creado.enlace} descripcion="Envíaselo a la persona por un medio seguro." /> : null}
-                <Boton variante={creado?.correo_enviado ? "primaria" : "secundaria"} onClick={() => cambiarAbierto(false)}>
+                {creado ? <BotonCopiar enlace={creado.enlace} descripcion="Envíaselo a la persona por un medio seguro." /> : null}
+                <Boton variante="secundaria" onClick={() => cambiarAbierto(false)}>
                   Listo
                 </Boton>
               </>

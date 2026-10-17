@@ -2,16 +2,19 @@
 // de nuevo en el servidor con `obtenerSesion()` (layout del panel y `conSesion`).
 
 /** Páginas que se ven sin sesión. */
-/** `/unirse` (#80): la persona todavía no tiene cuenta; la crea con el enlace del correo. */
-export const PAGINAS_PUBLICAS = ["/entrar", "/sin-permiso", "/unirse"] as const;
+/**
+ * `/unirse` (#80): la persona todavía no tiene cuenta; la crea con el enlace que le pasó el admin.
+ * `/vincular` (#85): un proveedor sin cuenta vincula su correo de facturación con el enlace que le pasó la empresa.
+ */
+export const PAGINAS_PUBLICAS = ["/entrar", "/sin-permiso", "/unirse", "/vincular"] as const;
 
 /**
  * Rutas de API que no pasan por `conSesion` (cada una verifica por su cuenta):
- * - `/api/enviar/<token>` (#28): quien sube no es miembro de la empresa, pero la ruta exige sesión, mismo origen y un
- *   enlace de invitación válido.
+ * - `/api/vincular/<token>` (#85): el proveedor no tiene cuenta; la autoriza el token del enlace (un solo uso), con
+ *   mismo origen y tope de intentos por IP.
  * - `/api/canales/telegram/webhook` (#13): sin sesión de usuario; verifica la cabecera X-Telegram-Bot-Api-Secret-Token.
  */
-export const API_PUBLICAS: readonly string[] = ["/api/enviar", "/api/canales/telegram/webhook"];
+export const API_PUBLICAS: readonly string[] = ["/api/vincular", "/api/canales/telegram/webhook"];
 
 export type DecisionRuta = "seguir" | "redirigir" | "no_autorizado";
 

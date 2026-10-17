@@ -9,7 +9,7 @@ Ya configurado en producción (#74): `REPOSITORIO=supabase`, `DEMO=1`, `GEMINI_A
 
 1. Justo antes de presentar, con una cuenta admin: Bandeja → **Reiniciar demo** → **Procesar facturas nuevas** (5 pagadas, 3 frenadas, 4 escaladas, sin decisiones humanas). Reiniciar abre una corrida nueva (#76): nada se borra, las corridas de los ensayos quedan guardadas en la base y el registro sigue siendo append-only. Se puede ensayar en producción cuantas veces haga falta. Los chats de Telegram vinculados no se pierden.
 2. Telegram (#13): el chat del presentador ya está vinculado a Diego Herrera. Si se cambia de teléfono: `npm run telegram -- enlace ben-diego-herrera` (con las variables de Railway) y abrir el enlace.
-3. Proveedores nuevos (#28): crear un enlace en **Proveedores nuevos** para «Lumen Diseño» y tenerlo abierto en otra pestaña, con una cuenta que no sea del equipo.
+3. Proveedores (#85): en **Proveedores → Crear enlace → Proveedor nuevo**, crear el enlace para «Lumen Diseño S.A.S.», abrirlo en otra pestaña (sin sesión) y vincular el correo desde el que se mandará `004-lum-0007.pdf`. Se ve el id de conexión `PRV-…`. Ese correo **no** debe ser el de un proveedor de la lista.
 4. En el teléfono o el Gmail del presentador: un correo **borrador** a `facturas.nebula.demo@gmail.com` con `adjuntos/003-ml-560.pdf` adjunto (asunto «Factura ML-560»). El correo del presentador **no** está vinculado a ningún proveedor, a propósito.
 5. Tener a mano `001-f-0106.png` (en el teléfono, para Telegram) y `002-inv-2216.eml`, `004-lum-0007.pdf`.
 
@@ -25,7 +25,7 @@ Ya configurado en producción (#74): `REPOSITORIO=supabase`, `DEMO=1`, `GEMINI_A
 | 6 | Telegram: mandar la **foto** `001-f-0106.png` al bot | El bot responde la ref y «no se pagará: ya habíamos recibido esta factura»: mismo cobro que F-0093 con otro número (R2) | seguridad |
 | 7 | Bandeja → **Recibir factura → correo**: `002-inv-2216.eml` | PAGADA sola: coincide con la OC-118 y la cuenta | autonomía |
 | 8 | **Correo real**: enviar el borrador con `003-ml-560.pdf` desde el Gmail del presentador. Mientras llega (≤ 1 min), seguir con el paso 9 | ESCALADA por dos causas: el PDF trae una orden al agente en **texto blanco**, invisible al imprimir (R10, la Traza la resalta), y el remitente no está vinculado a Mesa Legal (R11: una factura «de Mesa Legal» desde cualquier correo nunca se paga sola). El presentador recibe la respuesta automática con la ref y los aprobadores el aviso de #68 | seguridad · explicabilidad |
-| 9 | Pestaña del proveedor: subir `004-lum-0007.pdf` por el enlace | ESCALADA (R3 + R11): proveedor nuevo; el proveedor ve «en revisión», no reglas internas. Aprobar con «Agregar a la lista» vincula su correo | seguridad |
+| 9 | Desde el correo vinculado en el paso 3, enviar `004-lum-0007.pdf` a `facturas.nebula.demo@gmail.com` | ESCALADA (R3 + R11): proveedor nuevo; el registro muestra la conexión `PRV-…` y la factura espera a una persona. Aprobar con «Agregar a la lista» lo agrega con ese correo y sus próximas facturas siguen las reglas normales | seguridad |
 
 Cierre: «El modelo solo lee; las reglas deciden en código, y todo lo que no cumple espera a una persona con la explicación escrita».
 

@@ -1,20 +1,17 @@
 import { obtenerAlmacenEquipo } from "@/equipo";
-import { enviarCorreoInvitacion } from "@/equipo/envio";
 import { reenviar } from "@/equipo/servicio";
 import { auditar } from "@/lib/auth/auditoria";
 import { conSesion } from "@/lib/auth/ruta";
 import { relojSistema } from "@/lib/reloj-sistema";
-import { obtenerRepositorio } from "@/repositorio";
 
 import { manejar, ok } from "../../../../_http";
 
-/** POST /api/equipo/invitaciones/:id/reenviar (#80): revoca el enlace y manda uno nuevo al mismo correo. Solo administradores. */
+/** POST /api/equipo/invitaciones/:id/reenviar (#80): revoca el enlace y devuelve uno nuevo para el mismo correo. Solo administradores. */
 export const POST = conSesion(
   async (_req: Request, ctx: RouteContext<"/api/equipo/invitaciones/[id]/reenviar">, sesion) => {
     try {
       const { id } = await ctx.params;
-      const empresa = (await (await obtenerRepositorio()).datosComunes()).empresa.nombre;
-      const r = await reenviar(await obtenerAlmacenEquipo(), sesion, id, relojSistema().ahora(), { empresa, enviar: enviarCorreoInvitacion });
+      const r = await reenviar(await obtenerAlmacenEquipo(), sesion, id, relojSistema().ahora());
       auditar({ tipo: "equipo", usuario_id: sesion.usuario_id, ruta: "/api/equipo/invitaciones", motivo: `reenvió invitación ${id} → ${r.invitacion.id}` });
       return ok(r, { status: 201 });
     } catch (e) {
