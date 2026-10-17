@@ -7,6 +7,7 @@ import { codigoDe, contrasenaDe, errorDeContrasena, mensajeDeError, respuestaEnv
 import { auditar } from "@/lib/auth/auditoria";
 import { destinoTrasEntrar } from "@/lib/auth/rutas";
 import { obtenerSesion } from "@/lib/auth/sesion";
+import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { crearClienteServidor } from "@/lib/supabase/servidor";
 
 // Server actions de /entrar (#49, #81): iniciar sesión con contraseña y cambiar una contraseña olvidada con código.
@@ -55,10 +56,14 @@ async function iniciarSesion(formulario: FormData): Promise<EstadoEntrar> {
 async function pedirCambioDeContrasena(formulario: FormData): Promise<EstadoEntrar> {
   const correo = correoDe(formulario);
   if (!correo) return { vista: "olvide", error: "Escribe un correo válido." };
+  // Solo se manda el código si el correo es de una cuenta activa: así nadie espera un correo que no llegará.
+  const { data: existe, error: errorConsulta } = await crearClienteAdmin().rpc("existe_cuenta_activa", { p_correo: correo });
+  if (errorConsulta) return { vista: "olvide", correo, error: "No pudimos revisar tu correo. Inténtalo de nuevo en un minuto." };
+  if (existe !== true) return { vista: "olvide", correo, error: "No hay una cuenta activa con ese correo. Pídela a tu administrador." };
   const supabase = await crearClienteServidor();
   const { error } = await supabase.auth.resetPasswordForEmail(correo);
   const respuesta = respuestaEnvio(error, { vista: "recuperar", correo }, "olvide");
-  // Una falla del envío (no un correo inexistente, que responde igual) se audita: si el SMTP cae, alguien se entera.
+  // Una falla del envío se audita: si el SMTP cae, alguien se entera.
   if (respuesta.error && error?.status !== 429) {
     auditar({ tipo: "error_envio", usuario_id: null, ruta: "/entrar", motivo: `${error?.status ?? "sin status"} ${error?.code ?? ""}`.trim() });
   }
