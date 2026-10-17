@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { ErrorDecision } from "@/aprobaciones/decidir";
+import { ErrorEquipo } from "@/equipo/tipos";
 import { ErrorReglas } from "@/servicios/reglas";
 import { ErrorSubida } from "@/servicios/subida";
 
@@ -46,6 +47,7 @@ export function manejar(e: unknown): NextResponse {
   if (e instanceof ErrorEntrada) return error(400, e.message);
   if (e instanceof ErrorDecision) return error(e.estado, e.message);
   if (e instanceof ErrorSubida) return error(e.estado, e.message);
+  if (e instanceof ErrorEquipo) return error(e.estado, e.message);
   if (e instanceof ErrorReglas) return error(e.estado, e.message, e.reporte ? { reporte: e.reporte } : undefined);
   console.error(e);
   return error(500, "Error interno. Nada se pagó ni se registró a medias.");

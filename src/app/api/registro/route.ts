@@ -1,21 +1,13 @@
-import { z } from "zod";
-
 import { obtenerRepositorio } from "@/repositorio";
 import { conSesion } from "@/lib/auth/ruta";
-import { obtenerRegistro } from "@/servicios/registro";
+import { ConsultaRegistro, obtenerRegistro } from "@/servicios/registro";
 
 import { error, manejar, ok } from "../_http";
-
-const Consulta = z.object({
-  decision: z.enum(["todas", "pagar", "frenar", "escalar", "humanas"]).optional(),
-  actor: z.enum(["agente", "humano"]).optional(),
-  q: z.string().max(100).optional(),
-});
 
 /** GET /api/registro?decision=&actor=agente|humano&q= (§12): entradas agrupadas por día, más nuevas primero. */
 export const GET = conSesion(async (req: Request) => {
   try {
-    const c = Consulta.safeParse(Object.fromEntries(new URL(req.url).searchParams));
+    const c = ConsultaRegistro.safeParse(Object.fromEntries(new URL(req.url).searchParams));
     if (!c.success) return error(400, "Parámetros inválidos: decision todas|pagar|frenar|escalar|humanas, actor agente|humano.");
     return ok(await obtenerRegistro(await obtenerRepositorio(), c.data));
   } catch (e) {
