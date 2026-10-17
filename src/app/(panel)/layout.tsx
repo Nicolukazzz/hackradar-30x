@@ -7,9 +7,10 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { obtenerSesion } from "@/lib/auth/sesion";
 
 export default async function PanelLayout({ children }: LayoutProps<"/">) {
-  // #49: toda cuenta confirmada entra al panel. Sin sesión (o cuenta desactivada) → /entrar.
+  // Sin sesión (o cuenta desactivada) → /entrar. Cuenta que no es miembro de la empresa (#51) → /sin-permiso.
   const sesion = await obtenerSesion();
   if (!sesion) redirect("/entrar");
+  if (!sesion.rol) redirect("/sin-permiso");
 
   // La barra lateral guarda si quedó abierta en la cookie `sidebar_state` (componente Sidebar de shadcn).
   const abierta = (await cookies()).get("sidebar_state")?.value !== "false";
@@ -24,7 +25,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/">) {
       >
         Saltar al contenido
       </a>
-      <AppSidebar usuario={{ nombre: sesion.nombre, correo: sesion.correo }} pendientes={pendientes} />
+      <AppSidebar usuario={{ nombre: sesion.nombre, correo: sesion.correo, rol: sesion.rol }} pendientes={pendientes} />
       {/* Equivale a SidebarInset, pero como div: así la cabecera móvil es un banner propio y <main> solo tiene el contenido. */}
       <div data-slot="sidebar-inset" className="relative flex w-full min-w-0 flex-1 flex-col bg-background">
         {/* En móvil la barra lateral se vuelve menú superior: marca + botón que abre el panel. */}

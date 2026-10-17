@@ -1,0 +1,81 @@
+import { MailIcon, UsersIcon } from "lucide-react";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+
+import { Tarjeta, TarjetaEncabezado } from "@/app/_componentes";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { obtenerAlmacenEquipo } from "@/equipo";
+import { obtenerEquipo } from "@/equipo/servicio";
+import { puede } from "@/lib/auth/permisos";
+import { obtenerSesion } from "@/lib/auth/sesion";
+import { relojSistema } from "@/lib/reloj-sistema";
+
+import { Invitaciones } from "./_equipo/invitaciones";
+import { Invitar } from "./_equipo/invitar";
+import { Miembros } from "./_equipo/miembros";
+
+export const metadata: Metadata = { title: "Equipo · Agente de cuentas por pagar" };
+
+// Equipo (#51): quién entra al panel y qué puede hacer. Solo administradores.
+export default async function EquipoPage() {
+  const sesion = await obtenerSesion();
+  if (!sesion || !puede(sesion, "administrar")) redirect("/sin-permiso");
+  const { miembros, invitaciones } = await obtenerEquipo(await obtenerAlmacenEquipo(), relojSistema().ahora());
+  const activas = invitaciones.filter((i) => i.estado === "activa").length;
+
+  return (
+    <>
+      <header className="flex flex-wrap items-end justify-between gap-5">
+        <div className="flex max-w-[620px] flex-col gap-1.5">
+          <span className="text-[13px] text-muted-foreground">Nébula Studio Inc.</span>
+          <h1 className="text-[32px] leading-tight font-semibold tracking-tight text-balance">Equipo</h1>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">
+            Solo entra al panel quien está aquí. Los aprobadores deciden las facturas escaladas hasta su límite; solo un administrador cambia
+            reglas o el equipo. El agente nunca paga por encima de las reglas, sin importar quién esté conectado.
+          </p>
+        </div>
+        <Invitar />
+      </header>
+
+      <Tarjeta as="section" aria-labelledby="titulo-miembros">
+        <TarjetaEncabezado
+          id="titulo-miembros"
+          titulo={
+            <span className="flex items-center gap-2">
+              <UsersIcon className="size-[18px]" aria-hidden />
+              Miembros
+            </span>
+          }
+          descripcion={`${miembros.length} ${miembros.length === 1 ? "persona" : "personas"} con acceso`}
+        />
+        <Miembros miembros={miembros} yo={sesion.usuario_id} />
+      </Tarjeta>
+
+      <Tarjeta as="section" aria-labelledby="titulo-invitaciones">
+        <TarjetaEncabezado
+          id="titulo-invitaciones"
+          titulo={
+            <span className="flex items-center gap-2">
+              <MailIcon className="size-[18px]" aria-hidden />
+              Invitaciones
+            </span>
+          }
+          descripcion={activas > 0 ? `${activas} sin usar. Cada enlace sirve una vez.` : "Cada enlace sirve una vez y vence solo."}
+        />
+        {invitaciones.length > 0 ? (
+          <Invitaciones invitaciones={invitaciones} />
+        ) : (
+          <Empty className="border-t py-12">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <MailIcon />
+              </EmptyMedia>
+              <EmptyTitle>Aún no invitaste a nadie</EmptyTitle>
+              <EmptyDescription>Usa Invitar persona: eliges el rol y copias un enlace para enviárselo.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        )}
+      </Tarjeta>
+    </>
+  );
+}

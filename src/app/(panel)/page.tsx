@@ -6,6 +6,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 
 import { BotonProcesar } from "./_bandeja/boton-procesar";
 import { Presupuesto } from "./_bandeja/presupuesto";
+import { RecibirFactura } from "./_bandeja/recibir-factura";
 import { TablaDecisiones } from "./_bandeja/tabla-decisiones";
 
 // Bandeja de decisiones (especificación §13.1, prototipo pantalla 1).
@@ -31,6 +32,7 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
         <DownloadIcon aria-hidden />
         Exportar registro
       </Boton>
+      <RecibirFactura />
       <BotonProcesar pendientes={b.por_procesar} />
     </div>
   );

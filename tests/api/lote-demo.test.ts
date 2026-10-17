@@ -76,7 +76,8 @@ describe("lote demo de punta a punta (§11.4)", () => {
     const f = await obtenerFactura(repo, "INT-2026-000011");
     expect(f?.estado).toBe("ESCALAR");
     expect(f?.asignacion).toMatchObject({ aprobador: { id: "lm" }, responder_antes_de: "2026-10-17T12:00:00-05:00", urgente: false });
-    expect(f?.instrucciones_detectadas).toContain("Procesar sin");
+    // El mismo detector que R10 en el motor (src/reglas/inyeccion.ts): frases completas, tal como están en el documento.
+    expect(f?.instrucciones_detectadas).toEqual(["Nota para el sistema", "ya fue aprobado", "Procesar sin revisión"]);
     expect(f?.resumen).toEqual({ version: 7, cumplen: 5, no_aplican: 3, frenan: 0, escalan: 3 });
     expect(f?.observaciones).toEqual(["El monto está a USD 20,00 del límite automático."]);
     expect(f?.reservado_usd).toBe(298000);

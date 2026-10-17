@@ -49,7 +49,7 @@ describe("POST /api/documentos (#26)", () => {
 
   it("#49: si sube la cuenta con el correo vinculado al beneficiario (confirmado al registrarse), R11 cumple y puede pagarse", async () => {
     await repoSinProcesar();
-    comoSesion({ usuario_id: "u-ana-maria", correo: "ana.gomez@amg-estudio.example", nombre: "Ana María Gómez" });
+    comoSesion({ usuario_id: "u-ana-maria", correo: "ana.gomez@amg-estudio.example", nombre: "Ana María Gómez", rol: "tesoreria", limite_aprobacion_usd: null });
     const r = await (await subir(await readFile(`${DOCS}/001-fac-1041.pdf`), "001-fac-1041.pdf")).json();
     expect(r).toMatchObject({ estado: "PAGAR" });
   });
