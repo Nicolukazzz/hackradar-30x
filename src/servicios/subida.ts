@@ -1,11 +1,10 @@
-// Subida de un archivo desde el portal (proveedor) o el panel ("Cargar factura", carga manual) (#26).
+// Subida de un archivo desde el panel ("Cargar factura", carga manual) (#26; desde #49 sin portal de proveedores).
 // Valida el tipo real, arma el DocumentoEntrante con el remitente que dice la SESIÓN (nunca el cuerpo)
 // y lo pasa por la ingesta única (#11): ref, hash, extracción, motor y registro.
 
 import type { Canal, DecisionAgente, DocumentoEntrante, Remitente } from "@/dominio/tipos";
 import { ingerir, sha256 } from "@/ingesta/ingerir";
 import { type Extractor, procesarDocumento } from "@/ingesta/pipeline";
-import { textoRespuesta } from "@/ingesta/respuesta";
 import { sanearNombre, validarArchivo } from "@/ingesta/validar-archivo";
 import type { Sesion } from "@/lib/auth/permisos";
 import type { Repositorio } from "@/repositorio/repositorio";
@@ -23,7 +22,7 @@ export class ErrorSubida extends Error {
 export type ResultadoSubida = {
   ref_interna: string;
   estado: DecisionAgente;
-  /** proveedor: el aviso de §8 paso 8 (sin reglas internas). Panel: la explicación completa del agente. */
+  /** La explicación completa del agente. */
   mensaje: string;
 };
 
@@ -31,16 +30,11 @@ export type DependenciasSubida = {
   repo: Repositorio;
   ahora: string;
   extractor: Extractor;
-  urlPortal: string;
 };
 
-async function remitenteDe(sesion: Sesion, repo: Repositorio): Promise<{ canal: Canal; remitente: Remitente }> {
-  if (sesion.rol !== "proveedor") return { canal: "carga_manual", remitente: { tipo: "interno", valor: sesion.correo } };
-  const { beneficiarios } = await repo.datosComunes();
-  const b = beneficiarios.find((x) => x.id === sesion.beneficiario_id);
-  if (!b) throw new ErrorSubida(403, "Tu usuario no está asociado a un proveedor.");
-  // La sesión prueba quién es: su usuario de portal o, si no tiene, el id del beneficiario (R11 acepta los dos).
-  return { canal: "portal", remitente: { tipo: "portal", valor: b.canales.portal_usuario ?? b.id } };
+/** #49: quien sube es una cuenta del equipo (carga manual); el remitente es su correo, tomado de la sesión. */
+function remitenteDe(sesion: Sesion): { canal: Canal; remitente: Remitente } {
+  return { canal: "carga_manual", remitente: { tipo: "interno", valor: sesion.correo } };
 }
 
 /**
@@ -73,7 +67,7 @@ export async function subirDocumento(
   const v = validarArchivo(archivo.bytes);
   if (!v.ok) throw new ErrorSubida(v.estado, v.mensaje);
 
-  const { canal, remitente } = await remitenteDe(sesion, deps.repo);
+  const { canal, remitente } = remitenteDe(sesion);
   const bytes = Buffer.from(archivo.bytes.buffer, archivo.bytes.byteOffset, archivo.bytes.byteLength); // sin copiar
   const entrada: DocumentoEntrante = {
     canal,
@@ -86,7 +80,5 @@ export async function subirDocumento(
   const doc = await ingerir(entrada, { repo: deps.repo, reloj: { ahora: () => deps.ahora }, original });
   const e = await decidirConReintento(doc.ref_interna, deps);
   const decision = e.decision as DecisionAgente;
-  const mensaje =
-    sesion.rol === "proveedor" ? textoRespuesta(e, e.extraccion?.idioma ?? "es", { urlPortal: deps.urlPortal }) : e.explicacion;
-  return { ref_interna: e.ref_interna, estado: decision, mensaje };
+  return { ref_interna: e.ref_interna, estado: decision, mensaje: e.explicacion };
 }

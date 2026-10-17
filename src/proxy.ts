@@ -6,8 +6,8 @@ import { clasificarRuta } from "@/lib/auth/rutas";
 import { entornoPublico } from "@/lib/supabase/entorno";
 
 // Next 16: `proxy.ts` reemplaza a `middleware.ts`. Refresca la sesión de Supabase (cookies) y hace el
-// chequeo optimista: sin sesión, las páginas van a /entrar y la API responde 401. El rol se verifica
-// después en el servidor con obtenerSesion() + exigirRol().
+// chequeo optimista: sin sesión, las páginas van a /entrar y la API responde 401. La sesión se verifica
+// de nuevo en el servidor con obtenerSesion() (layout del panel y conSesion).
 export async function proxy(request: NextRequest) {
   const { url, publishableKey } = entornoPublico();
   let respuesta = NextResponse.next({ request });

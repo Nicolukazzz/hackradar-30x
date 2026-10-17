@@ -7,7 +7,7 @@ import type { EntradaRegistro } from "@/dominio/tipos";
 import { obtenerAprobaciones } from "@/servicios/aprobaciones";
 import { obtenerBandeja } from "@/servicios/bandeja";
 
-import { TESORERIA, comoAprobador, comoProveedor, comoSesion, entradaDe, escaladaSintetica, peticion, repoProcesado } from "./ayuda";
+import { CUENTA, comoCuenta, comoSesion, entradaDe, escaladaSintetica, peticion, repoProcesado } from "./ayuda";
 
 
 vi.mock("server-only", () => ({}));
@@ -107,32 +107,39 @@ describe("decidir() — reglas de §10", () => {
 });
 
 describe("POST /api/aprobaciones/:ref (ruta)", () => {
-  it("sin sesión → 401; tesorería o proveedor → 403; aprobador_id en el body → 400 (la identidad sale de la sesión)", async () => {
+  it("sin sesión → 401; aprobador_id en el body → 400 (la identidad sale de la sesión); comentario vacío → 400", async () => {
     const repo = await repoProcesado();
     const lf = await entradaDe(repo, "LF-2026-10");
-    const cuerpoOk = { accion: "aprobar", comentario: "Hito final revisado" };
     comoSesion(null);
-    expect((await post(lf.ref_interna, cuerpoOk)).status).toBe(401);
-    comoSesion(TESORERIA);
-    expect((await post(lf.ref_interna, cuerpoOk)).status).toBe(403);
-    comoProveedor("ben-lucia-fernandez");
-    expect((await post(lf.ref_interna, cuerpoOk)).status).toBe(403);
-    comoAprobador("ap");
+    expect((await post(lf.ref_interna, { accion: "aprobar", comentario: "Hito final revisado" })).status).toBe(401);
+    comoSesion(CUENTA);
     expect((await post(lf.ref_interna, { accion: "aprobar", comentario: "Hito final revisado", aprobador_id: "lm" })).status).toBe(400);
     expect((await post(lf.ref_interna, { accion: "aprobar", comentario: "" })).status).toBe(400);
   });
 
-  it("aprobar como la persona elegida → 201 con la entrada nueva; errores con { error }", async () => {
+  it("#49: cualquier cuenta aprueba con su propio nombre → 201; errores con { error }", async () => {
     const repo = await repoProcesado();
-    comoAprobador("lm");
     const lf = await entradaDe(repo, "LF-2026-10");
     const res = await post(lf.ref_interna, { accion: "aprobar", comentario: "Hito final entregado y revisado." });
     expect(res.status).toBe(201);
     const e = (await res.json()) as EntradaRegistro;
-    expect(e).toMatchObject({ decision: "APROBADA_HUMANO", actor: { nombre: "Laura Méndez" } });
+    expect(e).toMatchObject({ decision: "APROBADA_HUMANO", actor: { tipo: "humano", aprobador_id: CUENTA.usuario_id, nombre: "Ana Torres" } });
     const px = await entradaDe(repo, "PX-77");
     const r409 = await post(px.ref_interna, { accion: "aprobar", comentario: "Págala igual" });
     expect(r409.status).toBe(409);
     expect(await r409.json()).toHaveProperty("error");
+  });
+
+  it("#49: sobre USD 10.000 hacen falta dos cuentas distintas; la misma cuenta dos veces → 409", async () => {
+    const repo = await repoProcesado();
+    const ref = await escaladaSintetica(repo, 1_200_000);
+    const primera = await post(ref, { accion: "aprobar", comentario: "Primera firma, revisado" });
+    expect(primera.status).toBe(201);
+    expect(((await primera.json()) as EntradaRegistro).decision).toBeNull();
+    expect((await post(ref, { accion: "aprobar", comentario: "Otra vez yo" })).status).toBe(409);
+    comoCuenta("Beto Ruiz");
+    const segunda = await post(ref, { accion: "aprobar", comentario: "Segunda firma, de acuerdo" });
+    expect(segunda.status).toBe(201);
+    expect(((await segunda.json()) as EntradaRegistro)).toMatchObject({ decision: "APROBADA_HUMANO", actor: { nombre: "Beto Ruiz" } });
   });
 });

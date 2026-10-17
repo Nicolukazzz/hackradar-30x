@@ -1,8 +1,7 @@
-import { conRol } from "@/lib/auth/ruta";
+import { conSesion } from "@/lib/auth/ruta";
 import { obtenerRepositorio } from "@/repositorio";
 
 import { error, manejar } from "../../../_http";
-import { PANEL } from "../../../_identidad";
 
 /**
  * GET /api/documentos/:ref/archivo (§12): el archivo original tal como llegó.
@@ -10,15 +9,10 @@ import { PANEL } from "../../../_identidad";
  * Panel: cualquier documento. Proveedor: solo los que subió él por el portal; los demás dan 404
  * (no se confirma que exista una ref ajena).
  */
-export const GET = conRol([...PANEL, "proveedor"], async (req: Request, ctx: RouteContext<"/api/documentos/[ref]/archivo">, sesion) => {
+export const GET = conSesion(async (req: Request, ctx: RouteContext<"/api/documentos/[ref]/archivo">) => {
   try {
     const { ref } = await ctx.params;
     const repo = await obtenerRepositorio();
-    if (sesion.rol === "proveedor") {
-      const doc = await repo.documento(ref);
-      const suyo = doc?.remitente.tipo === "portal" && doc.beneficiario_remitente_id !== null && doc.beneficiario_remitente_id === sesion.beneficiario_id;
-      if (!suyo) return error(404, `No hay archivo para ${ref}.`);
-    }
     const adjunto = new URL(req.url).searchParams.get("adjunto");
     const indice = adjunto === null ? null : Number(adjunto);
     if (indice !== null && !(Number.isInteger(indice) && indice >= 0)) return error(400, "adjunto debe ser un número ≥ 0.");

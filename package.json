@@ -11,7 +11,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "evaluar": "tsx scripts/evaluar.ts",
-    "auth:sembrar": "tsx --env-file-if-exists=.env scripts/auth/sembrar-usuarios.ts",
     "extraer": "tsx --env-file-if-exists=.env scripts/extraer.ts",
     "dataset": "$([ -x .venv/bin/python ] && echo .venv/bin/python || echo python3) scripts/dataset/generar.py",
     "cargar-escenario": "tsx --env-file-if-exists=.env scripts/cargar-escenario.ts",

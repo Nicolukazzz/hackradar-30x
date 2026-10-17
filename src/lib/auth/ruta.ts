@@ -5,7 +5,7 @@ import { crearGuardia } from "@/lib/auth/guardia";
 import { obtenerSesion } from "@/lib/auth/sesion";
 
 /**
- * Envuelve un route handler: exige sesión, rol y mismo origen en métodos que escriben.
- * `export const POST = conRol(["aprobador"], async (req, ctx, sesion) => …)`
+ * Envuelve un route handler: exige sesión y mismo origen en métodos que escriben.
+ * `export const POST = conSesion(async (req, ctx, sesion) => …)`
  */
-export const { conRol } = crearGuardia({ obtenerSesion, auditar });
+export const { conSesion } = crearGuardia({ obtenerSesion, auditar });

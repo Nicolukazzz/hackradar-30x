@@ -9,7 +9,7 @@ import { crearLimitador } from "@/lib/limite";
 import { fijarRepositorio } from "@/repositorio";
 import { crearRepositorioMemoria } from "@/repositorio/memoria";
 
-import { comoProveedor, comoSesion, peticion, repoProcesado, TESORERIA } from "./ayuda";
+import { comoSesion, CUENTA, peticion, repoProcesado } from "./ayuda";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/sesion", async () => (await import("./ayuda")).sesionFalsa);
@@ -30,7 +30,7 @@ const archivo = (ref: string) =>
 
 async function repoSinProcesar() {
   fijarRepositorio(await crearRepositorioMemoria("lote-demo-oct"));
-  comoSesion(TESORERIA);
+  comoSesion(CUENTA);
 }
 
 describe("POST /api/documentos (#26)", () => {
@@ -66,32 +66,6 @@ describe("POST /api/documentos (#26)", () => {
     expect((await subir(pdf, "a.pdf")).status).toBe(401);
   });
 
-  it("proveedor: el remitente sale de su sesión, recibe el aviso sin reglas internas y solo ve sus archivos", async () => {
-    await repoProcesado();
-    comoProveedor("ben-ana-maria-gomez");
-    // Una cuenta de cobro nueva de Ana María (mismo formato que FAC-1041, otro archivo): el sistema no la conoce.
-    const res = await subir(await readFile(`${DOCS}/001-fac-1041.pdf`), "cuenta.pdf");
-    const r = await res.json();
-    expect(res.status).toBe(201);
-    expect(r.mensaje).toContain(r.ref_interna);
-    expect(r.mensaje).not.toMatch(/presupuesto|l[íi]mite|USD|R\d/i);
-    expect((await archivo(r.ref_interna)).status).toBe(200);
-    // documento de otro (del lote, no lo subió ella) → 404, sin confirmar que exista
-    expect((await archivo("INT-2026-000007")).status).toBe(404);
-    comoProveedor("ben-pixel-co");
-    expect((await archivo(r.ref_interna)).status).toBe(404);
-  });
-
-  it("proveedor sin usuario de portal (CloudNorte): R11 cumple por la sesión y puede ver lo que subió", async () => {
-    await repoSinProcesar();
-    comoProveedor("ben-cloudnorte");
-    const r = await (await subir(await readFile(`${DOCS}/adjuntos/002-inv-2210.pdf`), "inv.pdf")).json();
-    expect((await archivo(r.ref_interna)).status).toBe(200);
-    const { obtenerRepositorio } = await import("@/repositorio");
-    const e = (await (await obtenerRepositorio()).registro({ ref_interna: r.ref_interna, tipo: ["DECISION_AGENTE"] }))[0];
-    expect(e?.evaluaciones.find((x) => x.id === "R11")?.resultado).toBe("CUMPLE");
-  });
-
   it("si el registro falla después de ingerir: 503 con la ref, sin decir que no se registró nada", async () => {
     const { subirDocumento } = await import("@/servicios/subida");
     const base = await crearRepositorioMemoria("lote-demo-oct");
@@ -99,7 +73,7 @@ describe("POST /api/documentos (#26)", () => {
     const pdf = await readFile(`${DOCS}/001-fac-1041.pdf`);
     const extractor = async () => Promise.reject(new Error("sin LLM"));
     await expect(
-      subirDocumento({ bytes: pdf, nombre: "f.pdf" }, TESORERIA, { repo: roto, ahora: "2026-10-16T10:00:00-05:00", extractor, urlPortal: "x" }),
+      subirDocumento({ bytes: pdf, nombre: "f.pdf" }, CUENTA, { repo: roto, ahora: "2026-10-16T10:00:00-05:00", extractor }),
     ).rejects.toMatchObject({ estado: 503, message: expect.stringContaining("INT-2026-000013") });
   });
 
@@ -123,15 +97,15 @@ describe("POST /api/documentos (#26)", () => {
   });
 });
 
-describe("rutas del panel con conRol (#25/#26)", () => {
-  it("un proveedor no puede leer la bandeja, el registro ni procesar (403)", async () => {
+describe("rutas con conSesion (#25/#26/#49)", () => {
+  it("sin sesión no se lee la bandeja, el registro ni se procesa (401)", async () => {
     await repoProcesado();
-    comoProveedor("ben-pixel-co");
-    expect((await getBandeja(peticion("http://x/api/bandeja"))).status).toBe(403);
+    comoSesion(null);
+    expect((await getBandeja(peticion("http://x/api/bandeja"))).status).toBe(401);
     const { GET: getRegistro } = await import("@/app/api/registro/route");
-    expect((await getRegistro(peticion("http://x/api/registro"))).status).toBe(403);
+    expect((await getRegistro(peticion("http://x/api/registro"))).status).toBe(401);
     const { POST: postProcesar } = await import("@/app/api/procesar/route");
-    expect((await postProcesar(peticion("http://x/api/procesar", { method: "POST" }))).status).toBe(403);
+    expect((await postProcesar(peticion("http://x/api/procesar", { method: "POST" }))).status).toBe(401);
   });
 
   it("una escritura sin Origin del mismo sitio → 403 (CSRF)", async () => {

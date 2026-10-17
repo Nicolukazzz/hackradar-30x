@@ -12,8 +12,14 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
-## 2026-10-17 — Usuarios de la demo por alias del Gmail del equipo (#46)
+## 2026-10-17 — Login abierto con correo + contraseña, sin roles (#49)
 - Estado: aceptada
+- Decisión: `/entrar` es un login de app normal: **cualquiera crea su cuenta** (nombre, correo, contraseña ≥ 8), confirma el correo con un código de 6 dígitos y después entra con correo + contraseña; "¿Olvidaste tu contraseña?" por código. **Sin roles** por ahora: toda cuenta ve y hace todo; al aprobar o guardar reglas actúa con su propio nombre como aprobador principal sin límite (`aprobadorDeLaCuenta`), y la doble firma > USD 10.000 sigue pidiendo dos cuentas. `conRol` pasa a `conSesion`. `perfiles` queda con `nombre` y `activo` (un trigger lo crea al registrarse; `rol`/`aprobador_id`/`beneficiario_id` quedan sin uso y opcionales para no romper el deploy anterior). Se retiran `/portal`, `/api/portal/facturas`, `src/servicios/portal.ts`, la semilla `scripts/auth/` y `npm run auth:sembrar`. Reemplaza la parte de roles de #25 y la decisión de #46 (usuarios por alias) y deja sin login el portal de #12.
+- Por qué: el dueño del producto quiere por ahora un portal donde la gente se registre sola, sin roles; los roles vuelven después. Riesgo aceptado: en producción cualquiera de internet puede registrarse y aprobar escalados (demo, no se mueve dinero; el motor sigue decidiendo PAGAR solo dentro de las reglas). Los límites por aprobador siguen en `decidir.ts` para cuando vuelvan los roles. La protección contra contraseñas filtradas (HaveIBeenPwned) es solo del plan Pro de Supabase.
+- Quién: N
+
+## 2026-10-17 — Usuarios de la demo por alias del Gmail del equipo (#46)
+- Estado: reemplazada por "Login abierto con correo + contraseña, sin roles" (#49), salvo el aviso de envío fallido y `API_PUBLICAS`, que siguen.
 - Decisión: la semilla de Supabase Auth crea un usuario por rol con alias de `facturas.nebula.demo@gmail.com` (`+laura` aprobadora principal, `+andres` aprobador, `+tesoreria`, y 5 proveedores con portal), versionados en `scripts/auth/usuarios.equipo.json`; correos personales siguen en `scripts/auth/usuarios.json` (ignorado). `/entrar` avisa cuando el correo no se pudo enviar (5xx) pero sigue sin delatar correos no registrados (4xx). El proxy vuelve a respetar `API_PUBLICAS`. Se quitan de `permisos.ts` los helpers que duplicaban reglas del dominio (límite del aprobador, aprobador principal, documentos del proveedor).
 - Por qué: con un solo usuario nadie más del equipo podía entrar ni probar el portal (#12). Un buzón compartido deja a cualquiera presentar la demo con cualquier rol, sin modo demo ni contraseñas. Una sola fuente de verdad por regla de permisos.
 - Quién: N

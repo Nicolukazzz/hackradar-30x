@@ -8,30 +8,21 @@ import type { Repositorio } from "@/repositorio/repositorio";
 import { procesarPendientes } from "@/servicios/lote";
 
 /**
- * Sesión simulada para las rutas (`conRol` de #25). Cada archivo de test que llama rutas declara:
+ * Sesión simulada para las rutas (`conSesion`, #49: sin roles). Cada archivo de test que llama rutas declara:
  *   vi.mock("server-only", () => ({}));
  *   vi.mock("@/lib/auth/sesion", async () => (await import("./ayuda")).sesionFalsa);
  *   vi.mock("@/lib/auth/auditoria", () => ({ auditar: () => undefined }));
- * Por defecto actúa tesorería; `comoAprobador("lm")` cambia a un aprobador.
+ * Por defecto actúa una cuenta (Ana); `comoCuenta("Beto")` cambia a otra cuenta.
  */
-export const TESORERIA: Sesion = {
-  usuario_id: "u-tesoreria",
-  correo: "tesoreria@nebula.example",
-  rol: "tesoreria",
-  aprobador_id: null,
-  beneficiario_id: null,
-  nombre: "Tesorería",
-};
-let sesionActual: Sesion | null = TESORERIA;
+export const CUENTA: Sesion = { usuario_id: "u-ana", correo: "ana@nebula.example", nombre: "Ana Torres" };
+let sesionActual: Sesion | null = CUENTA;
 export const sesionFalsa = { obtenerSesion: async () => sesionActual };
 export function comoSesion(s: Sesion | null) {
   sesionActual = s;
 }
-export function comoAprobador(aprobador_id: string) {
-  sesionActual = { ...TESORERIA, usuario_id: `u-${aprobador_id}`, rol: "aprobador", aprobador_id, nombre: aprobador_id };
-}
-export function comoProveedor(beneficiario_id: string) {
-  sesionActual = { ...TESORERIA, usuario_id: `u-${beneficiario_id}`, rol: "proveedor", beneficiario_id, nombre: beneficiario_id };
+export function comoCuenta(nombre: string) {
+  const id = nombre.toLowerCase().replaceAll(/\s+/g, "-");
+  sesionActual = { usuario_id: `u-${id}`, correo: `${id}@nebula.example`, nombre };
 }
 
 /** Petición del mismo origen (la guardia rechaza escrituras sin Origin, CSRF). */
@@ -43,7 +34,7 @@ export async function repoProcesado(): Promise<Repositorio> {
   const repo = await crearRepositorioMemoria("lote-demo-oct");
   await procesarPendientes(repo);
   fijarRepositorio(repo);
-  comoSesion(TESORERIA);
+  comoSesion(CUENTA);
   return repo;
 }
 

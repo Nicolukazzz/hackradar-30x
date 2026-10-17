@@ -28,12 +28,6 @@ const navegacion = [
   { titulo: "Registro", href: "/registro", icono: ListIcon },
 ] as const;
 
-const ETIQUETA_ROL = {
-  tesoreria: "Tesorería",
-  aprobador: "Aprobador",
-  proveedor: "Proveedor",
-} as const;
-
 /** Logo + rol. Lo comparten la barra lateral y la cabecera móvil. */
 export function MarcaTesorero({ className }: { className?: string }) {
   return (
@@ -70,7 +64,7 @@ export function AppSidebar({
   usuario,
   pendientes,
 }: {
-  usuario: { nombre: string; rol: keyof typeof ETIQUETA_ROL };
+  usuario: { nombre: string; correo: string };
   pendientes: Promise<number | null>;
 }) {
   const ruta = usePathname();
@@ -143,7 +137,7 @@ export function AppSidebar({
         <div className="flex items-center justify-between gap-2 px-1">
           <span className="flex min-w-0 flex-col">
             <span className="truncate text-sm font-medium text-sidebar-foreground">{usuario.nombre}</span>
-            <span className="text-xs text-sidebar-muted">{ETIQUETA_ROL[usuario.rol]}</span>
+            <span className="truncate text-xs text-sidebar-muted">{usuario.correo}</span>
           </span>
           <form action={salir}>
             <button

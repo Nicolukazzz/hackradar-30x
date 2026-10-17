@@ -1,12 +1,11 @@
 import { dependenciasCanal } from "@/canales/dependencias";
 import { recibirCorreo } from "@/canales/correo/recibir";
 import { MAX_BYTES } from "@/ingesta/limites";
-import { conRol } from "@/lib/auth/ruta";
+import { conSesion } from "@/lib/auth/ruta";
 import { obtenerRepositorio } from "@/repositorio";
 
 import { cuerpoLimitado } from "../../../_cuerpo";
 import { error, manejar, ok } from "../../../_http";
-import { PANEL } from "../../../_identidad";
 
 /**
  * POST /api/canales/correo/simular (#14): recibe un .eml crudo (cuerpo `message/rfc822`) como si hubiera
@@ -14,7 +13,7 @@ import { PANEL } from "../../../_identidad";
  * la devuelve para mostrarla. El .eml lo sube alguien del panel: un From sin resultado de autenticación se
  * acepta (los .eml de prueba no traen Authentication-Results); un fail explícito igual escala.
  */
-export const POST = conRol(PANEL, async (req: Request) => {
+export const POST = conSesion(async (req: Request) => {
   try {
     const eml = await cuerpoLimitado(req, MAX_BYTES, "El correo supera los 10 MB.");
     if (eml.byteLength === 0) return error(400, "Envía el correo .eml en el cuerpo.");

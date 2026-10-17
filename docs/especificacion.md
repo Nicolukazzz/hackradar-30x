@@ -424,6 +424,8 @@ Reglas: nunca se edita ni borra una entrada (la interfaz `Repositorio` no tiene 
 
 ## 10. Decisión humana y aprobadores
 
+> **#49 (2026-10-17, temporal):** no hay roles. Cualquier cuenta creada en `/entrar` decide como aprobador principal **sin límite**, con su propio nombre y su `usuario_id` en `actor` del registro. La doble aprobación ≥ USD 10.000 sigue exigiendo dos cuentas distintas. Laura Méndez y Andrés Pardo quedan como datos del dataset (asignación `asignado_a`, historial). Los límites por aprobador de abajo siguen en el dominio (`decidir.ts`) para cuando vuelvan los roles.
+
 - Solo se decide sobre ESCALAR pendientes. FRENAR no se puede aprobar (se corrige y se reenvía la factura).
 - Comentario **obligatorio** (≥ 5 caracteres). Acciones: `aprobar`, `rechazar`. Opción `agregar_a_lista` solo si falló R3: crea beneficiario con la cuenta de la factura y escribe `CAMBIO_BENEFICIARIOS`.
 - Límite del aprobador: si `monto_usd > aprobador.limite_usd` → error 403 "Supera tu límite de aprobación".
@@ -596,7 +598,7 @@ Resultado: PAGAR 3 · FRENAR 3 · ESCALAR 7 · RECHAZADA_NO_FACTURA 1.
 | `POST /api/ingesta` | `DocumentoEntrante` | `{ ref_interna, estado }` | canales |
 | `POST /api/evaluar` | `{ extraccion, beneficiario_id? }` | `ResultadoMotor` (simulación sin registrar) | API para otros agentes (pitch) |
 
-Errores: `{ error: string }` con 400/401/403/404/409. El **401** lo emite `src/proxy.ts` para cualquier `/api/*` sin sesión válida, antes de llegar a la ruta; el resto los emite la ruta. Toda escritura pasa por el dominio, nunca SQL directo desde la ruta. El actor (quién aprueba) sale de la sesión de Supabase, no del cuerpo de la petición.
+Errores: `{ error: string }` con 400/401/403/404/409. El **401** lo emite `src/proxy.ts` para cualquier `/api/*` sin sesión válida, antes de llegar a la ruta (y `conSesion` lo repite en la ruta); 403 solo por CSRF (Origin ajeno) desde #49, que quitó los roles; el resto los emite la ruta. Toda escritura pasa por el dominio, nunca SQL directo desde la ruta. El actor (quién aprueba) sale de la sesión de Supabase, no del cuerpo de la petición.
 
 ## 13. Pantallas
 

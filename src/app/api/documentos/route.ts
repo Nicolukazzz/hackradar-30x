@@ -1,13 +1,12 @@
 import { dependenciasCanal } from "@/canales/dependencias";
 import { MAX_BYTES } from "@/ingesta/limites";
 import { crearLimitador } from "@/lib/limite";
-import { conRol } from "@/lib/auth/ruta";
+import { conSesion } from "@/lib/auth/ruta";
 import { obtenerRepositorio } from "@/repositorio";
 import { ErrorSubida, subirDocumento } from "@/servicios/subida";
 
 import { cuerpoLimitado } from "../_cuerpo";
 import { manejar, ok } from "../_http";
-import { PANEL } from "../_identidad";
 
 /** Margen para las cabeceras del multipart sobre los 10 MB del archivo. */
 const MAX_CUERPO = MAX_BYTES + 64 * 1024;
@@ -29,10 +28,10 @@ async function archivoDe(req: Request): Promise<{ bytes: Uint8Array; nombre: str
 }
 
 /**
- * POST /api/documentos (#26): sube una factura (PDF, PNG, JPG o XML, ≤ 10 MB) desde el portal (proveedor)
- * o el panel (carga manual). El remitente sale de la sesión. Devuelve la ref interna, la decisión y el aviso.
+ * POST /api/documentos (#26): sube una factura (PDF, PNG, JPG o XML, ≤ 10 MB) desde el panel
+ * (carga manual). El remitente sale de la sesión. Devuelve la ref interna, la decisión y el aviso.
  */
-export const POST = conRol([...PANEL, "proveedor"], async (req: Request, _ctx, sesion) => {
+export const POST = conSesion(async (req: Request, _ctx, sesion) => {
   try {
     if (!limitador.permitir(sesion.usuario_id)) throw new ErrorSubida(429, "Demasiadas subidas seguidas. Espera un minuto.");
     const archivo = await archivoDe(req);

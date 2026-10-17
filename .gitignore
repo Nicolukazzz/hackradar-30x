@@ -41,5 +41,3 @@ npm-debug.log*
 # caché de extracción LLM (especificación §14)
 .cache/
 
-# Usuarios reales para la semilla de Supabase Auth (correos personales, nunca al repo público)
-scripts/auth/usuarios.json

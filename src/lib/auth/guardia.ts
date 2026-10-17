@@ -1,10 +1,10 @@
-import { ErrorAuth, exigirRol, MENSAJE_401, MENSAJE_403, type Rol, type Sesion } from "@/lib/auth/permisos";
+import { ErrorAuth, exigirSesion, MENSAJE_401, MENSAJE_403, type Sesion } from "@/lib/auth/permisos";
 
-// Envoltura para route handlers: CSRF por Origin, sesión verificada y rol. Dependencias inyectadas
-// para probar sin red; la versión conectada a Supabase es `conRol` de ruta.ts.
+// Envoltura para route handlers: CSRF por Origin y sesión verificada. Dependencias inyectadas
+// para probar sin red; la versión conectada a Supabase es `conSesion` de ruta.ts.
 
 export type EventoAuditoria = {
-  tipo: "entrar" | "salir" | "error_envio" | "401" | "403";
+  tipo: "entrar" | "registro" | "salir" | "error_envio" | "401" | "403";
   usuario_id: string | null;
   ruta: string;
   motivo?: string;
@@ -32,7 +32,7 @@ function mismoOrigen(req: Request): boolean {
 }
 
 export function crearGuardia({ obtenerSesion, auditar }: DependenciasGuardia) {
-  function conRol<C>(roles: Rol[], manejador: Manejador<C>) {
+  function conSesion<C>(manejador: Manejador<C>) {
     // ctx opcional: las rutas sin parámetros (`/api/bandeja`) se llaman solo con la petición.
     return async (req: Request, ctx?: C): Promise<Response> => {
       const ruta = new URL(req.url).pathname;
@@ -40,7 +40,7 @@ export function crearGuardia({ obtenerSesion, auditar }: DependenciasGuardia) {
       try {
         if (!METODOS_SEGUROS.has(req.method) && !mismoOrigen(req)) throw new ErrorAuth(403);
         sesion = await obtenerSesion();
-        return await manejador(req, ctx as C, exigirRol(sesion, ...roles));
+        return await manejador(req, ctx as C, exigirSesion(sesion));
       } catch (e) {
         if (!(e instanceof ErrorAuth)) throw e;
         const evento: EventoAuditoria = { tipo: e.status === 401 ? "401" : "403", usuario_id: sesion?.usuario_id ?? null, ruta };
@@ -50,5 +50,5 @@ export function crearGuardia({ obtenerSesion, auditar }: DependenciasGuardia) {
       }
     };
   }
-  return { conRol };
+  return { conSesion };
 }
