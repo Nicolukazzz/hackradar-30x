@@ -4,19 +4,22 @@ import { InboxIcon, Loader2Icon, MailIcon, TriangleAlertIcon } from "lucide-reac
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { Boton, PildoraDecision } from "@/app/_componentes";
 import { SubirDocumento } from "@/components/subir-documento";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { DecisionAgente } from "@/dominio/tipos";
+import type { RespuestaSimularCorreo } from "@/app/api/canales/correo/simular/route";
 import { MAX_BYTES } from "@/ingesta/limites";
 
 // "Recibir factura" de la Bandeja (§13.1): sin esperar a un canal, una persona del equipo sube el PDF o la foto
 // (carga manual, #26) o un correo .eml como si hubiera llegado al buzón (#14, /api/canales/correo/simular).
 // Lo que entra pasa por la misma ingesta y el mismo motor que los canales.
 
-type ResultadoCorreo = { ref_interna: string; estado: DecisionAgente; explicacion: string; respuesta: { texto: string } | null };
+type ResultadoCorreo = RespuestaSimularCorreo;
+
+const MAX_MB = Math.round(MAX_BYTES / (1024 * 1024));
 
 function SimularCorreo({ alTerminar }: { alTerminar: () => void }) {
   const entrada = useRef<HTMLInputElement>(null);
@@ -26,13 +29,16 @@ function SimularCorreo({ alTerminar }: { alTerminar: () => void }) {
 
   async function enviar(archivo: File | undefined) {
     if (!archivo) return;
-    if (archivo.size > MAX_BYTES) return setEstado({ tipo: "error", mensaje: "El correo supera los 10 MB." });
+    if (archivo.size === 0) return setEstado({ tipo: "error", mensaje: "El archivo está vacío." });
+    if (archivo.size > MAX_BYTES) return setEstado({ tipo: "error", mensaje: `El correo supera los ${MAX_MB} MB.` });
     setEstado({ tipo: "enviando" });
     try {
       const res = await fetch("/api/canales/correo/simular", { method: "POST", headers: { "content-type": "message/rfc822" }, body: await archivo.arrayBuffer() });
       const datos = (await res.json().catch(() => ({}))) as Partial<ResultadoCorreo> & { error?: string };
       if (!res.ok || !datos.ref_interna) throw new Error(datos.error ?? "No se pudo procesar el correo.");
-      setEstado({ tipo: "listo", r: datos as ResultadoCorreo });
+      const r = datos as ResultadoCorreo;
+      setEstado({ tipo: "listo", r });
+      toast.success(`Correo recibido: ${r.ref_interna}`, { description: r.explicacion });
       alTerminar();
     } catch (e) {
       setEstado({ tipo: "error", mensaje: e instanceof Error ? e.message : "No se pudo procesar el correo." });
@@ -43,9 +49,16 @@ function SimularCorreo({ alTerminar }: { alTerminar: () => void }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border border-dashed border-borde-fuerte bg-card px-6 py-10 text-center transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-subtle">
+      {/* Soltar un .eml aquí: sin preventDefault el navegador abriría el archivo y saldría de la app. */}
+      <label
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (estado.tipo !== "enviando") void enviar(e.dataTransfer.files[0]);
+        }}
+        className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border border-dashed border-borde-fuerte bg-card px-6 py-10 text-center transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-subtle">
         <MailIcon aria-hidden className="size-8 text-muted-foreground" />
-        <span className="text-base font-medium">Elige un correo .eml</span>
+        <span className="text-base font-medium">Elige o suelta un correo .eml</span>
         <span className="text-sm text-muted-foreground">Se procesa como si hubiera llegado al buzón: remitente, cuerpo y adjuntos.</span>
         <input ref={entrada} type="file" accept=".eml,message/rfc822" className="sr-only" disabled={estado.tipo === "enviando"} onChange={(e) => void enviar(e.target.files?.[0])} />
       </label>
@@ -60,7 +73,7 @@ function SimularCorreo({ alTerminar }: { alTerminar: () => void }) {
           <div className="flex flex-col gap-2 rounded-xl bg-subtle p-4 text-sm">
             <span className="flex flex-wrap items-center gap-2">
               <span className="font-mono font-semibold tabular-nums">{estado.r.ref_interna}</span>
-              <PildoraDecision decision={estado.r.estado} />
+              {estado.r.estado ? <PildoraDecision decision={estado.r.estado} /> : null}
             </span>
             <span className="text-texto-3">{estado.r.explicacion}</span>
             {estado.r.respuesta ? <span className="text-xs text-muted-foreground">Respuesta al remitente: «{estado.r.respuesta.texto}»</span> : null}
