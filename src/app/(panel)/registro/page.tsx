@@ -2,7 +2,7 @@ import { DownloadIcon, ScrollTextIcon } from "lucide-react";
 import Link from "next/link";
 
 import { Boton } from "@/app/_componentes";
-import { obtenerRegistro, type FiltroDecisionRegistro } from "@/app/_datos/registro";
+import { ConsultaRegistro, obtenerRegistro } from "@/app/_datos/registro";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { relojSistema } from "@/lib/reloj-sistema";
 
@@ -10,9 +10,6 @@ import { FiltrosRegistro } from "../_registro/filtros";
 import { ListaRegistro } from "../_registro/lista";
 
 // Registro de decisiones (especificación §13.5, prototipo pantalla 5). Solo lectura: append-only (§9).
-
-const DECISIONES: readonly FiltroDecisionRegistro[] = ["todas", "pagar", "frenar", "escalar", "humanas"];
-const ACTORES = ["agente", "humano"] as const;
 
 /** "Hoy" y "Ayer" en hora de la empresa (Bogotá), no la del servidor. */
 function hoyYAyer() {
@@ -25,11 +22,11 @@ const texto = (v: string | string[] | undefined) => (typeof v === "string" ? v :
 
 export default async function RegistroPage({ searchParams }: PageProps<"/registro">) {
   const sp = await searchParams;
-  const decisionPedida = texto(sp.decision);
-  const decision = (DECISIONES as readonly string[]).includes(decisionPedida) ? (decisionPedida as FiltroDecisionRegistro) : "todas";
-  const actorPedido = texto(sp.actor);
-  const actor = (ACTORES as readonly string[]).includes(actorPedido) ? (actorPedido as (typeof ACTORES)[number]) : undefined;
-  const q = texto(sp.q).slice(0, 100);
+  // Mismo esquema que GET /api/registro: un valor desconocido en la URL se ignora (sin filtro).
+  const { shape } = ConsultaRegistro;
+  const decision = shape.decision.safeParse(texto(sp.decision) || undefined).data ?? "todas";
+  const actor = shape.actor.safeParse(texto(sp.actor) || undefined).data;
+  const q = shape.q.safeParse(texto(sp.q).slice(0, 100)).data ?? "";
   const r = await obtenerRegistro({ decision, actor, q });
 
   const { hoy, ayer } = hoyYAyer();

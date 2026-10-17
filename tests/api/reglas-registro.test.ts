@@ -81,6 +81,18 @@ describe("registro (§9, §13.5)", () => {
     expect(await repo.registro()).toHaveLength(largo + 1);
   });
 
+  it("buscar por regla (q=R4) y «Pagadas» incluye lo aprobado por una persona", async () => {
+    const repo = await repoProcesado();
+    const entradas = (r: { dias: { entradas: { factura_numero: string | null; decision: string | null }[] }[] }) => r.dias.flatMap((d) => d.entradas);
+    const r4 = await (await getRegistro(peticion("http://x/api/registro?q=R4"))).json();
+    expect(entradas(r4).map((e) => e.factura_numero)).toContain("F-0101");
+    const lf = await entradaDe(repo, "LF-2026-10");
+    await decidir({ ref: lf.ref_interna, accion: "aprobar", comentario: "Hito final entregado.", aprobador_id: "lm" }, { repo, ahora: "2026-10-16T15:10:00-05:00" });
+    const pagadas = entradas(await (await getRegistro(peticion("http://x/api/registro?decision=pagar"))).json());
+    expect(pagadas.some((e) => e.decision === "APROBADA_HUMANO" && e.factura_numero === "LF-2026-10")).toBe(true);
+    expect(pagadas.every((e) => e.decision === "PAGAR" || e.decision === "APROBADA_HUMANO")).toBe(true);
+  });
+
   it("export.csv: 15 columnas de §9, BOM, sin inyección de fórmulas", async () => {
     await repoProcesado();
     const bytes = new Uint8Array(await (await exportCsv(peticion("http://x/api/registro/export.csv"))).arrayBuffer());

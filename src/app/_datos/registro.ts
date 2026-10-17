@@ -3,6 +3,7 @@
 import { obtenerRepositorio } from "@/repositorio";
 import { obtenerRegistro as servicio, type FiltroDecisionRegistro, type RespuestaRegistro } from "@/servicios/registro";
 
+export { ConsultaRegistro } from "@/servicios/registro";
 export type { DiaRegistro, FiltroDecisionRegistro, RespuestaRegistro } from "@/servicios/registro";
 
 export async function obtenerRegistro(
