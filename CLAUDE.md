@@ -65,7 +65,7 @@ Next 16.4 cambia APIs respecto a versiones anteriores: antes de usar una API de 
 | `npm run typecheck` | `next typegen && tsc --noEmit` |
 | `npm run lint` | ESLint (incluye prohibición de `Date.now()` / `new Date()` en `src/dominio` y `src/reglas`) |
 | `npm run evaluar -- --escenario lote-demo-oct --extraccion golden\|real` | Evaluación §14 (stub hasta #7) |
-| `npm run dataset` | `python3 scripts/dataset/generar.py` (stub hasta #3) |
+| `npm run dataset` | `.venv/bin/python scripts/dataset/generar.py` (requiere `python3 -m venv .venv && .venv/bin/pip install -r scripts/dataset/requirements.txt`) |
 
 CI (`.github/workflows/ci.yml`): `npm ci` → `typecheck` → `lint` → `test` en cada PR. Componentes UI en `src/components/ui/` (shadcn, agregar con `npx shadcn@4.22.0 add …`), layout del panel en `src/app/(panel)/`, barra lateral en `src/components/app-sidebar.tsx`. Tokens §15 en `src/app/globals.css` (`bg-pagada`, `text-frenada-foreground`, `bg-brand`, etc.).
 
