@@ -1,8 +1,7 @@
 import { FileTextIcon } from "lucide-react";
-import { cn } from "cn";
-
-import { fechaCorta, Monto } from "@/app/_componentes";
+import { fechaCorta, Monto, PILDORA } from "@/app/_componentes";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import type { EstadoProveedor, FacturaProveedor } from "@/servicios/portal";
 
 const ESTADO: Record<EstadoProveedor, { texto: string; clase: string; punto: string }> = {
@@ -15,7 +14,7 @@ const ESTADO: Record<EstadoProveedor, { texto: string; clase: string; punto: str
 function Estado({ estado }: { estado: EstadoProveedor }) {
   const e = ESTADO[estado];
   return (
-    <Badge className={cn("h-auto gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold", e.clase)}>
+    <Badge className={cn(PILDORA, e.clase)}>
       <span aria-hidden className={cn("size-1.5 rounded-full", e.punto)} />
       {e.texto}
     </Badge>

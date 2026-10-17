@@ -137,6 +137,9 @@ export async function crearRepositorioMemoria(
     async documento(ref) {
       return s.documentos.get(ref) ?? null;
     },
+    async documentos() {
+      return [...s.documentos.values()].map((d) => structuredClone(d));
+    },
     async agregarEntrada(e) {
       if (s.registro.some((x) => x.id === e.id)) throw new Error(`la entrada ${e.id} ya existe: el registro no se sobrescribe`);
       s.registro.push(structuredClone(e));

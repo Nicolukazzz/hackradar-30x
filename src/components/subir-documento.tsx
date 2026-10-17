@@ -2,7 +2,7 @@
 
 import { CheckCircle2Icon, FileUpIcon, Loader2Icon, TriangleAlertIcon } from "lucide-react";
 import { useRef, useState } from "react";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 import { Boton } from "@/app/_componentes";
 import { Progress } from "@/components/ui/progress";

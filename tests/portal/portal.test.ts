@@ -44,6 +44,18 @@ describe("Mis facturas (#12)", () => {
     }
   });
 
+  it("lo recibido pero sin decisión aparece 'en revisión' (no desaparece si falló la revisión)", async () => {
+    const repo = await repoProcesado();
+    const { ingerir } = await import("@/ingesta/ingerir");
+    const doc = await ingerir(
+      { canal: "portal", remitente: { tipo: "portal", valor: "pixel.co" }, recibido_en: "2026-10-16T11:00:00-05:00", texto_mensaje: "factura nueva", adjuntos: [] },
+      { repo, reloj: { ahora: () => "2026-10-16T11:00:00-05:00" } },
+    );
+    const pixel = await facturasDelProveedor(repo, "ben-pixel-co", URL_PORTAL);
+    expect(pixel[0]).toMatchObject({ ref_interna: doc.ref_interna, estado: "en_revision", factura_numero: null });
+    expect(pixel.map((f) => f.factura_numero)).toEqual([null, "PX-77"]); // más nueva primero
+  });
+
   it("GET /api/portal/facturas: solo rol proveedor, y siempre las de su sesión", async () => {
     await repoProcesado();
     comoProveedor("ben-pixel-co");

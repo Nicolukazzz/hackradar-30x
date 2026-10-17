@@ -54,6 +54,8 @@ export interface Repositorio {
   siguienteIdRegistro(anio: number): Promise<string>;
   guardarDocumento(d: DocumentoRecibido): Promise<void>;
   documento(ref: string): Promise<DocumentoRecibido | null>;
+  /** Todos los documentos recibidos (ingeridos o procesados), sin orden garantizado. */
+  documentos(): Promise<DocumentoRecibido[]>;
 
   /** SOLO agregar. No hay update ni delete. */
   agregarEntrada(e: EntradaRegistro): Promise<void>;

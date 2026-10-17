@@ -13,7 +13,8 @@ const DECISIONES: Record<DecisionAgente | DecisionHumana, { texto: string; clase
   RECHAZADA_HUMANO: { texto: "Rechazada por persona", clase: "border-frenada-punto bg-card text-frenada-foreground" },
 };
 
-const PILDORA = "h-auto gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold";
+/** Forma común de las píldoras (también la del portal de proveedores, #12). */
+export const PILDORA = "h-auto gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold";
 
 export function PildoraDecision({ decision, className }: { decision: DecisionAgente | DecisionHumana; className?: string }) {
   const d = DECISIONES[decision];

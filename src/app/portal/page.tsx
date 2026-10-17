@@ -1,9 +1,9 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { salir } from "@/app/entrar/acciones";
 import { Button } from "@/components/ui/button";
 import { obtenerSesion } from "@/lib/auth/sesion";
+import { urlPublica } from "@/lib/url-publica";
 import { obtenerRepositorio } from "@/repositorio";
 import { facturasDelProveedor } from "@/servicios/portal";
 
@@ -17,9 +17,7 @@ export default async function PaginaPortal() {
   if (!sesion) redirect("/entrar?siguiente=/portal");
   if (sesion.rol !== "proveedor" || !sesion.beneficiario_id) redirect("/sin-permiso");
 
-  const h = await headers();
-  const origen = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host") ?? "localhost"}`;
-  const facturas = await facturasDelProveedor(await obtenerRepositorio(), sesion.beneficiario_id, { urlPortal: `${origen}/portal` });
+  const facturas = await facturasDelProveedor(await obtenerRepositorio(), sesion.beneficiario_id, { urlPortal: urlPublica("/portal") });
 
   return (
     <div className="min-h-svh bg-background">
