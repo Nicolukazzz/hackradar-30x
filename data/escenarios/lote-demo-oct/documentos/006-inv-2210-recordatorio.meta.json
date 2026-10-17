@@ -1,0 +1,18 @@
+{
+  "archivo_original": "documentos/006-inv-2210-recordatorio.eml",
+  "canal": "correo",
+  "remitente": {
+    "tipo": "correo",
+    "valor": "billing@cloudnorte.example"
+  },
+  "recibido_en": "2026-10-16T09:18:12-05:00",
+  "asunto": "Reminder: invoice INV-2210 pending",
+  "texto_mensaje": "Hello,\n\nFriendly reminder that invoice INV-2210 is still pending. Attaching it again.\n\nBest regards,\nCloudNorte Billing",
+  "adjuntos": [
+    {
+      "nombre": "INV-2210.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/adjuntos/006-inv-2210-recordatorio.pdf"
+    }
+  ]
+}

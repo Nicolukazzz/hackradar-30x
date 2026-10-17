@@ -1,0 +1,14 @@
+{
+  "id": "nebula",
+  "nombre": "Nébula Studio Inc.",
+  "jurisdiccion": "Delaware, EE. UU.",
+  "paises_operacion": [
+    "US",
+    "CO",
+    "MX",
+    "AR",
+    "BR"
+  ],
+  "moneda_base": "USD",
+  "zona_horaria": "America/Bogota"
+}

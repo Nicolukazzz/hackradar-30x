@@ -1,0 +1,18 @@
+[
+  {
+    "id": "lm",
+    "nombre": "Laura Méndez",
+    "rol": "CFO",
+    "limite_usd": null,
+    "principal": true,
+    "iniciales": "LM"
+  },
+  {
+    "id": "ap",
+    "nombre": "Andrés Pardo",
+    "rol": "Analista de finanzas",
+    "limite_usd": 500000,
+    "principal": false,
+    "iniciales": "AP"
+  }
+]

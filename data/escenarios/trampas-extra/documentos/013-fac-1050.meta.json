@@ -1,0 +1,16 @@
+{
+  "archivo_original": "documentos/013-fac-1050.pdf",
+  "canal": "portal",
+  "remitente": {
+    "tipo": "portal",
+    "valor": "ana.gomez"
+  },
+  "recibido_en": "2026-11-16T09:40:00-05:00",
+  "adjuntos": [
+    {
+      "nombre": "FAC-1050.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/013-fac-1050.pdf"
+    }
+  ]
+}

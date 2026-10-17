@@ -1,0 +1,16 @@
+{
+  "archivo_original": "documentos/006-vr-11.pdf",
+  "canal": "portal",
+  "remitente": {
+    "tipo": "portal",
+    "valor": "valeria.ruiz"
+  },
+  "recibido_en": "2026-11-16T08:50:00-05:00",
+  "adjuntos": [
+    {
+      "nombre": "VR-11.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/006-vr-11.pdf"
+    }
+  ]
+}

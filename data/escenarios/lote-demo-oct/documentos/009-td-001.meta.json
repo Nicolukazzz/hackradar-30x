@@ -1,0 +1,18 @@
+{
+  "archivo_original": "documentos/009-td-001.eml",
+  "canal": "correo",
+  "remitente": {
+    "tipo": "correo",
+    "valor": "ventas@tecnologiasdelta.example"
+  },
+  "recibido_en": "2026-10-16T09:20:48-05:00",
+  "asunto": "Factura TD-001 — Licencias de software",
+  "texto_mensaje": "Estimados,\n\nAdjuntamos la factura TD-001 por las licencias de software de 12 puestos.\n\nSaludos,\nTecnologías Delta SpA",
+  "adjuntos": [
+    {
+      "nombre": "TD-001.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/adjuntos/009-td-001.pdf"
+    }
+  ]
+}

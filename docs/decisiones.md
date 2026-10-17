@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-16 — Dataset v1 generado y verificado (#3)
+- Estado: propuesta
+- Decisión: `data/` completo (comunes + `lote-demo-oct` + `trampas-extra`) lo genera `scripts/dataset/generar.py` desde `mundo.py` y `escenarios.py`; nadie edita `data/` a mano. Cada decisión esperada se escribe a mano y la recalcula un oráculo independiente (`oraculo.py`); el generador falla si no coinciden o si la aritmética del lote demo no da la del prototipo. Ajustes de especificación que salieron de construirlo (§4.3, §10, §11, §16 punto 6): campos afectados por R1 → reglas dependientes NO_APLICA; hitos repetidos sin ventana; doble aprobación con al menos una firma con límite suficiente; trampa nueva `fecha-invalida`; líneas `VR-SOP` y `OC-126`; `.meta.json` con `archivo_original` y adjuntos extraídos.
+- Por qué: una sola fuente evita que el JSON de proveedores y los documentos digan cosas distintas; el oráculo garantiza que cada `esperado.json` sea inequívoco antes de que el motor (#5) lo use como verdad. Los JSON comunes (que #2 iba a escribir) salen del mismo generador; #2 se queda con tipos, zod y cargador.
+- Quién: J
+
 ## 2026-10-16 — Especificación v1 como contrato técnico
 - Estado: propuesta
 - Decisión: `docs/especificacion.md` es la fuente de verdad para escribir código: tipos compartidos (§3), reglas R1–R11 con lógica exacta (§4), combinación e invariantes (§5), presupuesto (§6), plantillas de explicación (§7), registro (§9), aprobaciones (§10), dataset (§11), API (§12), pantallas (§13) y evaluación (§14). Base visual: prototipo `docs/diseno/prototipo-ui.html`. Los issues #1–#14 citan sus secciones y traen un prompt listo.

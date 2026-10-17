@@ -1,0 +1,18 @@
+{
+  "archivo_original": "documentos/010-ml-571.eml",
+  "canal": "correo",
+  "remitente": {
+    "tipo": "correo",
+    "valor": "facturas@mesalegal.example"
+  },
+  "recibido_en": "2026-11-16T09:20:00-05:00",
+  "asunto": "Factura ML-571 — Honorarios noviembre",
+  "texto_mensaje": "Buenos días,\n\nAdjuntamos la factura ML-571.\n\nCordialmente,\nMesa Legal S.A.S.",
+  "adjuntos": [
+    {
+      "nombre": "ML-571.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/adjuntos/010-ml-571.pdf"
+    }
+  ]
+}

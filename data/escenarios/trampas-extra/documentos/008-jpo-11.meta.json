@@ -1,0 +1,11 @@
+{
+  "archivo_original": "documentos/008-jpo-11.txt",
+  "canal": "telegram",
+  "remitente": {
+    "tipo": "telegram",
+    "valor": "700100004"
+  },
+  "recibido_en": "2026-11-16T09:10:00-05:00",
+  "texto_mensaje": "Hola, les comparto la cuenta de cobro del hito 2. Gracias!\nCuenta de cobro N.º JPO-11\nFecha: 12/11/2026 · Vence: 27/11/2026\nConcepto: Hito 2 de 3 — tablero de datos (CT-JPO, hito 2 de 3)\nValor: USD 900,00\nPagar a: Juan Pablo Ortiz · Banco Cafetal · Cuenta de ahorros 999-000000-8812",
+  "adjuntos": []
+}

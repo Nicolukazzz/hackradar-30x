@@ -1,0 +1,18 @@
+{
+  "archivo_original": "documentos/002-inv-2210.eml",
+  "canal": "correo",
+  "remitente": {
+    "tipo": "correo",
+    "valor": "billing@cloudnorte.example"
+  },
+  "recibido_en": "2026-10-16T09:14:10-05:00",
+  "asunto": "Invoice INV-2210 — CloudNorte S.A.S.",
+  "texto_mensaje": "Hello Nébula team,\n\nPlease find attached invoice INV-2210 for October hosting and CDN services (PO OC-118).\n\nBest regards,\nCloudNorte Billing",
+  "adjuntos": [
+    {
+      "nombre": "INV-2210.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/adjuntos/002-inv-2210.pdf"
+    }
+  ]
+}

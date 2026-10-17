@@ -1,0 +1,18 @@
+{
+  "archivo_original": "documentos/009-folleto-alba.eml",
+  "canal": "correo",
+  "remitente": {
+    "tipo": "correo",
+    "valor": "cxc@grupoalba.example"
+  },
+  "recibido_en": "2026-11-16T09:15:00-05:00",
+  "asunto": "Nuevas rutas 2027 — Grupo Alba Logística",
+  "texto_mensaje": "Estimado cliente,\n\nLe compartimos nuestro catálogo de nuevas rutas para 2027.\n\nGrupo Alba Logística",
+  "adjuntos": [
+    {
+      "nombre": "Nuevas-rutas-2027.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/adjuntos/009-folleto-alba.pdf"
+    }
+  ]
+}
