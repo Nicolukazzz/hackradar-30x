@@ -9,12 +9,11 @@ import { destinoTrasEntrar } from "@/lib/auth/rutas";
 import { obtenerSesion } from "@/lib/auth/sesion";
 import { crearClienteServidor } from "@/lib/supabase/servidor";
 
-// Server actions de /entrar (#49): crear cuenta, confirmar el correo con código, iniciar sesión con contraseña
-// y cambiar una contraseña olvidada. Next verifica el Origin de cada server action (CSRF).
+// Server actions de /entrar (#49, #81): iniciar sesión con contraseña y cambiar una contraseña olvidada con código.
+// Las cuentas ya no se crean aquí: las crea un admin con «Crear empleado» (#80). Next verifica el Origin (CSRF).
 
 const esquemaCorreo = z.email();
 const esquemaCodigo = z.string().regex(/^\d{6}$/);
-const esquemaNombre = z.string().min(1).max(120);
 
 function texto(formulario: FormData, campo: string): string {
   const valor = formulario.get(campo);
@@ -37,12 +36,6 @@ export async function avanzar(previo: EstadoEntrar, formulario: FormData): Promi
   switch (texto(formulario, "accion")) {
     case "iniciar":
       return iniciarSesion(formulario);
-    case "crear":
-      return crearCuenta(formulario);
-    case "confirmar":
-      return confirmarCuenta(formulario);
-    case "reenviar":
-      return reenviarCodigo(formulario);
     case "olvide":
       return pedirCambioDeContrasena(formulario);
     case "recuperar":
@@ -59,57 +52,11 @@ async function iniciarSesion(formulario: FormData): Promise<EstadoEntrar> {
 
   const supabase = await crearClienteServidor();
   const { error } = await supabase.auth.signInWithPassword({ email: correo, password: contrasena });
-  if (error?.code === "email_not_confirmed") {
-    // La cuenta existe y la contraseña es correcta, pero falta confirmar el correo: se reenvía el código.
-    const { error: errorEnvio } = await supabase.auth.resend({ type: "signup", email: correo });
-    const siguiente: EstadoEntrar = { vista: "confirmar", correo, aviso: "Tu correo aún no está confirmado. Te enviamos un código nuevo." };
-    return respuestaEnvio(errorEnvio, siguiente, "entrar");
-  }
+  // Solo cuentas creadas antes de #80 por el registro abierto, que nunca confirmaron su correo.
+  // «¿Olvidaste tu contraseña?» manda un código al correo y, al usarlo, también lo confirma.
+  if (error?.code === "email_not_confirmed") return { vista: "entrar", correo, error: "Tu correo no está confirmado. Usa «¿Olvidaste tu contraseña?»: el código que te llega lo confirma." };
   if (error) return { vista: "entrar", correo, error: mensajeDeError(error) };
   return terminarEntrada(texto(formulario, "siguiente"), "entrar");
-}
-
-async function crearCuenta(formulario: FormData): Promise<EstadoEntrar> {
-  const nombre = esquemaNombre.safeParse(texto(formulario, "nombre"));
-  if (!nombre.success) return { vista: "crear", error: "Escribe tu nombre (hasta 120 caracteres)." };
-  const correo = correoDe(formulario);
-  if (!correo) return { vista: "crear", error: "Escribe un correo válido." };
-  const contrasena = contrasenaDe(formulario);
-  const problema = errorDeContrasena(contrasena);
-  if (problema) return { vista: "crear", correo, nombre: nombre.data, error: problema };
-
-  const supabase = await crearClienteServidor();
-  // Si el correo ya tiene cuenta, Supabase responde igual y no envía nada: no se delata quién está registrado.
-  const { error } = await supabase.auth.signUp({ email: correo, password: contrasena, options: { data: { nombre: nombre.data } } });
-  if (error?.code === "weak_password") return { vista: "crear", correo, nombre: nombre.data, error: mensajeDeError(error) };
-  const enviado = respuestaEnvio(error, { vista: "confirmar", correo }, "crear");
-  const respuesta = enviado.error ? { ...enviado, nombre: nombre.data } : enviado;
-  if (!respuesta.error) {
-    auditar({ tipo: "registro", usuario_id: null, ruta: "/entrar" });
-  } else if (error?.status !== 429) {
-    auditar({ tipo: "error_envio", usuario_id: null, ruta: "/entrar", motivo: `${error?.status ?? "sin status"} ${error?.code ?? ""}`.trim() });
-  }
-  return respuesta;
-}
-
-async function confirmarCuenta(formulario: FormData): Promise<EstadoEntrar> {
-  const correo = correoDe(formulario);
-  if (!correo) return { vista: "crear", error: "Vuelve a escribir tu correo." };
-  const codigo = esquemaCodigo.safeParse(texto(formulario, "codigo"));
-  if (!codigo.success) return { vista: "confirmar", correo, error: "El código tiene 6 dígitos." };
-
-  const supabase = await crearClienteServidor();
-  const { error } = await supabase.auth.verifyOtp({ email: correo, token: codigo.data, type: "email" });
-  if (error) return { vista: "confirmar", correo, error: mensajeDeError({ status: error.status, code: error.code ?? "otp_expired" }) };
-  return terminarEntrada(texto(formulario, "siguiente"), "confirmar");
-}
-
-async function reenviarCodigo(formulario: FormData): Promise<EstadoEntrar> {
-  const correo = correoDe(formulario);
-  if (!correo) return { vista: "crear", error: "Vuelve a escribir tu correo." };
-  const supabase = await crearClienteServidor();
-  const { error } = await supabase.auth.resend({ type: "signup", email: correo });
-  return respuestaEnvio(error, { vista: "confirmar", correo, aviso: "Te enviamos un código nuevo." }, "confirmar");
 }
 
 async function pedirCambioDeContrasena(formulario: FormData): Promise<EstadoEntrar> {
@@ -117,7 +64,12 @@ async function pedirCambioDeContrasena(formulario: FormData): Promise<EstadoEntr
   if (!correo) return { vista: "olvide", error: "Escribe un correo válido." };
   const supabase = await crearClienteServidor();
   const { error } = await supabase.auth.resetPasswordForEmail(correo);
-  return respuestaEnvio(error, { vista: "recuperar", correo }, "olvide");
+  const respuesta = respuestaEnvio(error, { vista: "recuperar", correo }, "olvide");
+  // Una falla del envío (no un correo inexistente, que responde igual) se audita: si el SMTP cae, alguien se entera.
+  if (respuesta.error && error?.status !== 429) {
+    auditar({ tipo: "error_envio", usuario_id: null, ruta: "/entrar", motivo: `${error?.status ?? "sin status"} ${error?.code ?? ""}`.trim() });
+  }
+  return respuesta;
 }
 
 async function cambiarContrasena(formulario: FormData): Promise<EstadoEntrar> {
