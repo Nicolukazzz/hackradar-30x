@@ -18,7 +18,7 @@ export const GET = conSesion(async () => {
 
 /**
  * POST /api/reglas (§12): guarda una versión nueva ("Guardar como v8"). Cuerpo: Reglas sin `version`
- * (editada_por y editada_en los pone el servidor). Cualquier cuenta (#49); 409 si la simulación
+ * (editada_por y editada_en los pone el servidor). Solo administradores (#51); 409 si la simulación
  * da algún pago fuera de reglas.
  */
 export const POST = conSesion(async (req: Request, _ctx, sesion) => {
@@ -36,4 +36,4 @@ export const POST = conSesion(async (req: Request, _ctx, sesion) => {
   } catch (e) {
     return manejar(e);
   }
-});
+}, { permiso: "editar_reglas" });
