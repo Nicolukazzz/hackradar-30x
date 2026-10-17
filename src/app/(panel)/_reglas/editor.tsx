@@ -254,6 +254,9 @@ export function EditorReglas({
   }
 
   const v = historial.find((h) => h.version === vigente.version);
+  let mensajeBarra = "Cambios sin guardar. La simulación no aprueba pagos fuera de reglas.";
+  if (confirmando) mensajeBarra = `¿Guardar como v${siguiente}? Aplica desde el próximo lote y queda en el registro.`;
+  else if (sinConfigurar) mensajeBarra = "Valores sugeridos. Revísalos y guarda la versión 1 para que el agente empiece a decidir.";
 
   return (
     <>
@@ -446,12 +449,7 @@ export function EditorReglas({
           <span className="flex min-w-0 items-center gap-2 text-sm">
             {motivoBloqueo ? <AlertTriangleIcon className={cn("size-4 flex-none", inseguro ? "text-frenada" : "text-aviso")} aria-hidden /> : <CheckCircle2Icon className="size-4 flex-none text-brand" aria-hidden />}
             <span aria-live="polite">
-              {motivoBloqueo ??
-                (confirmando
-                  ? `¿Guardar como v${siguiente}? Aplica desde el próximo lote y queda en el registro.`
-                  : sinConfigurar
-                    ? "Valores sugeridos. Revísalos y guarda la versión 1 para que el agente empiece a decidir."
-                    : "Cambios sin guardar. La simulación no aprueba pagos fuera de reglas.")}
+              {motivoBloqueo ?? mensajeBarra}
             </span>
           </span>
           <span className="flex flex-wrap gap-2">
