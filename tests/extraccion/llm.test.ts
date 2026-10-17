@@ -10,7 +10,7 @@ import { crearGemini } from "@/extraccion/llm/gemini";
 import { crearGroq } from "@/extraccion/llm/groq";
 import { ninguno } from "@/extraccion/llm/ninguno";
 import { mensajeUsuario } from "@/extraccion/llm/prompt";
-import { cadena, ErrorLLM, proveedorDesdeEntorno, validarRespuestaLlm, type ProveedorLLM } from "@/extraccion/llm/proveedor";
+import { cadena, conReintento, ErrorLLM, proveedorDesdeEntorno, validarRespuestaLlm, type ProveedorLLM } from "@/extraccion/llm/proveedor";
 import type { ExtraccionParcial } from "@/extraccion/tipos";
 
 import { recibido } from "./ayuda";
@@ -193,6 +193,37 @@ describe("proveedores HTTP (fetch simulado)", () => {
 
     const caido = crearGroq({ apiKey: "k", fetch: (async () => respuesta(503, {})) as typeof fetch });
     expect(await cadena([gemini, caido]).extraer(vacio, ["numero"])).toEqual({ proveedor_llm: "ninguno" });
+  });
+
+  it("#93: un 503 o 429 pasajero se reintenta una vez y la factura se lee", async () => {
+    const ok = respuesta(200, { candidates: [{ content: { parts: [{ text: JSON.stringify({ numero: conf("X-1") }) }] } }] });
+    for (const estado of [503, 429]) {
+      const f = vi.fn<typeof fetch>().mockResolvedValueOnce(respuesta(estado, {})).mockResolvedValueOnce(ok.clone());
+      const esperas: number[] = [];
+      const p = conReintento(crearGemini({ apiKey: "k", fetch: f }), { esperar: async (ms) => void esperas.push(ms) });
+      expect((await p.extraer(vacio, ["numero"])).numero?.valor).toBe("X-1");
+      expect(f).toHaveBeenCalledTimes(2);
+      expect(esperas).toHaveLength(1);
+    }
+  });
+
+  it("#93: un 400 (pedido mal armado) no se reintenta; dos fallos seguidos sí llegan a la cadena", async () => {
+    const f400 = vi.fn<typeof fetch>(async () => respuesta(400, {}));
+    await expect(conReintento(crearGemini({ apiKey: "k", fetch: f400 }), { esperar: async () => {} }).extraer(vacio, ["numero"])).rejects.toBeInstanceOf(ErrorLLM);
+    expect(f400).toHaveBeenCalledTimes(1);
+    const f503 = vi.fn<typeof fetch>(async () => respuesta(503, {}));
+    await expect(conReintento(crearGemini({ apiKey: "k", fetch: f503 }), { esperar: async () => {} }).extraer(vacio, ["numero"])).rejects.toBeInstanceOf(ErrorLLM);
+    expect(f503).toHaveBeenCalledTimes(2);
+  });
+
+  it("#93: sin alFallar, un fallo del LLM queda en el log (sin el contenido del documento)", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const caido = crearGemini({ apiKey: "k", fetch: (async () => respuesta(400, {})) as typeof fetch });
+    await cadena([caido]).extraer(vacio, ["numero"]);
+    expect(log).toHaveBeenCalledOnce();
+    expect(String(log.mock.calls[0]?.[0])).toMatch(/"llm":"falló".*HTTP 400/);
+    expect(String(log.mock.calls[0]?.[0])).not.toContain("hola");
+    log.mockRestore();
   });
 
   it("selección por LLM_PROVIDER: solo proveedores con llave; sin llaves → ninguno", () => {

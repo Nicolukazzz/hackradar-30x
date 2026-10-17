@@ -5,15 +5,46 @@
 import type { ProveedorLlm } from "@/dominio/tipos";
 
 import { crearAnthropic } from "./anthropic";
-import type { ProveedorLLM } from "./contrato";
+import { ErrorLLM, type ProveedorLLM } from "./contrato";
 import { crearGemini } from "./gemini";
 import { crearGroq } from "./groq";
 import { ninguno } from "./ninguno";
 
 export { CONFIANZA_MAXIMA_LLM, ErrorLLM, RespuestaLlmSchema, validarRespuestaLlm, type ProveedorLLM } from "./contrato";
 
+/** Fallo de un proveedor en el log (#93): solo proveedor y motivo, nunca el contenido del documento. */
+const registrarFallo = (e: unknown) => console.error(JSON.stringify({ llm: "falló", error: e instanceof Error ? e.message : String(e) }));
+
+/** 429, 5xx o sin respuesta (red, timeout): puede funcionar al reintentar. Un 4xx o una respuesta inválida, no. */
+function esPasajero(e: unknown): boolean {
+  return e instanceof ErrorLLM && (e.estado === null || e.estado === 429 || e.estado >= 500);
+}
+
+export type OpcionesReintento = { intentos?: number; esperaMs?: number; esperar?: (ms: number) => Promise<void> };
+
+/**
+ * Reintenta un proveedor ante errores pasajeros (#93): el free tier de Gemini responde 503/429 a ratos y, sin
+ * reintento, una factura legible quedaba sin leer (R1 escala con confianza 0 %).
+ */
+export function conReintento(p: ProveedorLLM, { intentos = 2, esperaMs = 2000, esperar = (ms) => new Promise((r) => setTimeout(r, ms)) }: OpcionesReintento = {}): ProveedorLLM {
+  return {
+    ...p,
+    async extraer(doc, faltantes) {
+      for (let i = 1; ; i++) {
+        try {
+          return await p.extraer(doc, faltantes);
+        } catch (e) {
+          if (i >= intentos || !esPasajero(e)) throw e;
+          registrarFallo(e);
+          await esperar(esperaMs);
+        }
+      }
+    },
+  };
+}
+
 /** Prueba cada proveedor en orden; el primero que responda (aunque sea con algo descartado) gana. */
-export function cadena(proveedores: ProveedorLLM[], alFallar?: (e: unknown) => void): ProveedorLLM {
+export function cadena(proveedores: ProveedorLLM[], alFallar: (e: unknown) => void = registrarFallo): ProveedorLLM {
   if (proveedores.length === 0) return ninguno;
   return {
     nombre: proveedores[0]?.nombre ?? "ninguno",
@@ -23,7 +54,7 @@ export function cadena(proveedores: ProveedorLLM[], alFallar?: (e: unknown) => v
         try {
           return await p.extraer(doc, faltantes);
         } catch (e) {
-          alFallar?.(e);
+          alFallar(e);
         }
       }
       return ninguno.extraer(doc, faltantes);
@@ -52,9 +83,9 @@ export function proveedorDesdeEntorno(env: Entorno = process.env, alFallar?: (e:
   const elegido = (env.LLM_PROVIDER ?? "gemini").trim().toLowerCase();
   if (elegido === "ninguno") return ninguno;
   const disponibles: Partial<Record<ProveedorLlm, () => ProveedorLLM>> = {};
-  if (env.GEMINI_API_KEY) disponibles.gemini = () => crearGemini({ apiKey: env.GEMINI_API_KEY ?? "", modelo: env.GEMINI_MODEL });
-  if (env.GROQ_API_KEY) disponibles.groq = () => crearGroq({ apiKey: env.GROQ_API_KEY ?? "", modelo: env.GROQ_MODEL });
-  if (env.ANTHROPIC_API_KEY) disponibles.anthropic = () => crearAnthropic({ apiKey: env.ANTHROPIC_API_KEY ?? "", modelo: env.ANTHROPIC_MODEL });
+  if (env.GEMINI_API_KEY) disponibles.gemini = () => conReintento(crearGemini({ apiKey: env.GEMINI_API_KEY ?? "", modelo: env.GEMINI_MODEL }));
+  if (env.GROQ_API_KEY) disponibles.groq = () => conReintento(crearGroq({ apiKey: env.GROQ_API_KEY ?? "", modelo: env.GROQ_MODEL }));
+  if (env.ANTHROPIC_API_KEY) disponibles.anthropic = () => conReintento(crearAnthropic({ apiKey: env.ANTHROPIC_API_KEY ?? "", modelo: env.ANTHROPIC_MODEL }));
   const orden: ProveedorLlm[] = ["gemini", "groq", "anthropic"];
   if (elegido === "doble") {
     // Dos lectores distintos: uno de cada lista, sin repetir proveedor (dos veces el mismo modelo no es independiente).
