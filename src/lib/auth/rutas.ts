@@ -4,14 +4,14 @@
 /** Páginas que se ven sin sesión. */
 /**
  * `/unirse` (#80): la persona todavía no tiene cuenta; la crea con el enlace que le pasó el admin.
- * `/vincular` (#85): un proveedor sin cuenta vincula su correo de facturación con el enlace que le pasó la empresa.
+ * `/vincular` (#85): portal del proveedor, sin cuenta: entra con el enlace, su correo y su código, y sube facturas.
  */
 export const PAGINAS_PUBLICAS = ["/entrar", "/sin-permiso", "/unirse", "/vincular"] as const;
 
 /**
  * Rutas de API que no pasan por `conSesion` (cada una verifica por su cuenta):
- * - `/api/vincular/<token>` (#85): el proveedor no tiene cuenta; la autoriza el token del enlace (un solo uso), con
- *   mismo origen y tope de intentos por IP.
+ * - `/api/vincular/<token>` (#85): portal del proveedor, sin cuenta. Entrar exige token + correo + código (con tope de
+ *   intentos); subir facturas (`/facturas`), la cookie firmada que deja entrar. Mismo origen en las dos.
  * - `/api/canales/telegram/webhook` (#13): sin sesión de usuario; verifica la cabecera X-Telegram-Bot-Api-Secret-Token.
  */
 export const API_PUBLICAS: readonly string[] = ["/api/vincular", "/api/canales/telegram/webhook"];

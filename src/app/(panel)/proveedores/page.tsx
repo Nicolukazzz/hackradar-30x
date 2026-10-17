@@ -10,25 +10,24 @@ import { ListaEnlaces } from "./_proveedores/lista";
 
 export const metadata: Metadata = { title: "Proveedores · Agente de cuentas por pagar" };
 
-// Proveedores (#85): enlaces de un solo uso para que un proveedor vincule el correo desde el que manda sus facturas
-// y reciba su id de conexión. La app no envía correos: el enlace se comparte por el medio que ya usan.
+// Proveedores (#85): un portal por proveedor (enlace + su correo + un código) para que suba sus facturas sin cuenta.
+// La app no envía correos: el admin comparte el enlace y el código por el medio que ya usan.
 export default async function ProveedoresPage() {
-  const { enlaces, beneficiarios, crear } = await obtenerProveedores();
+  const { enlaces, crear } = await obtenerProveedores();
   const activos = enlaces.filter((e) => e.estado === "activo").length;
-  const vinculados = enlaces.filter((e) => e.estado === "usado").length;
 
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div className="flex max-w-[640px] flex-col gap-1.5">
-          <span className="text-[13px] text-muted-foreground">Correo de facturación</span>
+          <span className="text-[13px] text-muted-foreground">Portal de proveedores</span>
           <h1 className="text-[32px] leading-tight font-semibold tracking-tight text-balance">Proveedores</h1>
           <p className="text-[15px] leading-relaxed text-pretty text-muted-foreground">
-            Crea un enlace y pásaselo al proveedor por WhatsApp, llamada o el medio que ya usan. Al abrirlo escribe el correo desde el que manda
-            sus facturas y recibe su id de conexión. Desde ahí, lo que llegue de ese correo queda a su nombre.
+            Crea un enlace con el nombre y el correo del proveedor y un código. Pásale el enlace y el código por WhatsApp, llamada o el medio que
+            ya usan: entra con su correo y el código, y sube sus facturas. Cada factura la decide el agente con las mismas reglas.
           </p>
         </div>
-        <CrearEnlace beneficiarios={beneficiarios} permiso={crear} />
+        <CrearEnlace permiso={crear} />
       </header>
 
       <Tarjeta as="section" aria-labelledby="titulo-enlaces">
@@ -42,8 +41,8 @@ export default async function ProveedoresPage() {
           }
           descripcion={
             enlaces.length > 0
-              ? `${activos} ${activos === 1 ? "activo" : "activos"} · ${vinculados} ${vinculados === 1 ? "correo vinculado" : "correos vinculados"}. Cada enlace sirve una vez y vence en 7 días.`
-              : "Cada enlace sirve una sola vez y vence en 7 días."
+              ? `${activos} ${activos === 1 ? "activo" : "activos"}. Cada enlace vence en 30 días; el código se puede cambiar cuando quieras.`
+              : "Cada enlace vence en 30 días; el código se puede cambiar cuando quieras."
           }
         />
         {enlaces.length > 0 ? (
@@ -55,16 +54,16 @@ export default async function ProveedoresPage() {
                 <LinkIcon />
               </EmptyMedia>
               <EmptyTitle>Aún no hay enlaces</EmptyTitle>
-              <EmptyDescription>Usa Crear enlace para un proveedor de la lista o para uno nuevo.</EmptyDescription>
+              <EmptyDescription>Usa Crear enlace con el nombre y el correo del proveedor.</EmptyDescription>
             </EmptyHeader>
           </Empty>
         )}
         <TarjetaPie className="flex items-start gap-2">
           <ShieldCheckIcon className="mt-0.5 size-4 flex-none text-pagada-punto" aria-hidden />
           <span>
-            Solo un administrador crea enlaces. Para un proveedor de la lista, el correo vinculado hace que sus facturas cumplan R11 (remitente
-            verificado); todas las demás reglas siguen igual. Para un proveedor nuevo, el correo solo queda registrado: sus facturas se escalan
-            (R3) hasta que una persona lo agregue a la lista. Un correo que ya es de otro proveedor no se puede vincular.
+            Solo un administrador crea enlaces y cambia códigos. Para entrar hacen falta el enlace, el correo y el código, con pocos intentos por
+            minuto. Lo que sube un proveedor de la lista con su correo registrado sigue las reglas normales; un proveedor nuevo se escala (R3, R11)
+            hasta que una persona lo agregue a la lista.
           </span>
         </TarjetaPie>
       </Tarjeta>

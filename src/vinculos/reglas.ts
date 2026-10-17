@@ -1,25 +1,33 @@
-// Reglas puras de los enlaces de proveedor (#85): sin reloj, red ni base (`ahora` inyectado). La base repite la
-// validación al usar el enlace (`usar_enlace_proveedor`), atómica, como segunda capa.
-
-import { randomBytes } from "node:crypto";
+// Reglas puras del portal del proveedor (#85): sin reloj, red ni base (`ahora` inyectado).
 
 import { z } from "zod";
 
+import { normalizarCodigo } from "./codigo";
 import type { EnlaceProveedor, EstadoEnlace } from "./tipos";
 
-export const VIGENCIA_DIAS = 7;
+export const VIGENCIA_DIAS = 30;
 
-export const EsquemaNuevoEnlace = z.union([
-  z.strictObject({ beneficiario_id: z.string().trim().min(1).max(80) }),
-  z.strictObject({ nombre: z.string().trim().min(2, { message: "Escribe el nombre del proveedor." }).max(120) }),
-]);
+const Correo = z.string().trim().toLowerCase().max(254).pipe(z.email({ message: "Escribe un correo válido." }));
+const Codigo = z
+  .string()
+  .max(20)
+  .transform((t, ctx) => {
+    const c = normalizarCodigo(t);
+    if (c === null) ctx.addIssue({ code: "custom", message: "El código tiene 8 caracteres, como K7M2-Q9XD." });
+    return c ?? "";
+  });
 
-export const EsquemaUsoEnlace = z.strictObject({
-  correo: z.string().trim().toLowerCase().max(254).pipe(z.email({ message: "Escribe un correo válido." })),
+export const EsquemaNuevoEnlace = z.strictObject({
+  nombre: z.string().trim().min(2, { message: "Escribe el nombre del proveedor." }).max(120),
+  correo: Correo,
+  codigo: Codigo,
 });
 
-export function estadoEnlace(e: EnlaceProveedor, ahora: string): EstadoEnlace {
-  if (e.usado_en !== null) return "usado";
+export const EsquemaCambioCodigo = z.strictObject({ codigo: Codigo });
+
+export const EsquemaAcceso = z.strictObject({ correo: Correo, codigo: Codigo });
+
+export function estadoEnlace(e: Pick<EnlaceProveedor, "revocado_en" | "expira_en">, ahora: string): EstadoEnlace {
   if (e.revocado_en !== null) return "revocado";
   if (Date.parse(e.expira_en) <= Date.parse(ahora)) return "vencido";
   return "activo";
@@ -28,13 +36,4 @@ export function estadoEnlace(e: EnlaceProveedor, ahora: string): EstadoEnlace {
 /** `ahora` + n días, como ISO UTC (timestamptz en la base). */
 export function venceEn(ahora: string, dias: number): string {
   return new Date(Date.parse(ahora) + dias * 24 * 60 * 60 * 1000).toISOString();
-}
-
-// Base32 de Crockford: sin I, L, O ni U, para que se lea y se dicte sin confundir letras con números.
-const ALFABETO = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-
-/** Id de conexión empresa ↔ proveedor: `PRV-XXXX-XXXX` (40 bits aleatorios). */
-export function generarConexionId(bytes: Uint8Array = randomBytes(8)): string {
-  const c = Array.from(bytes.subarray(0, 8), (b) => ALFABETO[b % 32]).join("");
-  return `PRV-${c.slice(0, 4)}-${c.slice(4, 8)}`;
 }

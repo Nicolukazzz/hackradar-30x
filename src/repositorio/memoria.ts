@@ -11,7 +11,7 @@ import { cargarGolden, cargarSinDocumentos, type DocGolden } from "@/evaluacion/
 import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
 
-import { coincideFiltro, conVinculosCorreo, conVinculosTelegram, crearCola, duenoDelCorreo, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
+import { coincideFiltro, conVinculosTelegram, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
 import type { ArchivoGuardado, EscenarioCargado, Repositorio, ResumenVersion } from "./repositorio";
 
 
@@ -42,15 +42,14 @@ export async function crearRepositorioMemoria(
   // "vacio" no lee ni hashea los documentos: van a entrar por la ingesta.
   const cargar = () => (opciones.lote === "vacio" ? cargarSinDocumentos(idEscenario, dir) : cargarGolden(idEscenario, dir));
   // Sobreviven a "Reiniciar demo" (#76), igual que en Supabase: el chat de Telegram de cada beneficiario y las
-  // huellas de los enlaces ya usados y los correos vinculados por enlace de proveedor (#85).
+  // huellas de los enlaces ya usados.
   const vinculos = new Map<string, string>();
-  const correos = new Map<string, string>();
   const huellasUsadas = new Set<string>();
 
   async function estadoInicial(): Promise<Estado> {
     const g = await cargar();
     const datos = structuredClone(g.datos);
-    datos.beneficiarios = conVinculosCorreo(conVinculosTelegram(datos.beneficiarios, vinculos), correos);
+    datos.beneficiarios = conVinculosTelegram(datos.beneficiarios, vinculos);
     const e: Estado = {
       datos,
       versiones: [...datos.reglas.versiones],
@@ -108,14 +107,6 @@ export async function crearRepositorioMemoria(
       for (const [b, c] of vinculos) if (b === beneficiario_id || c === chat_id) vinculos.delete(b);
       vinculos.set(beneficiario_id, chat_id);
       s.datos.beneficiarios = conVinculosTelegram(s.datos.beneficiarios, new Map([[beneficiario_id, chat_id]]));
-    },
-    async vincularCorreo(beneficiario_id, correo) {
-      const c = correo.trim().toLowerCase();
-      if (!s.datos.beneficiarios.some((b) => b.id === beneficiario_id)) throw new Error(`no existe el beneficiario ${beneficiario_id}`);
-      const dueno = duenoDelCorreo(s.datos.beneficiarios, c);
-      if (dueno && dueno.id !== beneficiario_id) throw new Error(`el correo ${c} ya está vinculado a otro beneficiario`);
-      correos.set(c, beneficiario_id);
-      s.datos.beneficiarios = conVinculosCorreo(s.datos.beneficiarios, new Map([[c, beneficiario_id]]));
     },
     async guardarArchivo(ref, archivo) {
       s.archivos.set(ref, { ...archivo, bytes: Buffer.from(archivo.bytes) });
