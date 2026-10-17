@@ -1,0 +1,18 @@
+{
+  "archivo_original": "documentos/005-ph-0458.eml",
+  "canal": "correo",
+  "remitente": {
+    "tipo": "correo",
+    "valor": "ventas@pampahardware.example"
+  },
+  "recibido_en": "2026-11-16T08:40:00-05:00",
+  "asunto": "Factura PH-0458 — OC-126",
+  "texto_mensaje": "Hola,\n\nAdjuntamos la factura PH-0458 de los servidores (OC-126).\n\nSaludos,\nPampa Hardware",
+  "adjuntos": [
+    {
+      "nombre": "PH-0458.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/adjuntos/005-ph-0458.pdf"
+    }
+  ]
+}

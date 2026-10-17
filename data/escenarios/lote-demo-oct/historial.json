@@ -1,0 +1,1169 @@
+[
+  {
+    "id": "REG-HIST-0002",
+    "momento": "2026-09-09T09:30:00-05:00",
+    "actor": {
+      "tipo": "agente"
+    },
+    "tipo": "DECISION_AGENTE",
+    "ref_interna": "INT-HIST-0002",
+    "factura_numero": "INV-2195",
+    "beneficiario": "CloudNorte S.A.S.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 124000,
+      "moneda": "USD"
+    },
+    "monto_usd_centavos": 124000,
+    "tasa_usada": null,
+    "decision": "PAGAR",
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [],
+    "comparaciones": [],
+    "explicacion": "Importado del registro anterior: Coincide con la OC-118.",
+    "comentario": null,
+    "entrada_origen": null,
+    "extraccion": {
+      "es_factura": {
+        "valor": true,
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "beneficiario_nombre": {
+        "valor": "CloudNorte S.A.S.",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "numero": {
+        "valor": "INV-2195",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "monto_total": {
+        "valor": {
+          "centavos": 124000,
+          "moneda": "USD"
+        },
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_emision": {
+        "valor": "2026-09-08",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_vencimiento": {
+        "valor": "2026-09-22",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "cuenta_destino_ultimos4": {
+        "valor": "5530",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "concepto": {
+        "valor": "Hosting and CDN — September (PO OC-118)",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "referencia_acuerdo": {
+        "valor": "OC-118",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "idioma": "en",
+      "texto_crudo": "CloudNorte S.A.S.\nBogotá, Colombia\nNIT 999.000.102-1 (ficticio)\nINVOICE # INV-2195\nIssue date: Sep 8, 2026\nDue date: Sep 22, 2026\nBill to: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nDescription: Hosting and CDN — September (PO OC-118)\nTotal: USD 1,240.00\nReference: OC-118\nPay to: CloudNorte S.A.S. · Banco Llanos Unidos · Account 999-000000-5530\nFictitious document generated for the Blinka challenge. Not a tax document.",
+      "senales_llm": {
+        "instrucciones_sospechosas": []
+      },
+      "proveedor_llm": "ninguno"
+    },
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0001",
+    "momento": "2026-09-11T10:00:00-05:00",
+    "actor": {
+      "tipo": "agente"
+    },
+    "tipo": "DECISION_AGENTE",
+    "ref_interna": "INT-HIST-0001",
+    "factura_numero": "FAC-1032",
+    "beneficiario": "Ana María Gómez",
+    "canal": "portal",
+    "formato": "pdf",
+    "monto_original": {
+      "centavos": 840000000,
+      "moneda": "COP"
+    },
+    "monto_usd_centavos": 200000,
+    "tasa_usada": "COP 4.200,00",
+    "decision": "PAGAR",
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [],
+    "comparaciones": [],
+    "explicacion": "Importado del registro anterior: Contrato mensual de diseño, monto acordado.",
+    "comentario": null,
+    "entrada_origen": null,
+    "extraccion": {
+      "es_factura": {
+        "valor": true,
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "beneficiario_nombre": {
+        "valor": "Ana María Gómez",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "numero": {
+        "valor": "FAC-1032",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "monto_total": {
+        "valor": {
+          "centavos": 840000000,
+          "moneda": "COP"
+        },
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_emision": {
+        "valor": "2026-09-10",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_vencimiento": {
+        "valor": "2026-09-25",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "cuenta_destino_ultimos4": {
+        "valor": "3021",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "concepto": {
+        "valor": "Diseño de producto — septiembre",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "referencia_acuerdo": {
+        "valor": "CT-AMG",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "idioma": "es",
+      "texto_crudo": "Ana María Gómez\nMedellín, Colombia\nC.C. 999.000.101 (ficticio)\nCUENTA DE COBRO N.º FAC-1032\nFecha de emisión: 10/09/2026\nVence: 25/09/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Diseño de producto — septiembre\nTotal: COP 8.400.000\nReferencia: CT-AMG\nPagar a: Ana María Gómez · Banco Cafetal · Cuenta de ahorros 999-000000-3021\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "senales_llm": {
+        "instrucciones_sospechosas": []
+      },
+      "proveedor_llm": "ninguno"
+    },
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0003",
+    "momento": "2026-09-15T09:00:00-05:00",
+    "actor": {
+      "tipo": "agente"
+    },
+    "tipo": "DECISION_AGENTE",
+    "ref_interna": "INT-HIST-0003",
+    "factura_numero": "JPO-09",
+    "beneficiario": "Juan Pablo Ortiz",
+    "canal": "telegram",
+    "formato": "chat",
+    "monto_original": {
+      "centavos": 90000,
+      "moneda": "USD"
+    },
+    "monto_usd_centavos": 90000,
+    "tasa_usada": null,
+    "decision": "PAGAR",
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [],
+    "comparaciones": [],
+    "explicacion": "Importado del registro anterior: Hito 1 de 3 por el monto acordado.",
+    "comentario": null,
+    "entrada_origen": null,
+    "extraccion": {
+      "es_factura": {
+        "valor": true,
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "beneficiario_nombre": {
+        "valor": "Juan Pablo Ortiz",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "numero": {
+        "valor": "JPO-09",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "monto_total": {
+        "valor": {
+          "centavos": 90000,
+          "moneda": "USD"
+        },
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_emision": {
+        "valor": "2026-09-14",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_vencimiento": {
+        "valor": "2026-09-30",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "cuenta_destino_ultimos4": {
+        "valor": "8812",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "concepto": {
+        "valor": "Hito 1 de 3 — tablero de datos",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "referencia_acuerdo": {
+        "valor": "CT-JPO",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "hito_numero": {
+        "valor": 1,
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "idioma": "es",
+      "texto_crudo": "Juan Pablo Ortiz\nCali, Colombia\nC.C. 999.000.104 (ficticio)\nCUENTA DE COBRO N.º JPO-09\nFecha de emisión: 14/09/2026\nVence: 30/09/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Hito 1 de 3 — tablero de datos\nTotal: USD 900,00\nReferencia: CT-JPO · hito 1\nPagar a: Juan Pablo Ortiz · Banco Cafetal · Cuenta de ahorros 999-000000-8812\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "senales_llm": {
+        "instrucciones_sospechosas": []
+      },
+      "proveedor_llm": "ninguno"
+    },
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0004",
+    "momento": "2026-10-01T09:10:00-05:00",
+    "actor": {
+      "tipo": "agente"
+    },
+    "tipo": "DECISION_AGENTE",
+    "ref_interna": "INT-HIST-0004",
+    "factura_numero": "RV-1171",
+    "beneficiario": "Rio Verde Traduções Ltda.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 1100000,
+      "moneda": "BRL"
+    },
+    "monto_usd_centavos": 200000,
+    "tasa_usada": "BRL 5,50",
+    "decision": "PAGAR",
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [],
+    "comparaciones": [],
+    "explicacion": "Importado del registro anterior: Honorario mensual acordado.",
+    "comentario": null,
+    "entrada_origen": null,
+    "extraccion": {
+      "es_factura": {
+        "valor": true,
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "beneficiario_nombre": {
+        "valor": "Rio Verde Traduções Ltda.",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "numero": {
+        "valor": "RV-1171",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "monto_total": {
+        "valor": {
+          "centavos": 1100000,
+          "moneda": "BRL"
+        },
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_emision": {
+        "valor": "2026-09-30",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_vencimiento": {
+        "valor": "2026-10-15",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "cuenta_destino_ultimos4": {
+        "valor": "5512",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "concepto": {
+        "valor": "Tradução e localização — outubro",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "referencia_acuerdo": {
+        "valor": "HON-RV",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "idioma": "pt",
+      "texto_crudo": "Rio Verde Traduções Ltda.\nCuritiba, Brasil\nCNPJ 99.900.011/0001-11 (fictício)\nFATURA Nº RV-1171\nData de emissão: 30/09/2026\nVencimento: 15/10/2026\nFaturar para: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nDescrição: Tradução e localização — outubro\nTotal: BRL 11.000,00\nReferência: HON-RV\nPagar a: Rio Verde Traduções Ltda. · Banco Ipê Dourado · Conta corrente 999-0000-5512\nDocumento fictício gerado para o desafio Blinka. Sem validade fiscal.",
+      "senales_llm": {
+        "instrucciones_sospechosas": []
+      },
+      "proveedor_llm": "ninguno"
+    },
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0005",
+    "momento": "2026-10-01T09:20:00-05:00",
+    "actor": {
+      "tipo": "agente"
+    },
+    "tipo": "DECISION_AGENTE",
+    "ref_interna": "INT-HIST-0005",
+    "factura_numero": "VR-10",
+    "beneficiario": "Valeria Ruiz",
+    "canal": "portal",
+    "formato": "pdf",
+    "monto_original": {
+      "centavos": 250000,
+      "moneda": "USD"
+    },
+    "monto_usd_centavos": 250000,
+    "tasa_usada": null,
+    "decision": "PAGAR",
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [],
+    "comparaciones": [],
+    "explicacion": "Importado del registro anterior: Contrato mensual de QA, monto acordado.",
+    "comentario": null,
+    "entrada_origen": null,
+    "extraccion": {
+      "es_factura": {
+        "valor": true,
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "beneficiario_nombre": {
+        "valor": "Valeria Ruiz",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "numero": {
+        "valor": "VR-10",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "monto_total": {
+        "valor": {
+          "centavos": 250000,
+          "moneda": "USD"
+        },
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_emision": {
+        "valor": "2026-09-30",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_vencimiento": {
+        "valor": "2026-10-15",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "cuenta_destino_ultimos4": {
+        "valor": "7781",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "concepto": {
+        "valor": "QA funcional — octubre",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "referencia_acuerdo": {
+        "valor": "VR-QA",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "idioma": "es",
+      "texto_crudo": "Valeria Ruiz\nRosario, Argentina\nCUIT 99-90001120-2 (ficticio)\nFACTURA N.º VR-10\nFecha de emisión: 30/09/2026\nVence: 15/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: QA funcional — octubre\nTotal: USD 2.500,00\nReferencia: VR-QA\nPagar a: Valeria Ruiz · Banco Pampero Sur · CBU 9990000300000000007781\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "senales_llm": {
+        "instrucciones_sospechosas": []
+      },
+      "proveedor_llm": "ninguno"
+    },
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0006",
+    "momento": "2026-10-02T11:00:00-05:00",
+    "actor": {
+      "tipo": "agente"
+    },
+    "tipo": "DECISION_AGENTE",
+    "ref_interna": "INT-HIST-0006",
+    "factura_numero": "BC-3290",
+    "beneficiario": "Bitácora Contable S.A.S.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 1260000000,
+      "moneda": "COP"
+    },
+    "monto_usd_centavos": 300000,
+    "tasa_usada": "COP 4.200,00",
+    "decision": "PAGAR",
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [],
+    "comparaciones": [],
+    "explicacion": "Importado del registro anterior: Honorario mensual acordado, igual al límite automático.",
+    "comentario": null,
+    "entrada_origen": null,
+    "extraccion": {
+      "es_factura": {
+        "valor": true,
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "beneficiario_nombre": {
+        "valor": "Bitácora Contable S.A.S.",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "numero": {
+        "valor": "BC-3290",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "monto_total": {
+        "valor": {
+          "centavos": 1260000000,
+          "moneda": "COP"
+        },
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_emision": {
+        "valor": "2026-10-01",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_vencimiento": {
+        "valor": "2026-10-16",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "cuenta_destino_ultimos4": {
+        "valor": "4408",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "concepto": {
+        "valor": "Contabilidad — octubre",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "referencia_acuerdo": {
+        "valor": "HON-BC",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "idioma": "es",
+      "texto_crudo": "Bitácora Contable S.A.S.\nBucaramanga, Colombia\nNIT 999.000.113-4 (ficticio)\nFACTURA N.º BC-3290\nFecha de emisión: 01/10/2026\nVence: 16/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Contabilidad — octubre\nTotal: COP 12.600.000\nReferencia: HON-BC\nPagar a: Bitácora Contable S.A.S. · Banco Cafetal · Cuenta de ahorros 999-000000-4408\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "senales_llm": {
+        "instrucciones_sospechosas": []
+      },
+      "proveedor_llm": "ninguno"
+    },
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0007",
+    "momento": "2026-10-03T10:00:00-05:00",
+    "actor": {
+      "tipo": "agente"
+    },
+    "tipo": "DECISION_AGENTE",
+    "ref_interna": "INT-HIST-0007",
+    "factura_numero": "PH-0441",
+    "beneficiario": "Pampa Hardware S.A.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 1200000,
+      "moneda": "USD"
+    },
+    "monto_usd_centavos": 1200000,
+    "tasa_usada": null,
+    "decision": "ESCALAR",
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [
+      "R9"
+    ],
+    "comparaciones": [],
+    "explicacion": "Importado del registro anterior: Supera el límite automático.",
+    "comentario": null,
+    "entrada_origen": null,
+    "extraccion": {
+      "es_factura": {
+        "valor": true,
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "beneficiario_nombre": {
+        "valor": "Pampa Hardware S.A.",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "numero": {
+        "valor": "PH-0441",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "monto_total": {
+        "valor": {
+          "centavos": 1200000,
+          "moneda": "USD"
+        },
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_emision": {
+        "valor": "2026-10-02",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_vencimiento": {
+        "valor": "2026-10-17",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "cuenta_destino_ultimos4": {
+        "valor": "3365",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "concepto": {
+        "valor": "Estaciones de trabajo (OC-119)",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "referencia_acuerdo": {
+        "valor": "OC-119",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "idioma": "es",
+      "texto_crudo": "Pampa Hardware S.A.\nMendoza, Argentina\nCUIT 99-90001140-4 (ficticio)\nFACTURA N.º PH-0441\nFecha de emisión: 02/10/2026\nVence: 17/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Estaciones de trabajo (OC-119)\nTotal: USD 12.000,00\nReferencia: OC-119\nPagar a: Pampa Hardware S.A. · Banco Pampero Sur · CBU 9990000300000000003365\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "senales_llm": {
+        "instrucciones_sospechosas": []
+      },
+      "proveedor_llm": "ninguno"
+    },
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0007-H1",
+    "momento": "2026-10-03T15:00:00-05:00",
+    "actor": {
+      "tipo": "humano",
+      "aprobador_id": "lm",
+      "nombre": "Laura Méndez"
+    },
+    "tipo": "DECISION_HUMANA",
+    "ref_interna": "INT-HIST-0007",
+    "factura_numero": "PH-0441",
+    "beneficiario": "Pampa Hardware S.A.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 1200000,
+      "moneda": "USD"
+    },
+    "monto_usd_centavos": 1200000,
+    "tasa_usada": null,
+    "decision": null,
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [
+      "R9"
+    ],
+    "comparaciones": [],
+    "explicacion": "Primera aprobación (1 de 2) por Laura Méndez: «OC-119 aprobada por dirección. Primera firma.». Falta una segunda firma.",
+    "comentario": "OC-119 aprobada por dirección. Primera firma.",
+    "entrada_origen": "REG-HIST-0007",
+    "extraccion": null,
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0007-H2",
+    "momento": "2026-10-03T16:30:00-05:00",
+    "actor": {
+      "tipo": "humano",
+      "aprobador_id": "ap",
+      "nombre": "Andrés Pardo"
+    },
+    "tipo": "DECISION_HUMANA",
+    "ref_interna": "INT-HIST-0007",
+    "factura_numero": "PH-0441",
+    "beneficiario": "Pampa Hardware S.A.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 1200000,
+      "moneda": "USD"
+    },
+    "monto_usd_centavos": 1200000,
+    "tasa_usada": null,
+    "decision": "APROBADA_HUMANO",
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [
+      "R9"
+    ],
+    "comparaciones": [],
+    "explicacion": "Aprobada por Andrés Pardo: «Segunda firma: recepción de equipos confirmada.».",
+    "comentario": "Segunda firma: recepción de equipos confirmada.",
+    "entrada_origen": "REG-HIST-0007",
+    "extraccion": null,
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0008",
+    "momento": "2026-10-05T09:00:00-05:00",
+    "actor": {
+      "tipo": "agente"
+    },
+    "tipo": "DECISION_AGENTE",
+    "ref_interna": "INT-HIST-0008",
+    "factura_numero": "ALBA-7781",
+    "beneficiario": "Grupo Alba Logística S.A. de C.V.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 25900000,
+      "moneda": "MXN"
+    },
+    "monto_usd_centavos": 1400000,
+    "tasa_usada": "MXN 18,50",
+    "decision": "ESCALAR",
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [
+      "R9"
+    ],
+    "comparaciones": [],
+    "explicacion": "Importado del registro anterior: Supera el límite automático.",
+    "comentario": null,
+    "entrada_origen": null,
+    "extraccion": {
+      "es_factura": {
+        "valor": true,
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "beneficiario_nombre": {
+        "valor": "Grupo Alba Logística S.A. de C.V.",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "numero": {
+        "valor": "ALBA-7781",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "monto_total": {
+        "valor": {
+          "centavos": 25900000,
+          "moneda": "MXN"
+        },
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_emision": {
+        "valor": "2026-10-04",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_vencimiento": {
+        "valor": "2026-10-19",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "cuenta_destino_ultimos4": {
+        "valor": "2290",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "concepto": {
+        "valor": "Logística regional Q4 (OC-115)",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "referencia_acuerdo": {
+        "valor": "OC-115",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "idioma": "es",
+      "texto_crudo": "Grupo Alba Logística S.A. de C.V.\nMonterrey, México\nRFC FICT990010GA1 (ficticio)\nFACTURA N.º ALBA-7781\nFecha de emisión: 04/10/2026\nVence: 19/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Logística regional Q4 (OC-115)\nTotal: MXN 259,000.00\nReferencia: OC-115\nPagar a: Grupo Alba Logística S.A. de C.V. · Banco Nopal · CLABE 999180000000002290\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "senales_llm": {
+        "instrucciones_sospechosas": []
+      },
+      "proveedor_llm": "ninguno"
+    },
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0008-H1",
+    "momento": "2026-10-05T12:00:00-05:00",
+    "actor": {
+      "tipo": "humano",
+      "aprobador_id": "lm",
+      "nombre": "Laura Méndez"
+    },
+    "tipo": "DECISION_HUMANA",
+    "ref_interna": "INT-HIST-0008",
+    "factura_numero": "ALBA-7781",
+    "beneficiario": "Grupo Alba Logística S.A. de C.V.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 25900000,
+      "moneda": "MXN"
+    },
+    "monto_usd_centavos": 1400000,
+    "tasa_usada": "MXN 18,50",
+    "decision": null,
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [
+      "R9"
+    ],
+    "comparaciones": [],
+    "explicacion": "Primera aprobación (1 de 2) por Laura Méndez: «OC-115 vigente. Primera firma.». Falta una segunda firma.",
+    "comentario": "OC-115 vigente. Primera firma.",
+    "entrada_origen": "REG-HIST-0008",
+    "extraccion": null,
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0008-H2",
+    "momento": "2026-10-05T14:10:00-05:00",
+    "actor": {
+      "tipo": "humano",
+      "aprobador_id": "ap",
+      "nombre": "Andrés Pardo"
+    },
+    "tipo": "DECISION_HUMANA",
+    "ref_interna": "INT-HIST-0008",
+    "factura_numero": "ALBA-7781",
+    "beneficiario": "Grupo Alba Logística S.A. de C.V.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 25900000,
+      "moneda": "MXN"
+    },
+    "monto_usd_centavos": 1400000,
+    "tasa_usada": "MXN 18,50",
+    "decision": "APROBADA_HUMANO",
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [
+      "R9"
+    ],
+    "comparaciones": [],
+    "explicacion": "Aprobada por Andrés Pardo: «Segunda firma: servicio prestado en octubre.».",
+    "comentario": "Segunda firma: servicio prestado en octubre.",
+    "entrada_origen": "REG-HIST-0008",
+    "extraccion": null,
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0009",
+    "momento": "2026-10-09T10:30:00-05:00",
+    "actor": {
+      "tipo": "agente"
+    },
+    "tipo": "DECISION_AGENTE",
+    "ref_interna": "INT-HIST-0009",
+    "factura_numero": "PH-0447",
+    "beneficiario": "Pampa Hardware S.A.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 410000,
+      "moneda": "USD"
+    },
+    "monto_usd_centavos": 410000,
+    "tasa_usada": null,
+    "decision": "ESCALAR",
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [
+      "R9"
+    ],
+    "comparaciones": [],
+    "explicacion": "Importado del registro anterior: Supera el límite automático.",
+    "comentario": null,
+    "entrada_origen": null,
+    "extraccion": {
+      "es_factura": {
+        "valor": true,
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "beneficiario_nombre": {
+        "valor": "Pampa Hardware S.A.",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "numero": {
+        "valor": "PH-0447",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "monto_total": {
+        "valor": {
+          "centavos": 410000,
+          "moneda": "USD"
+        },
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_emision": {
+        "valor": "2026-10-08",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_vencimiento": {
+        "valor": "2026-10-23",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "cuenta_destino_ultimos4": {
+        "valor": "3365",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "concepto": {
+        "valor": "Monitores y periféricos (OC-120)",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "referencia_acuerdo": {
+        "valor": "OC-120",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "idioma": "es",
+      "texto_crudo": "Pampa Hardware S.A.\nMendoza, Argentina\nCUIT 99-90001140-4 (ficticio)\nFACTURA N.º PH-0447\nFecha de emisión: 08/10/2026\nVence: 23/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Monitores y periféricos (OC-120)\nTotal: USD 4.100,00\nReferencia: OC-120\nPagar a: Pampa Hardware S.A. · Banco Pampero Sur · CBU 9990000300000000003365\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "senales_llm": {
+        "instrucciones_sospechosas": []
+      },
+      "proveedor_llm": "ninguno"
+    },
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0009-H1",
+    "momento": "2026-10-09T17:00:00-05:00",
+    "actor": {
+      "tipo": "humano",
+      "aprobador_id": "lm",
+      "nombre": "Laura Méndez"
+    },
+    "tipo": "DECISION_HUMANA",
+    "ref_interna": "INT-HIST-0009",
+    "factura_numero": "PH-0447",
+    "beneficiario": "Pampa Hardware S.A.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 410000,
+      "moneda": "USD"
+    },
+    "monto_usd_centavos": 410000,
+    "tasa_usada": null,
+    "decision": "APROBADA_HUMANO",
+    "reglas_version": 6,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [
+      "R9"
+    ],
+    "comparaciones": [],
+    "explicacion": "Aprobada por Laura Méndez: «OC-120 recibida completa.».",
+    "comentario": "OC-120 recibida completa.",
+    "entrada_origen": "REG-HIST-0009",
+    "extraccion": null,
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0011",
+    "momento": "2026-10-14T10:00:00-05:00",
+    "actor": {
+      "tipo": "agente"
+    },
+    "tipo": "DECISION_AGENTE",
+    "ref_interna": "INT-HIST-0011",
+    "factura_numero": "BR-12",
+    "beneficiario": "Nova Prints",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 78000,
+      "moneda": "USD"
+    },
+    "monto_usd_centavos": 78000,
+    "tasa_usada": null,
+    "decision": "ESCALAR",
+    "reglas_version": 7,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [
+      "R3",
+      "R11"
+    ],
+    "comparaciones": [],
+    "explicacion": "Importado del registro anterior: Beneficiario fuera de la lista permitida y remitente no vinculado.",
+    "comentario": null,
+    "entrada_origen": null,
+    "extraccion": {
+      "es_factura": {
+        "valor": true,
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "beneficiario_nombre": {
+        "valor": "Nova Prints",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "numero": {
+        "valor": "BR-12",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "monto_total": {
+        "valor": {
+          "centavos": 78000,
+          "moneda": "USD"
+        },
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_emision": {
+        "valor": "2026-10-12",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_vencimiento": {
+        "valor": "2026-10-27",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "cuenta_destino_ultimos4": {
+        "valor": "0451",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "concepto": {
+        "valor": "Impresión de material POP",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "idioma": "es",
+      "texto_crudo": "Nova Prints\nPuebla, México\nRFC FICT990099NP0 (ficticio)\nFACTURA N.º BR-12\nFecha de emisión: 12/10/2026\nVence: 27/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Impresión de material POP\nTotal: USD 780.00\nPagar a: Nova Prints · Banco Nopal · CLABE 999180000000000451\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "senales_llm": {
+        "instrucciones_sospechosas": []
+      },
+      "proveedor_llm": "ninguno"
+    },
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0010",
+    "momento": "2026-10-14T15:00:00-05:00",
+    "actor": {
+      "tipo": "agente"
+    },
+    "tipo": "DECISION_AGENTE",
+    "ref_interna": "INT-HIST-0010",
+    "factura_numero": "KX-090",
+    "beneficiario": "Kora Digital S.A.S.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 340000,
+      "moneda": "USD"
+    },
+    "monto_usd_centavos": 340000,
+    "tasa_usada": null,
+    "decision": "ESCALAR",
+    "reglas_version": 7,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [
+      "R9"
+    ],
+    "comparaciones": [],
+    "explicacion": "Importado del registro anterior: Supera el límite automático.",
+    "comentario": null,
+    "entrada_origen": null,
+    "extraccion": {
+      "es_factura": {
+        "valor": true,
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "beneficiario_nombre": {
+        "valor": "Kora Digital S.A.S.",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "numero": {
+        "valor": "KX-090",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "monto_total": {
+        "valor": {
+          "centavos": 340000,
+          "moneda": "USD"
+        },
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_emision": {
+        "valor": "2026-10-13",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "fecha_vencimiento": {
+        "valor": "2026-10-28",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "cuenta_destino_ultimos4": {
+        "valor": "6120",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "concepto": {
+        "valor": "Licencia anual plataforma de marketing",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "referencia_acuerdo": {
+        "valor": "KX",
+        "confianza": 1.0,
+        "fuente": "parser"
+      },
+      "idioma": "es",
+      "texto_crudo": "Kora Digital S.A.S.\nBarranquilla, Colombia\nNIT 999.000.109-9 (ficticio)\nFACTURA N.º KX-090\nFecha de emisión: 13/10/2026\nVence: 28/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Licencia anual plataforma de marketing\nTotal: USD 3.400,00\nReferencia: KX\nPagar a: Kora Digital S.A.S. · Banco Llanos Unidos · Cuenta de ahorros 999-000000-6120\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "senales_llm": {
+        "instrucciones_sospechosas": []
+      },
+      "proveedor_llm": "ninguno"
+    },
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0011-H1",
+    "momento": "2026-10-15T11:05:47-05:00",
+    "actor": {
+      "tipo": "humano",
+      "aprobador_id": "ap",
+      "nombre": "Andrés Pardo"
+    },
+    "tipo": "DECISION_HUMANA",
+    "ref_interna": "INT-HIST-0011",
+    "factura_numero": "BR-12",
+    "beneficiario": "Nova Prints",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 78000,
+      "moneda": "USD"
+    },
+    "monto_usd_centavos": 78000,
+    "tasa_usada": null,
+    "decision": "RECHAZADA_HUMANO",
+    "reglas_version": 7,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [
+      "R3",
+      "R11"
+    ],
+    "comparaciones": [],
+    "explicacion": "Rechazada por Andrés Pardo: «No reconocemos este proveedor». La reserva volvió al presupuesto.",
+    "comentario": "No reconocemos este proveedor",
+    "entrada_origen": "REG-HIST-0011",
+    "extraccion": null,
+    "sha256": null
+  },
+  {
+    "id": "REG-HIST-0010-H1",
+    "momento": "2026-10-15T16:40:22-05:00",
+    "actor": {
+      "tipo": "humano",
+      "aprobador_id": "lm",
+      "nombre": "Laura Méndez"
+    },
+    "tipo": "DECISION_HUMANA",
+    "ref_interna": "INT-HIST-0010",
+    "factura_numero": "KX-090",
+    "beneficiario": "Kora Digital S.A.S.",
+    "canal": "correo",
+    "formato": "correo",
+    "monto_original": {
+      "centavos": 340000,
+      "moneda": "USD"
+    },
+    "monto_usd_centavos": 340000,
+    "tasa_usada": null,
+    "decision": "APROBADA_HUMANO",
+    "reglas_version": 7,
+    "evaluaciones": [],
+    "reglas_que_fallaron": [
+      "R9"
+    ],
+    "comparaciones": [],
+    "explicacion": "Aprobada por Laura Méndez: «Pago anual acordado en la reunión de directorio».",
+    "comentario": "Pago anual acordado en la reunión de directorio",
+    "entrada_origen": "REG-HIST-0010",
+    "extraccion": null,
+    "sha256": null
+  }
+]

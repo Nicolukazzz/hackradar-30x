@@ -1,0 +1,4 @@
+# Versiones fijas: el generador es determinista byte a byte solo con estas versiones.
+reportlab==5.0.1
+Pillow==13.0.0
+pytest==9.1.1

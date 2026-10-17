@@ -1,0 +1,11 @@
+canal: telegram
+chat_id: 700100004
+de: Juan Pablo Ortiz
+fecha: 2026-10-16T09:16:05-05:00
+
+Hola equipo de Nébula, les envío mi cuenta de cobro del hito 2. Quedo atento, gracias.
+Cuenta de cobro N.º JPO-10
+Fecha: 14/10/2026 · Vence: 30/10/2026
+Concepto: Hito 2 de 3 — tablero de datos (CT-JPO, hito 2 de 3)
+Valor: USD 900,00
+Pagar a: Juan Pablo Ortiz · Banco Cafetal · Cuenta de ahorros 999-000000-8812

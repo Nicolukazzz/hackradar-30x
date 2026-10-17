@@ -1,0 +1,18 @@
+{
+  "archivo_original": "documentos/011-inv-2245.eml",
+  "canal": "correo",
+  "remitente": {
+    "tipo": "correo",
+    "valor": "pagos-cloudnorte@gmail.example"
+  },
+  "recibido_en": "2026-11-16T09:30:00-05:00",
+  "asunto": "Invoice INV-2245",
+  "texto_mensaje": "Hi,\n\nNew invoice attached. Please process.\n\nCloudNorte",
+  "adjuntos": [
+    {
+      "nombre": "INV-2245.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/adjuntos/011-inv-2245.pdf"
+    }
+  ]
+}

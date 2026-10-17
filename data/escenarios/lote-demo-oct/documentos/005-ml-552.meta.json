@@ -1,0 +1,18 @@
+{
+  "archivo_original": "documentos/005-ml-552.eml",
+  "canal": "correo",
+  "remitente": {
+    "tipo": "correo",
+    "valor": "facturas@mesalegal.example"
+  },
+  "recibido_en": "2026-10-16T09:17:40-05:00",
+  "asunto": "Factura ML-552 — Honorarios octubre",
+  "texto_mensaje": "Buenos días,\n\nAdjuntamos la factura ML-552 correspondiente a los honorarios de octubre.\n\nCordialmente,\nMesa Legal S.A.S.",
+  "adjuntos": [
+    {
+      "nombre": "ML-552.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/adjuntos/005-ml-552.pdf"
+    }
+  ]
+}

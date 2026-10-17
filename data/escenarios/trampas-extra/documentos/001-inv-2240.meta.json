@@ -1,0 +1,18 @@
+{
+  "archivo_original": "documentos/001-inv-2240.eml",
+  "canal": "correo",
+  "remitente": {
+    "tipo": "correo",
+    "valor": "billing@cloudnorte.example"
+  },
+  "recibido_en": "2026-11-16T08:00:00-05:00",
+  "asunto": "Invoice INV-2240 — CloudNorte S.A.S.",
+  "texto_mensaje": "Hello Nébula team,\n\nPlease find attached invoice INV-2240 for November.\n\nBest regards,\nCloudNorte Billing",
+  "adjuntos": [
+    {
+      "nombre": "INV-2240.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/adjuntos/001-inv-2240.pdf"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "archivo_original": "documentos/012-es-4410.png",
+  "canal": "telegram",
+  "remitente": {
+    "tipo": "telegram",
+    "valor": "700100008"
+  },
+  "recibido_en": "2026-10-16T09:23:55-05:00",
+  "adjuntos": [
+    {
+      "nombre": "ES-4410.png",
+      "mime": "image/png",
+      "ruta": "documentos/012-es-4410.png"
+    }
+  ],
+  "texto_mensaje": "Olá! Segue a fatura de outubro da trilha sonora."
+}
