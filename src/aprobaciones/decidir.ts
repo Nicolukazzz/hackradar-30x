@@ -2,6 +2,7 @@
 // Nunca modifica la entrada del agente: agrega una DECISION_HUMANA que apunta a ella.
 // Sin reloj: `ahora` llega inyectado.
 
+import { correoDeInvitacion, esRemitenteInvitacion } from "@/dominio/remitente";
 import { formatearUsd } from "@/dominio/dinero";
 import type { Aprobador, Beneficiario, EntradaRegistro } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
@@ -209,6 +210,9 @@ function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnTyp
   const ultimos4 = origen.extraccion?.cuenta_destino_ultimos4.valor ?? null;
   if (!nombre || !ultimos4) throw new ErrorDecision(400, "Sin nombre o cuenta confiables en la factura no se puede agregar a la lista.");
   const rem = documento?.remitente;
+  // Enlace de invitación (#28): se vincula el correo verificado de quien envió (sus próximas facturas por correo
+  // pasan R11), nunca el remitente `invitacion:*`, que seguiría sin verificar a nadie.
+  const correoInvitacion = rem ? correoDeInvitacion(rem.valor) : null;
   return {
     id: `ben-${slug(nombre)}`,
     nombre,
@@ -220,9 +224,9 @@ function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnTyp
     limite_mensual_usd: null,
     estado: "activo",
     canales: {
-      correos: rem?.tipo === "correo" ? [rem.valor] : [],
+      correos: correoInvitacion ? [correoInvitacion] : rem?.tipo === "correo" ? [rem.valor] : [],
       telegram_chat_id: rem?.tipo === "telegram" ? rem.valor : null,
-      portal_usuario: rem?.tipo === "portal" ? rem.valor : null,
+      portal_usuario: rem?.tipo === "portal" && !correoInvitacion && !esRemitenteInvitacion(rem.valor) ? rem.valor : null,
     },
   };
 }

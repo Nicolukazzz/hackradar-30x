@@ -6,6 +6,7 @@
 import { createHash } from "node:crypto";
 
 import { DocumentoEntranteSchema } from "@/dominio/esquemas";
+import { esRemitenteInvitacion } from "@/dominio/remitente";
 import type { Reloj } from "@/dominio/reloj";
 import type { Beneficiario, DocumentoEntrante, DocumentoRecibido, Formato, Remitente } from "@/dominio/tipos";
 import type { ArchivoGuardado, Repositorio } from "@/repositorio/repositorio";
@@ -41,6 +42,8 @@ export function formatoDe(entrada: Pick<DocumentoEntrante, "canal" | "adjuntos">
 export function beneficiarioDelRemitente(remitente: Remitente, beneficiarios: readonly Beneficiario[]): string | null {
   // Misma comparación que R11 (sin recortar: `ingerir` ya guarda el valor recortado), para que no discrepen.
   const { tipo, valor } = remitente;
+  // Enlace de invitación (#28): nunca se vincula, aunque alguien registre ese texto como canal.
+  if (esRemitenteInvitacion(valor)) return null;
   const b = beneficiarios.find((x) => {
     if (tipo === "correo") return x.canales.correos.some((c) => c.toLowerCase() === valor.toLowerCase());
     if (tipo === "telegram") return x.canales.telegram_chat_id === valor;

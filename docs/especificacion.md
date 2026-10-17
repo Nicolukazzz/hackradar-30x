@@ -213,6 +213,7 @@ export type Formato = 'pdf'|'imagen'|'correo'|'chat'|'xml';
 export type DocumentoEntrante = {           // lo produce cada canal; lo consume ingerir()
   canal: Canal;
   remitente: { tipo: 'correo'|'telegram'|'portal'|'interno'; valor: string }; // 'facturacion@omicron-pagos.example'
+                                            // enlace de invitación (#28): { tipo: 'portal', valor: 'invitacion:<id>:<correo>' }
   recibido_en: string;                      // ISO
   asunto?: string;
   texto_mensaje?: string;                   // cuerpo del correo o del chat
@@ -320,7 +321,7 @@ type Regla = (ctx: ContextoRegla) => EvaluacionRegla;   // función pura. Sin I/
 - **R8 Mensual por beneficiario.** NO_APLICA si R3 falla. `pagado_y_reservado_del_beneficiario_en_periodo + monto_usd > limite` → FALLA. Comparación: `2.054,05 + 648,65 = 2.702,70 ≤ 6.000,00 USD`.
 - **R9 Pago automático.** FALLA si `monto_usd > pago_automatico_usd`. Comparación: `4.500,00 > 3.000,00 USD`.
 - **R10 Instrucciones al agente.** FALLA si el detector determinista (`reglas/inyeccion.ts`) encuentra un patrón en `texto_crudo`, `asunto` o `texto_mensaje` **o** si `senales_llm.instrucciones_sospechosas` no está vacío. Patrones mínimos (normalizar tildes/mayúsculas): `nota para el sistema`, `sistema de pagos`, `ignora|ignorar (las|todas) (reglas|instrucciones)`, `sin revisi[oó]n`, `ya (fue|est[aá]) aprobad`, `aprobar autom[aá]ticamente`, `procesar (sin|de inmediato)`, `ignore (previous|all) instructions`, `approved by`, `do not (review|escalate)`, `system:`, `assistant:`, `ignore as regras`, `pagamento aprovado`. Comparación: `detectado: «procesar sin revisión» en el cuerpo`. El texto **jamás** se pasa al LLM como instrucción (§8 paso 4).
-- **R11 Remitente verificado.** Canal `portal` con sesión del beneficiario → CUMPLE. Canal `correo`/`telegram`: CUMPLE si el remitente está en `canales` **del mismo beneficiario** que nombra la factura. Remitente `interno` (empleado de Nébula reenviando) → CUMPLE solo si R3 cumple. Comparación: `facturacion@omicron-pagos.example no está vinculado a ningún beneficiario`. Reemplaza la CUARENTENA de `producto.md` §5 (ver §16).
+- **R11 Remitente verificado.** Canal `portal` con sesión del beneficiario → CUMPLE. Canal `correo`/`telegram`: CUMPLE si el remitente está en `canales` **del mismo beneficiario** que nombra la factura. Remitente `interno` (empleado de Nébula reenviando) → CUMPLE solo si R3 cumple. Remitente `invitacion:*` (enlace de invitación, #28) → **siempre FALLA**, aunque alguien lo registre como canal: el enlace prueba que se tiene el código y un correo, no que sea quien cobra (invariante con fast-check). Comparación: `facturacion@omicron-pagos.example no está vinculado a ningún beneficiario`. Reemplaza la CUARENTENA de `producto.md` §5 (ver §16).
 
 ### 4.4 Tests obligatorios por regla
 
@@ -427,7 +428,7 @@ Reglas: nunca se edita ni borra una entrada (la interfaz `Repositorio` no tiene 
 > **#51 (2026-10-17): roles por empresa.** Solo entra al panel una cuenta que es miembro de la empresa (`public.membresias`); sin membresía no ve nada (403 en toda `/api/*`, página `/sin-permiso`). Roles: **admin** (todo: aprueba sin límite, es el aprobador principal que guarda reglas, administra el equipo y reinicia la demo) · **aprobador** (ve y decide escalados hasta su `limite_aprobacion_usd`; null = sin límite) · **tesorería** (ve, sube y procesa; no decide ni cambia reglas). Las firmas válidas de este apartado son las de los miembros que **hoy** tienen permiso de aprobar, con su límite actual (`firmantes()` + `cuentas` de `decidir`): una cuenta a la que le quitaron el rol ya no firma, y su primera firma no cubre el monto. La doble aprobación ≥ USD 10.000 exige dos cuentas distintas, al menos una con límite suficiente. `agregar_a_lista` (abajo) es solo de admin: la lista permitida es parte de las reglas. Se entra al equipo por invitación (enlace `/unirse/<token>` de un solo uso, vence en 1–30 días, revocable, opcionalmente atada a un correo) o con `npm run equipo:admin` (primer admin). Laura Méndez y Andrés Pardo quedan como datos del dataset (asignación `asignado_a`, historial).
 
 - Solo se decide sobre ESCALAR pendientes. FRENAR no se puede aprobar (se corrige y se reenvía la factura).
-- Comentario **obligatorio** (≥ 5 caracteres). Acciones: `aprobar`, `rechazar`. Opción `agregar_a_lista` solo si falló R3: crea beneficiario con la cuenta de la factura y escribe `CAMBIO_BENEFICIARIOS`.
+- Comentario **obligatorio** (≥ 5 caracteres). Acciones: `aprobar`, `rechazar`. Opción `agregar_a_lista` solo si falló R3: crea beneficiario con la cuenta de la factura y escribe `CAMBIO_BENEFICIARIOS`. Si la factura llegó por enlace de invitación (#28), se vincula el **correo verificado** de quien la envió (`canales.correos`), nunca el remitente `invitacion:*`: sus próximas facturas por correo pasan R11.
 - Límite del aprobador: si `monto_usd > aprobador.limite_usd` → error 403 "Supera tu límite de aprobación".
 - Monto ≥ `doble_aprobacion_desde_usd` (10.000): requiere dos aprobaciones de personas distintas; la primera deja la factura en "1 de 2 aprobaciones" (entrada `DECISION_HUMANA` con `decision: null`). **Al menos una** de las dos debe ser de un aprobador cuyo límite cubra el monto; la otra es la segunda firma de control y no exige límite (si no, con Andrés limitado a USD 5.000 nunca habría dos firmas válidas).
 - Asignación al escalar: **Laura Méndez (CFO)** si falló R9 o R10 o `monto_usd > 5.000`; si no, **Andrés Pardo (Finanzas)**.
@@ -596,6 +597,8 @@ Resultado: PAGAR 3 · FRENAR 3 · ESCALAR 7 · RECHAZADA_NO_FACTURA 1.
 | `GET /api/registro?decision=&actor=agente\|humano&q=` | — | `EntradaRegistro[]` agrupadas por día | Registro |
 | `GET /api/registro/export.json` · `export.csv` | — | archivo | Registro |
 | `POST /api/ingesta` | `DocumentoEntrante` | `{ ref_interna, estado }` | canales |
+| `GET/POST /api/invitaciones-proveedor` · `DELETE /api/invitaciones-proveedor/:id` | `{ nombre_esperado?, correo_esperado?, dias_vigencia?, usos_max? }` | `{ invitaciones }` · `{ invitacion, enlace }` (el token solo aquí) | Proveedores nuevos (#28) |
+| `POST /api/enviar/:token` | multipart `archivo` | `{ ref_interna, estado: 'en_revision'\|'aprobada'\|'no_se_pagara'\|'no_es_factura', mensaje }` | `/enviar/[token]` (#28; en `API_PUBLICAS`: exige sesión, no membresía) |
 | `POST /api/evaluar` | `{ extraccion, beneficiario_id? }` | `ResultadoMotor` (simulación sin registrar) | API para otros agentes (pitch) |
 | `GET /api/equipo` | — | `{ miembros: Miembro[], invitaciones: (Invitacion & { estado })[] }` | Equipo (admin) |
 | `POST /api/equipo/invitaciones` | `{ rol, limite_aprobacion_usd?, correo_esperado?, dias_vigencia? }` | `{ invitacion, enlace }` (el token solo viaja aquí) | Equipo (admin) |
