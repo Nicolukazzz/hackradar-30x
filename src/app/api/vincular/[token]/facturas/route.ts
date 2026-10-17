@@ -20,7 +20,7 @@ import { error, manejar, ok } from "../../../_http";
 // y la decide el motor; el proveedor solo ve un estado sin reglas internas. Está en API_PUBLICAS (prefijo /api/vincular).
 
 const MAX_CUERPO = MAX_BYTES + 64 * 1024;
-const porMinuto = crearLimitador({ maximo: 5, ventanaMs: 60_000 });
+const porMinuto = crearLimitador({ maximo: 20, ventanaMs: 60_000 }); // un envío de hasta 10 facturas cabe holgado
 const porDia = crearLimitador({ maximo: 50, ventanaMs: 24 * 60 * 60 * 1000 });
 
 async function archivoDe(req: Request): Promise<{ bytes: Uint8Array; nombre: string }> {

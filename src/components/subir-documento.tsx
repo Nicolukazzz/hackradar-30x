@@ -15,7 +15,7 @@ import type { ResultadoSubida } from "@/servicios/subida";
 // Hecho a mano y no con el dropzone de @kibo-ui: ese depende de react-dropzone (dependencia nueva) y aquí
 // basta un <label> con <input type="file"> nativo, accesible por teclado, para un solo archivo.
 
-const ACEPTA = ".pdf,.png,.jpg,.jpeg,.xml,application/pdf,image/png,image/jpeg,application/xml,text/xml";
+export const ACEPTA = ".pdf,.png,.jpg,.jpeg,.xml,application/pdf,image/png,image/jpeg,application/xml,text/xml";
 
 type Estado =
   | { tipo: "inicial" }
@@ -23,7 +23,8 @@ type Estado =
   | { tipo: "listo"; nombre: string; resultado: ResultadoSubida }
   | { tipo: "error"; mensaje: string };
 
-function enviar(url: string, archivo: File, alAvanzar: (pct: number) => void): Promise<ResultadoSubida> {
+/** Sube un archivo a `url` (multipart, campo `archivo`) informando el progreso. Lanza con el mensaje del servidor. */
+export function enviarArchivo(url: string, archivo: File, alAvanzar: (pct: number) => void): Promise<ResultadoSubida> {
   return new Promise((resolver, rechazar) => {
     // XMLHttpRequest y no fetch: fetch no informa el progreso de subida.
     const xhr = new XMLHttpRequest();
@@ -67,7 +68,7 @@ export function SubirDocumento({
     if (archivo.size > MAX_BYTES) return setEstado({ tipo: "error", mensaje: "El archivo supera los 10 MB." });
     setEstado({ tipo: "subiendo", nombre: archivo.name, progreso: 0 });
     try {
-      const resultado = await enviar(url, archivo, (progreso) => setEstado({ tipo: "subiendo", nombre: archivo.name, progreso }));
+      const resultado = await enviarArchivo(url, archivo, (progreso) => setEstado({ tipo: "subiendo", nombre: archivo.name, progreso }));
       setEstado({ tipo: "listo", nombre: archivo.name, resultado });
       alTerminar?.(resultado);
     } catch (e) {
