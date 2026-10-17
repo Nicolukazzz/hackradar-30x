@@ -166,10 +166,11 @@ Archivos reales: solo en `contexto-privado/` (ignorado por git). Hallazgos anoni
 
 ## 11. Decisiones abiertas
 
-- [ ] Confirmar: el LLM lee y explica; el código decide (sección 3).
-- [ ] LLM: Gemini free principal + Groq respaldo; ¿ponemos $5 para Claude Haiku 5.5? ¿El hackathon da créditos? (sección 4).
-- [ ] Confirmar los 3 canales y el orden de construcción (sección 5).
-- [ ] Roles para la demo: ¿los 5 o solo proveedor + aprobador + tesorería?
+- [x] El LLM lee y explica; el código decide (sección 3). Aceptado en #9.
+- [x] LLM: Gemini free principal + Groq respaldo (en implementación, #4).
+- [ ] ¿Ponemos USD 5 para Claude Haiku 5.5? ¿El hackathon da créditos? (sección 4).
+- [x] 3 canales, en este orden: portal (#12) → Telegram (#13) → correo (#14). Aceptado en #9.
+- [ ] Roles para la demo. **Propuesta (#9):** Tesorero como vista principal del panel; Laura Méndez y Andrés Pardo como aprobadores con un selector "Actuar como" (sin login); Proveedor en el portal. Cuentas por pagar y Admin se ven como el mismo panel. Confirmar.
 - [x] Stack (#1): Next.js 16 + TS + Vitest + shadcn/ui, Railway + Supabase.
-- [ ] Aceptar especificación v1: R11 en vez de CUARENTENA, dataset por escenarios, dinero en centavos (ver `docs/decisiones.md`).
-- [ ] Modelo de negocio para el pitch (sección 8).
+- [x] Especificación v1: R11 en vez de CUARENTENA, dataset por escenarios, dinero en centavos. Aceptado en #9 (ver `docs/decisiones.md`).
+- [ ] Modelo de negocio para el pitch. **Propuesta (#9):** módulo dentro de Blinka ("Blinka AP Agent") cobrado por factura procesada, con la API de decisión para agentes de terceros como segunda línea (sección 8). Confirmar.
