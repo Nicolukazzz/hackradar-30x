@@ -1,16 +1,13 @@
 import { z } from "zod";
 
 import { decidir } from "@/aprobaciones/decidir";
-import { obtenerAlmacenEquipo } from "@/equipo";
-import { firmantes } from "@/equipo/servicio";
-import { EMPRESA_ID } from "@/equipo/tipos";
 import { puede } from "@/lib/auth/permisos";
 import { conSesion } from "@/lib/auth/ruta";
 import { obtenerRepositorio } from "@/repositorio";
 import { ahoraHumano } from "@/servicios/comun";
 
 import { cuerpo, error, manejar, ok } from "../../_http";
-import { aprobadorDeMiembro } from "../../_identidad";
+import { cuentasFirmantes } from "../../_identidad";
 
 // Estricto: un body con `aprobador_id` se rechaza (la identidad sale de la sesión, #25).
 const Cuerpo = z.strictObject({
@@ -32,8 +29,7 @@ export const POST = conSesion(
       if (body.agregar_a_lista && !puede(sesion, "editar_reglas")) {
         return error(403, "Solo un administrador puede agregar beneficiarios a la lista permitida. Puedes aprobar sin agregarlo.");
       }
-      const [repo, almacen] = await Promise.all([obtenerRepositorio(), obtenerAlmacenEquipo()]);
-      const cuentas = firmantes(await almacen.miembros(EMPRESA_ID)).map(aprobadorDeMiembro);
+      const [repo, cuentas] = await Promise.all([obtenerRepositorio(), cuentasFirmantes()]);
       const r = await decidir({ ref, ...body, aprobador_id: sesion.usuario_id, cuentas }, { repo, ahora: await ahoraHumano(repo) });
       return ok(r.entrada, { status: 201 });
     } catch (e) {
