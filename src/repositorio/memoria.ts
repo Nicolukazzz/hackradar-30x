@@ -7,19 +7,12 @@ import path from "node:path";
 
 import { DIR_DATA_POR_DEFECTO, type DatosComunes } from "@/dominio/cargar";
 import type { Beneficiario, DocumentoRecibido, EntradaRegistro, Reglas } from "@/dominio/tipos";
-import { cargarGolden, type DocGolden } from "@/evaluacion/escenario";
+import { cargarGolden, cargarSinDocumentos, type DocGolden } from "@/evaluacion/escenario";
+import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
 
 import type { ArchivoGuardado, EscenarioCargado, FiltroRegistro, Repositorio, ResumenVersion } from "./repositorio";
 
-const MIME: Record<string, string> = {
-  ".pdf": "application/pdf",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".eml": "message/rfc822",
-  ".txt": "text/plain; charset=utf-8",
-  ".xml": "application/xml",
-};
 
 type Estado = {
   datos: DatosComunes;
@@ -32,8 +25,21 @@ type Estado = {
   carpeta: string;
 };
 
-export async function crearRepositorioMemoria(idEscenario: string, dir: string = DIR_DATA_POR_DEFECTO): Promise<Repositorio> {
-  const g = await cargarGolden(idEscenario, dir);
+export type OpcionesMemoria = {
+  /**
+   * "pendiente" (por defecto): los documentos del escenario esperan "Procesar facturas nuevas" con sus refs reservadas.
+   * "vacio": solo historial y configuración; los documentos entran por la ingesta (#11) y toman refs nuevas.
+   */
+  lote?: "pendiente" | "vacio";
+};
+
+export async function crearRepositorioMemoria(
+  idEscenario: string,
+  dir: string = DIR_DATA_POR_DEFECTO,
+  opciones: OpcionesMemoria = {},
+): Promise<Repositorio> {
+  // "vacio" no lee ni hashea los documentos: van a entrar por la ingesta.
+  const g = opciones.lote === "vacio" ? await cargarSinDocumentos(idEscenario, dir) : await cargarGolden(idEscenario, dir);
   const datos = structuredClone(g.datos);
   const s: Estado = {
     datos,
@@ -53,7 +59,7 @@ export async function crearRepositorioMemoria(idEscenario: string, dir: string =
   // Archivo original de cada documento del escenario (lo que muestra el visor de la traza).
   for (const d of g.docs) {
     const ruta = path.join(s.carpeta, d.esperado.documento);
-    s.archivos.set(d.doc.ref_interna, { ruta, nombre: path.basename(ruta), mime: MIME[path.extname(ruta)] ?? "application/octet-stream" });
+    s.archivos.set(d.doc.ref_interna, { ruta, nombre: path.basename(ruta), mime: mimeDeArchivo(ruta) });
   }
   // Cola de escrituras: cada operación exclusiva espera a que termine la anterior.
   let cola: Promise<unknown> = Promise.resolve();
