@@ -14,4 +14,4 @@ estado=$(supabase status -o json)
 # Las versiones nuevas de la CLI dan SECRET_KEY/PUBLISHABLE_KEY; las viejas SERVICE_ROLE_KEY/ANON_KEY.
 leer() { node -e "const e=JSON.parse(process.argv[1]); const v=process.argv.slice(2).map((k)=>e[k]).find(Boolean); if(!v){console.error('falta '+process.argv.slice(2).join(' o ')+' en supabase status'); process.exit(1)} process.stdout.write(v)" "$estado" "$@"; }
 SUPABASE_PRUEBA_URL=$(leer API_URL) SUPABASE_PRUEBA_CLAVE=$(leer SECRET_KEY SERVICE_ROLE_KEY) SUPABASE_PRUEBA_PUBLICA=$(leer PUBLISHABLE_KEY ANON_KEY) \
-  npx vitest run tests/repositorio/supabase.test.ts
+  ./node_modules/.bin/vitest run tests/repositorio/supabase.test.ts

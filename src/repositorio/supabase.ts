@@ -192,15 +192,15 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
     async registro(filtro) {
       return (await registro()).filter((e) => coincideFiltro(e, filtro));
     },
-    async escenario() {
-      return escenario;
+    escenario() {
+      return Promise.resolve(escenario);
     },
     // Exclusividad dentro del proceso. Durante un deploy Railway corre el contenedor viejo y el nuevo a la vez:
     // si los dos escriben al mismo tiempo, la clave única de `registro.id` y de `reglas_versiones.version` hace
     // fallar uno (error visible, nunca una decisión duplicada ni un registro pisado).
     enExclusiva,
-    async documentosEscenario() {
-      return [...g.docs];
+    documentosEscenario() {
+      return Promise.resolve([...g.docs]);
     },
     async pendientes() {
       const guardados = await refsConDocumento();
