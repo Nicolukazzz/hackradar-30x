@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-17 — Demo en vivo: INV-2216 cobra una compra aparte, no un segundo mes (#65)
+- Estado: propuesta
+- Decisión: en `demo-en-vivo`, INV-2216 de CloudNorte cobra la **OC-122** (migración de base de datos, compra única, USD 900), una línea nueva de su acuerdo en `data/proveedores.json`, en vez de un segundo cobro de octubre de la OC-118 mensual. El modo golden lee el texto de los adjuntos (el texto blanco de ML-560 solo está en el PDF) y **falla** si un adjunto no se puede leer, en vez de seguir sin ese texto. El texto oculto (`nota_oculta`) solo se permite en documentos PDF.
+- Por qué: la versión anterior pagaba sola un segundo cobro mensual de la misma OC en el mismo mes (pasaba R2 por un día de diferencia). Aunque las reglas lo permitían, un jurado lo puede leer como pago duplicado, y un pago indebido descalifica. Con una compra distinta el paso "llega por correo y se paga solo" muestra autonomía sin ambigüedad.
+- Quién: J
+
 ## 2026-10-17 — Envío por invitación para proveedores nuevos (#28)
 - Estado: propuesta
 - Decisión: tesorería crea en `/proveedores` un enlace `/enviar/<token>` (token de 32 bytes; en la base solo su sha256, `src/equipo/token.ts` de #51) con vigencia (1–30 días, 7 por defecto), envíos máximos (1–20, 5) y correo esperado opcional; se puede revocar. Quien lo abre crea su cuenta en `/entrar` (correo confirmado con código) y sube PDF/imagen por `POST /api/enviar/:token`. **No crea membresía**: el proveedor nunca ve el panel (`/sin-permiso`). Tabla propia `invitaciones_proveedor` (no la de #51, cuyo `aceptar_invitacion` crea una membresía) con `usar_invitacion_proveedor` atómica en SQL. El archivo se valida antes de gastar un envío. El remitente lo arma el servidor: `{ tipo: 'portal', valor: 'invitacion:<id>:<correo>' }`; **R11 siempre falla** para ese prefijo y la ingesta nunca lo vincula a un beneficiario (invariante nuevo en `tests/reglas/invariantes.test.ts`, también con el remitente registrado como canal). Al aprobar con `agregar_a_lista` se vincula el correo verificado, no el remitente de invitación. El proveedor ve en el enlace el estado de lo que envió (en revisión · aprobada · no se pagará · no es factura) sin reglas ni montos; si falla R11 tampoco se le confirma que la factura ya existía (igual que `respuesta.ts`). Cambios: §3, §4.3 R11, §10, §12.

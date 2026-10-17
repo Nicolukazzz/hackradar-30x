@@ -137,8 +137,10 @@ BENEFICIARIOS = [
          ciudad="Medellín, Colombia", id_fiscal="C.C. 999.000.101 (ficticio)"),
     _ben("ben-cloudnorte", "CloudNorte S.A.S.", "CO", "hosting", "proveedor",
          _cuenta("cuenta", BANCOS["CO2"], "5530"),
-         {"tipo": "orden_compra", "referencia": "OC-118", "descripcion": "Orden de compra abierta OC-118 (mensual)",
-          "lineas": [_linea("OC-118", "Hosting y CDN mensual", ["hosting", "cdn"], c("1240.00"), "USD")]},
+         {"tipo": "orden_compra", "referencia": "OC-118", "descripcion": "Orden de compra abierta OC-118 (mensual) y OC-122 (única)",
+          "lineas": [_linea("OC-118", "Hosting y CDN mensual", ["hosting", "cdn"], c("1240.00"), "USD"),
+                     # Compra única, aparte del hosting mensual: la factura en vivo de la demo (INV-2216) la cobra.
+                     _linea("OC-122", "Migración de base de datos (única)", ["migracion", "base de datos", "database"], c("900.00"), "USD")]},
          c(3000), correos=["billing@cloudnorte.example"],
          ciudad="Bogotá, Colombia", id_fiscal="NIT 999.000.102-1 (ficticio)"),
     _ben("ben-diego-herrera", "Diego Herrera", "MX", "desarrollo", "contratista",

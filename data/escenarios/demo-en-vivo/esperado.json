@@ -36,20 +36,20 @@
     "asignado_a": null,
     "responder_antes_de": null,
     "trampa": [],
-    "motivo": "Coincide con la OC-118, cuenta registrada, dentro del límite mensual de CloudNorte.",
+    "motivo": "Compra única de la OC-122 (migración de base de datos, USD 900), aparte del hosting mensual de la OC-118 que ya se pagó en octubre; cuenta registrada y dentro del límite mensual.",
     "extraccion_esperada": {
       "es_factura": true,
       "beneficiario_nombre": "CloudNorte S.A.S.",
       "numero": "INV-2216",
       "monto_total": {
-        "centavos": 124000,
+        "centavos": 90000,
         "moneda": "USD"
       },
       "fecha_emision": "2026-10-16",
       "fecha_vencimiento": "2026-10-30",
       "cuenta_destino_ultimos4": "5530",
-      "concepto": "Hosting and CDN — additional capacity October (PO OC-118)",
-      "referencia_acuerdo": "OC-118",
+      "concepto": "Database migration — one-time (PO OC-122)",
+      "referencia_acuerdo": "OC-122",
       "idioma": "en"
     }
   },

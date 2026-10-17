@@ -45,6 +45,10 @@ def doc(n, slug, canal, formato, idioma, recibido, remitente, render, fac, esp, 
     desconocidas = set(opciones) - set(_OPCIONES_DOC)
     if desconocidas:
         raise TypeError(f"opciones de documento desconocidas: {sorted(desconocidas)}")
+    # El texto oculto solo existe en el PDF (render.pdf_factura lo dibuja en blanco). En una foto o un chat el
+    # oráculo lo pondría en texto_crudo sin que esté en el documento: el esperado diría R10 por algo invisible.
+    if fac is not None and fac.get("nota_oculta") and render not in ("pdf", EML_PDF):
+        raise ValueError(f"{slug}: nota_oculta solo se dibuja en PDF, no en '{render}'")
     return {"n": n, "slug": slug, "canal": canal, "formato": formato, "idioma": idioma, "recibido_en": recibido,
             "remitente": remitente, "render": render, "factura": fac, "esperado": esp, **_OPCIONES_DOC, **opciones}
 
@@ -375,8 +379,9 @@ DEMO_EN_VIVO = [
         mensaje="Hola, te mando la factura de desarrollo de octubre."),
     doc(2, "inv-2216", "correo", "correo", "en", _oct17("10:35:00"), CLOUDNORTE, EML_PDF,
         factura("ben-cloudnorte", "INV-2216", "2026-10-16", "2026-10-30", "USD",
-                "Hosting and CDN — additional capacity October (PO OC-118)", c("1240.00"), referencia="OC-118"),
-        esperado("PAGAR", motivo="Coincide con la OC-118, cuenta registrada, dentro del límite mensual de CloudNorte."),
+                "Database migration — one-time (PO OC-122)", c("900.00"), referencia="OC-122"),
+        esperado("PAGAR", motivo="Compra única de la OC-122 (migración de base de datos, USD 900), aparte del hosting "
+                                 "mensual de la OC-118 que ya se pagó en octubre; cuenta registrada y dentro del límite mensual."),
         asunto="Invoice INV-2216 — CloudNorte S.A.S.",
         mensaje="Hello Nébula team,\n\nPlease find attached invoice INV-2216.\n\nBest regards,\nCloudNorte Billing"),
     doc(3, "ml-560", "correo", "correo", "es", _oct17("10:40:00"),

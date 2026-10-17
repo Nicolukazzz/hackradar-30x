@@ -47,10 +47,31 @@ export async function cargarSinDocumentos(id: string, dir?: string): Promise<Esc
   return { datos, escenario, reglas: reglasVersion(datos, escenario.config.reglas_version), docs: [] };
 }
 
+/**
+ * Texto de los adjuntos de un documento del dataset, una vez por proceso (el escenario se carga en cada arranque y
+ * en cada "reiniciar demo"). Si un adjunto no se puede leer, falla: en modo golden un PDF que no se parsea perdería
+ * en silencio su texto oculto y R10 dejaría pasar una factura que debe escalar (ML-560).
+ */
+const textoAdjuntos = new Map<string, Promise<string[]>>();
+
+async function lineasDeAdjuntos(doc: DocumentoRecibido, carpeta: string): Promise<string[]> {
+  const clave = `${carpeta}:${doc.ref_interna}:${doc.sha256}`;
+  let p = textoAdjuntos.get(clave);
+  if (!p) {
+    p = (async () => {
+      const { normalizarDocumento } = await import("@/extraccion/normalizar");
+      const n = await normalizarDocumento(doc, { dirBase: carpeta });
+      if (n.errores.length > 0) throw new Error(`modo golden: no se pudo leer un adjunto de ${doc.ref_interna}: ${n.errores.join("; ")}`);
+      return n.lineas_adjuntos;
+    })();
+    textoAdjuntos.set(clave, p);
+    p.catch(() => textoAdjuntos.delete(clave)); // un error no queda cacheado
+  }
+  return p;
+}
+
 export async function cargarGolden(id: string, dir?: string): Promise<EscenarioGolden> {
   const [datos, escenario] = await Promise.all([cargarDatosComunes(dir), cargarEscenario(id, dir)]);
-  // Import dinámico: los parsers de PDF y correo solo se cargan para leer el texto de los adjuntos.
-  const { normalizarDocumento } = await import("@/extraccion/normalizar");
   const docs = await Promise.all(
     escenario.documentos.map(async (meta): Promise<DocGolden> => {
       const { archivo_original, ...entrante } = meta;
@@ -59,7 +80,7 @@ export async function cargarGolden(id: string, dir?: string): Promise<EscenarioG
       // Mismo DocumentoRecibido que produce la ingesta (#11), con la ref que espera el escenario.
       const { doc } = await recibir(entrante, esperado.ref_esperada, datos.beneficiarios, escenario.carpeta);
       // Un extractor perfecto también ve el texto de los adjuntos, aunque no se vea impreso (texto blanco, #8): R10 lo escanea.
-      const adjuntos = (await normalizarDocumento(doc, { dirBase: escenario.carpeta })).lineas_adjuntos;
+      const adjuntos = await lineasDeAdjuntos(doc, escenario.carpeta);
       const texto = [meta.asunto, meta.texto_mensaje, ...adjuntos].filter(Boolean).join("\n");
       return { doc, ext: extraccionDesdePlana(esperado.extraccion_esperada, texto), esperado };
     }),
