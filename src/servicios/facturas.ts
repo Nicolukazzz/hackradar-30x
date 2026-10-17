@@ -172,7 +172,11 @@ function lineaDeTiempo(x: {
   return linea;
 }
 
-export async function obtenerFactura(repo: Repositorio, ref: string): Promise<RespuestaFactura | null> {
+/**
+ * `cuentas`: los miembros del equipo que hoy pueden firmar (#51), los mismos que recibe `decidir()`.
+ * Sin ellos, `firmas[].cubre` solo reconoce a los aprobadores de data/aprobadores.json.
+ */
+export async function obtenerFactura(repo: Repositorio, ref: string, cuentas: readonly Aprobador[] = []): Promise<RespuestaFactura | null> {
   const [registro, datos, documento] = await Promise.all([repo.registro(), repo.datosComunes(), repo.documento(ref)]);
   const e = decisionAgente(registro, ref);
   if (!e) return null;
@@ -205,7 +209,7 @@ export async function obtenerFactura(repo: Repositorio, ref: string): Promise<Re
     observaciones: e.decision === "RECHAZADA_NO_FACTURA" ? [] : observaciones(e.monto_usd_centavos, reglas),
     instrucciones_detectadas: instrucciones,
     firmas: firmas.map((f) => {
-      const a = datos.aprobadores.find((x) => x.id === f.aprobador_id);
+      const a = [...datos.aprobadores, ...cuentas].find((x) => x.id === f.aprobador_id);
       const usd = e.monto_usd_centavos;
       return { ...f, cubre: a !== undefined && usd !== null && (a.limite_usd === null || usd <= a.limite_usd) };
     }),

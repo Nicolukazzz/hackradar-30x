@@ -33,6 +33,8 @@ export type PropsPanelDecision = {
   /** `cubre`: el límite de quien firmó primero alcanza el monto (§10) */
   firmas: { aprobador_id: string; nombre: string; cubre: boolean }[];
   actual: AprobadorCorto | null;
+  /** por qué la cuenta no puede decidir (rol sin `aprobar`, #51); se muestra en vez del panel */
+  motivoSinPermiso?: string;
   /** id del textarea, para enlazar "Decidir ahora" */
   idComentario?: string;
   className?: string;
@@ -108,7 +110,7 @@ export function PanelDecision(p: PropsPanelDecision) {
   if (!p.actual) {
     return (
       <p className={cn("rounded-xl bg-muted px-4 py-3 text-sm text-texto-3", p.className)}>
-        Tu cuenta no puede decidir sobre esta factura.
+        {p.motivoSinPermiso ?? "Tu cuenta no puede decidir sobre esta factura."}
       </p>
     );
   }

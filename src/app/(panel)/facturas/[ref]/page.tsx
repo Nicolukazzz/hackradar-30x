@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Boton, Monto, PanelDecision, PildoraDecision, Tarjeta, etiquetaCanal, fechaCorta, fechaHora, hora } from "@/app/_componentes";
 import { obtenerFactura, type RespuestaFactura } from "@/app/_datos/facturas";
 import { aprobadorDeLaCuenta } from "@/app/api/_identidad";
+import { permisoPara } from "@/lib/auth/permisos";
 import { obtenerSesion } from "@/lib/auth/sesion";
 import { cn } from "@/lib/utils";
 
@@ -94,9 +95,11 @@ async function DecisionHumana({ f }: { f: RespuestaFactura }) {
   const pendiente = f.estado === "ESCALAR";
   // Todas las decisiones humanas, también la primera de dos firmas (decision null): su comentario es parte de la traza.
   const humanas = f.decisiones_humanas;
-  // #49: toda cuenta decide como aprobador principal con su propio nombre. Con roles (#51) sale de `puede(sesion, 'aprobar')`.
+  // Roles (#51): decide solo quien tiene `aprobar`; si no, se muestra el motivo. aprobadorDeLaCuenta lanza sin rol,
+  // por eso se llama solo después de confirmar el permiso.
   const sesion = pendiente ? await obtenerSesion() : null;
-  const cuenta = sesion ? aprobadorDeLaCuenta(sesion) : null;
+  const permiso = permisoPara(sesion, "aprobar");
+  const cuenta = sesion && permiso.ok ? aprobadorDeLaCuenta(sesion) : null;
   const actual = cuenta ? { id: cuenta.id, nombre: cuenta.nombre, limite_usd: cuenta.limite_usd } : null;
 
   return (
@@ -130,7 +133,9 @@ async function DecisionHumana({ f }: { f: RespuestaFactura }) {
             factura={e.factura_numero}
             beneficiario={e.beneficiario}
             montoUsd={e.monto_usd_centavos}
-            puedeAgregarALista={e.reglas_que_fallaron.includes("R3")}
+            // Agregar a la lista permitida cambia las reglas: solo `editar_reglas` (el servidor responde 403 si no).
+            puedeAgregarALista={e.reglas_que_fallaron.includes("R3") && permisoPara(sesion, "editar_reglas").ok}
+            motivoSinPermiso={permiso.ok ? undefined : permiso.motivo}
             requiereDobleAprobacion={f.requiere_doble_aprobacion}
             firmas={f.firmas}
             actual={actual}

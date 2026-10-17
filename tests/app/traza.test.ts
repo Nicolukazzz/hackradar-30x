@@ -64,4 +64,13 @@ describe("firmas de una doble aprobación", () => {
     expect((await obtenerFactura(repo, conAndres))?.firmas).toEqual([expect.objectContaining({ aprobador_id: "ap", cubre: false })]);
     expect((await obtenerFactura(repo, conAndres))?.requiere_doble_aprobacion).toBe(true);
   });
+
+  it("reconoce también a los miembros del equipo que firman (#51), con su propio límite", async () => {
+    const repo = await repoProcesado();
+    const ref = await escaladaSintetica(repo, 1200000);
+    const sofia = { id: "u-sofia", nombre: "Sofía", rol: "Aprobadora", limite_usd: null, principal: false, iniciales: "SO" };
+    await decidir({ ref, accion: "aprobar", comentario: "Primera firma de Sofía", aprobador_id: "u-sofia", cuentas: [sofia] }, { repo, ahora: AHORA });
+    expect((await obtenerFactura(repo, ref))?.firmas[0]?.cubre).toBe(false); // sin la lista de cuentas no se la conoce
+    expect((await obtenerFactura(repo, ref, [sofia]))?.firmas[0]?.cubre).toBe(true);
+  });
 });
