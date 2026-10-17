@@ -1,10 +1,10 @@
-import { ErrorAuth, exigirSesion, MENSAJE_401, MENSAJE_403, type Sesion } from "@/lib/auth/permisos";
+import { ErrorAuth, exigirPermiso, exigirSesion, MENSAJE_401, MENSAJE_403, type Permiso, type Sesion } from "@/lib/auth/permisos";
 
-// Envoltura para route handlers: CSRF por Origin y sesión verificada. Dependencias inyectadas
+// Envoltura para route handlers: CSRF por Origin, sesión verificada y permiso del rol (#51). Dependencias inyectadas
 // para probar sin red; la versión conectada a Supabase es `conSesion` de ruta.ts.
 
 export type EventoAuditoria = {
-  tipo: "entrar" | "registro" | "salir" | "error_envio" | "401" | "403";
+  tipo: "entrar" | "registro" | "salir" | "error_envio" | "401" | "403" | "equipo";
   usuario_id: string | null;
   ruta: string;
   motivo?: string;
@@ -16,6 +16,9 @@ export type DependenciasGuardia = {
 };
 
 export type Manejador<C> = (req: Request, ctx: C, sesion: Sesion) => Promise<Response>;
+
+/** Por defecto basta con ser miembro de la empresa (`ver`); una cuenta sin membresía recibe 403. */
+export type OpcionesRuta = { permiso?: Permiso };
 
 const METODOS_SEGUROS = new Set(["GET", "HEAD", "OPTIONS"]);
 
@@ -32,7 +35,7 @@ function mismoOrigen(req: Request): boolean {
 }
 
 export function crearGuardia({ obtenerSesion, auditar }: DependenciasGuardia) {
-  function conSesion<C>(manejador: Manejador<C>) {
+  function conSesion<C>(manejador: Manejador<C>, { permiso = "ver" }: OpcionesRuta = {}) {
     // ctx opcional: las rutas sin parámetros (`/api/bandeja`) se llaman solo con la petición.
     return async (req: Request, ctx?: C): Promise<Response> => {
       const ruta = new URL(req.url).pathname;
@@ -40,7 +43,7 @@ export function crearGuardia({ obtenerSesion, auditar }: DependenciasGuardia) {
       try {
         if (!METODOS_SEGUROS.has(req.method) && !mismoOrigen(req)) throw new ErrorAuth(403);
         sesion = await obtenerSesion();
-        return await manejador(req, ctx as C, exigirSesion(sesion));
+        return await manejador(req, ctx as C, exigirPermiso(exigirSesion(sesion), permiso));
       } catch (e) {
         if (!(e instanceof ErrorAuth)) throw e;
         const evento: EventoAuditoria = { tipo: e.status === 401 ? "401" : "403", usuario_id: sesion?.usuario_id ?? null, ruta };
