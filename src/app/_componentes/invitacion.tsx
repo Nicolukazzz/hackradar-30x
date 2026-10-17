@@ -1,12 +1,11 @@
 "use client";
 
-import { CheckIcon, CopyIcon, Loader2Icon, XIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, ExternalLinkIcon, Loader2Icon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { Boton } from "./boton";
@@ -40,11 +39,20 @@ export function SelectorOpciones({ id, opciones, valor, onCambio }: { id: string
   );
 }
 
-/** Enlace recién creado (solo se ve una vez) con su resumen debajo. */
+/** Enlace recién creado (solo se ve una vez), clicable: abre en otra pestaña la pantalla que verá quien lo reciba. */
 export function EnlaceGenerado({ enlace, etiqueta, resumen }: { enlace: string; etiqueta: string; resumen: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <Input readOnly value={enlace} aria-label={etiqueta} onFocus={(e) => e.target.select()} className="h-11 font-mono text-xs" />
+      <a
+        href={enlace}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${etiqueta} (se abre en otra pestaña)`}
+        className="flex min-h-11 items-center gap-2 rounded-[10px] border border-input bg-superficie-2 px-3 py-2.5 font-mono text-xs break-all text-link underline-offset-2 transition-colors outline-none hover:bg-muted hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <span className="flex-1">{enlace}</span>
+        <ExternalLinkIcon className="size-4 flex-none" aria-hidden />
+      </a>
       <p className="text-[13px] text-muted-foreground">{resumen}</p>
     </div>
   );

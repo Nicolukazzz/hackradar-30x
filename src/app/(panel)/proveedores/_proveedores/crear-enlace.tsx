@@ -1,6 +1,6 @@
 "use client";
 
-import { LinkIcon, Loader2Icon } from "lucide-react";
+import { ExternalLinkIcon, LinkIcon, Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -76,7 +76,7 @@ export function CrearEnlace({ beneficiarios, permiso }: { beneficiarios: OpcionB
   const descripcion = {
     tipo: "El proveedor abre el enlace, escribe el correo desde el que manda sus facturas y recibe su id de conexión.",
     quien: tipo === "lista" ? "Solo aparecen los proveedores activos de la lista permitida." : "Como aparece en sus facturas. Lo verás en la lista de enlaces y en el registro.",
-    enlace: "Cópialo y pásaselo por el medio que ya usan. Por seguridad no se vuelve a mostrar. Sirve una sola vez y vence en 7 días.",
+    enlace: "Cópialo y pásaselo por el medio que ya usan; ábrelo para ver lo que verá el proveedor. Solo se gasta cuando alguien vincula un correo. Por seguridad no se vuelve a mostrar y vence en 7 días.",
   }[paso];
 
   if (!permiso.ok) {
@@ -180,6 +180,10 @@ export function CrearEnlace({ beneficiarios, permiso }: { beneficiarios: OpcionB
               <>
                 <Boton variante="secundaria" onClick={() => cambiarAbierto(false)}>
                   Listo
+                </Boton>
+                <Boton variante="secundaria" render={<a href={url ?? ""} target="_blank" rel="noopener noreferrer" />} nativeButton={false}>
+                  <ExternalLinkIcon aria-hidden />
+                  Abrir
                 </Boton>
                 <BotonCopiar enlace={url ?? ""} descripcion={`Pásaselo a ${paraQuien} por el medio que ya usan.`} />
               </>
