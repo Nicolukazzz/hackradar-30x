@@ -6,7 +6,18 @@ import { textoCrudo } from "../normalizar";
 import { ErrorLLM, validarRespuestaLlm, type ProveedorLLM } from "./contrato";
 import { mensajeUsuario, PROMPT_SISTEMA } from "./prompt";
 
-export const MODELO_GEMINI_POR_DEFECTO = "gemini-flash-latest";
+/**
+ * Modelos en orden de preferencia (#103): si uno responde 503/429/404 se prueba el siguiente. `gemini-flash-latest`
+ * pasaba días en 503 "high demand" y `gemini-2.5-*` ya no se ofrece a cuentas nuevas (probado con la llave de producción).
+ */
+export const MODELOS_GEMINI_POR_DEFECTO = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"] as const;
+export const MODELO_GEMINI_POR_DEFECTO = MODELOS_GEMINI_POR_DEFECTO[0];
+
+/** `GEMINI_MODEL` admite una lista separada por comas; vacía → los modelos por defecto. */
+export function modelosGemini(valor: string | undefined): string[] {
+  const lista = (valor ?? "").split(",").map((m) => m.trim()).filter(Boolean);
+  return lista.length > 0 ? [...new Set(lista)] : [...MODELOS_GEMINI_POR_DEFECTO];
+}
 const URL_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const TIEMPO_MAXIMO_MS = 30_000;
 

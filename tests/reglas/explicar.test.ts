@@ -63,3 +63,29 @@ describe("explicaciones (§7)", () => {
     }
   });
 });
+
+describe("#103: el LLM no respondió", () => {
+  it("la explicación dice que no se pudo leer, sin «confianza 0 %» ni «de El beneficiario»", async () => {
+    const g = await cargarGolden("lote-demo-oct");
+    const primero = g.docs[0]!;
+    const vacio = { valor: null, confianza: 0, fuente: "parser" as const };
+    const ext = {
+      ...primero.ext,
+      es_factura: vacio,
+      beneficiario_nombre: vacio,
+      numero: vacio,
+      monto_total: vacio,
+      fecha_emision: vacio,
+      fecha_vencimiento: vacio,
+      cuenta_destino_ultimos4: vacio,
+      concepto: vacio,
+      senales_llm: { instrucciones_sospechosas: [], sin_respuesta: true },
+    };
+    const l = procesarLote([{ doc: primero.doc, ext }], { datos: g.datos, reglas: g.reglas, historial: g.escenario.historial, ahora: g.escenario.config.ahora });
+    const e = l.entradas[0]!;
+    expect(e.decision).toBe("ESCALAR");
+    expect(e.explicacion).toContain("el agente no pudo leer el documento porque el servicio de lectura no respondió");
+    expect(e.explicacion).not.toContain("El beneficiario");
+    expect(e.explicacion).not.toContain("0%");
+  });
+});

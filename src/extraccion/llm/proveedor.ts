@@ -6,7 +6,7 @@ import type { ProveedorLlm } from "@/dominio/tipos";
 
 import { crearAnthropic } from "./anthropic";
 import { ErrorLLM, type ProveedorLLM } from "./contrato";
-import { crearGemini } from "./gemini";
+import { crearGemini, modelosGemini } from "./gemini";
 import { crearGroq } from "./groq";
 import { ninguno } from "./ninguno";
 
@@ -43,7 +43,10 @@ export function conReintento(p: ProveedorLLM, { intentos = 2, esperaMs = 2000, e
   };
 }
 
-/** Prueba cada proveedor en orden; el primero que responda (aunque sea con algo descartado) gana. */
+/**
+ * Prueba cada proveedor en orden; el primero que responda (aunque sea con algo descartado) gana. Si todos fallan, el
+ * parcial lleva `sin_respuesta` (#103): la traza dice que el servicio de lectura no respondió, no "confianza 0 %".
+ */
 export function cadena(proveedores: ProveedorLLM[], alFallar: (e: unknown) => void = registrarFallo): ProveedorLLM {
   if (proveedores.length === 0) return ninguno;
   return {
@@ -57,7 +60,7 @@ export function cadena(proveedores: ProveedorLLM[], alFallar: (e: unknown) => vo
           alFallar(e);
         }
       }
-      return ninguno.extraer(doc, faltantes);
+      return { ...(await ninguno.extraer(doc, faltantes)), sin_respuesta: true };
     },
   };
 }
@@ -83,7 +86,11 @@ export function proveedorDesdeEntorno(env: Entorno = process.env, alFallar?: (e:
   const elegido = (env.LLM_PROVIDER ?? "gemini").trim().toLowerCase();
   if (elegido === "ninguno") return ninguno;
   const disponibles: Partial<Record<ProveedorLlm, () => ProveedorLLM>> = {};
-  if (env.GEMINI_API_KEY) disponibles.gemini = () => conReintento(crearGemini({ apiKey: env.GEMINI_API_KEY ?? "", modelo: env.GEMINI_MODEL }));
+  if (env.GEMINI_API_KEY) {
+    // Un modelo saturado (503) o retirado (404) no deja la factura sin leer: se prueba el siguiente de la lista.
+    const modelos = modelosGemini(env.GEMINI_MODEL).map((modelo) => conReintento(crearGemini({ apiKey: env.GEMINI_API_KEY ?? "", modelo })));
+    disponibles.gemini = () => (modelos.length === 1 ? modelos[0]! : cadena(modelos, alFallar));
+  }
   if (env.GROQ_API_KEY) disponibles.groq = () => conReintento(crearGroq({ apiKey: env.GROQ_API_KEY ?? "", modelo: env.GROQ_MODEL }));
   if (env.ANTHROPIC_API_KEY) disponibles.anthropic = () => conReintento(crearAnthropic({ apiKey: env.ANTHROPIC_API_KEY ?? "", modelo: env.ANTHROPIC_MODEL }));
   const orden: ProveedorLlm[] = ["gemini", "groq", "anthropic"];

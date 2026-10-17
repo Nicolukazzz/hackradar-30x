@@ -66,9 +66,14 @@ function fraseDuplicado({ d, x, nombre }: Frase): string {
   return `${nombre} ya envió la factura ${previa} y quedó escalada ${momento}, pendiente de aprobación. No se paga dos veces.`;
 }
 
+const SIN_NOMBRE = "El beneficiario";
+
 /** Una frase por regla que falla (§7). */
 const FRASES: Record<IdRegla, (f: Frase) => string> = {
-  R1: ({ e, de }) => `el agente no está seguro de lo que leyó en la factura${de} (${e.comparacion}). Una persona debe confirmar los datos.`,
+  R1: ({ e, d, de }) =>
+    d.lectura === "sin_respuesta"
+      ? `el agente no pudo leer el documento${de} porque el servicio de lectura no respondió. Una persona debe revisarlo o pedir que se reenvíe.`
+      : `el agente no está seguro de lo que leyó en la factura${de} (${e.comparacion}). Una persona debe confirmar los datos.`,
   R2: fraseDuplicado,
   R3: ({ nombre }) => `${nombre} no está en la lista de beneficiarios permitidos.`,
   R4: ({ d, nombre }) =>
@@ -101,7 +106,8 @@ function fraseRegla(e: EvaluacionRegla, x: EntradaExplicacion, nombre: string, n
     if (e.id === "R5") return `no se pudo asociar la factura a lo acordado con ${nombre} (${texto(d.motivo)}).`;
     return `no se pudo evaluar «${e.nombre}» (${e.comparacion}).`;
   }
-  const de = nombrado ? "" : " de " + nombre;
+  // Sin nombre legible no se escribe "la factura de El beneficiario".
+  const de = nombrado || nombre === SIN_NOMBRE ? "" : " de " + nombre;
   const monto = x.monto_usd_centavos === null ? "el monto" : usd(x.monto_usd_centavos);
   const sujeto = nombrado ? monto : "la factura" + de + " (" + monto + ")";
   return FRASES[e.id]({ e, d, x, nombre, de, monto, sujeto });
@@ -126,7 +132,7 @@ function explicarPago(x: EntradaExplicacion, nombre: string): string {
 }
 
 export function explicar(x: EntradaExplicacion): string {
-  const nombre = x.beneficiario?.nombre ?? x.ext.beneficiario_nombre.valor ?? "El beneficiario";
+  const nombre = x.beneficiario?.nombre ?? x.ext.beneficiario_nombre.valor ?? SIN_NOMBRE;
   if (x.decision === "PAGAR") return explicarPago(x, nombre);
   if (x.decision === "RECHAZADA_NO_FACTURA") {
     return `Rechazada: el documento no es una factura (confianza ${Math.floor(x.ext.es_factura.confianza * 100)}%); no entra a las reglas de pago.`;
@@ -139,7 +145,11 @@ export function explicar(x: EntradaExplicacion): string {
   // Reenvío interno (carga manual, empleado de Nébula): R11 falla solo porque falló R3; sería repetir la misma causa.
   const r3Falla = fallas.some((e) => e.id === "R3" && e.resultado === "FALLA");
   const interno = x.doc.remitente.tipo === "interno";
-  const unidas = [...frenan, ...resto].filter((e) => !(e.id === "R11" && e.resultado === "FALLA" && interno && r3Falla));
+  // LLM sin respuesta y sin nombre legible (#103): R3 y R11 fallan solo porque no se leyó nada; la traza las conserva.
+  const sinLectura = nombre === SIN_NOMBRE && fallas.some((e) => e.id === "R1" && e.datos.lectura === "sin_respuesta");
+  const unidas = [...frenan, ...resto].filter(
+    (e) => !(e.id === "R11" && e.resultado === "FALLA" && interno && r3Falla) && !(sinLectura && (e.id === "R3" || e.id === "R11")),
+  );
   for (const e of unidas) frases.push(fraseRegla(e, x, nombre, frases.some((f) => f.includes(nombre))));
   const prefijo = x.decision === "FRENAR" ? "Frenada" : "Escalada";
   if (frases.length === 0) return `${prefijo}: no se cumplieron las condiciones mínimas para pagar automáticamente.`;

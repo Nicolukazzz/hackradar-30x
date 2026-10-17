@@ -204,7 +204,7 @@ export const ExtraccionSchema = z.strictObject({
   hito_numero: campo(z.int().positive()).optional(),
   idioma,
   texto_crudo: z.string(),
-  senales_llm: z.strictObject({ instrucciones_sospechosas: z.array(z.string()) }),
+  senales_llm: z.strictObject({ instrucciones_sospechosas: z.array(z.string()), sin_respuesta: z.boolean().optional() }),
   proveedor_llm: z.enum(["ninguno", "gemini", "groq", "anthropic"]),
 }) satisfies z.ZodType<Extraccion>;
 
