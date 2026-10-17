@@ -2,6 +2,7 @@
 // Nunca modifica la entrada del agente: agrega una DECISION_HUMANA que apunta a ella.
 // Sin reloj: `ahora` llega inyectado.
 
+import { correoDeInvitacion, esRemitenteInvitacion } from "@/dominio/remitente";
 import { formatearUsd } from "@/dominio/dinero";
 import type { Aprobador, Beneficiario, EntradaRegistro } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
@@ -138,7 +139,9 @@ function resolverAprobacion(v: Validado, usd: number, dobleDesde: number, aproba
     if (!cubre(aprobador, usd)) throw new ErrorDecision(403, `Supera tu límite de aprobación (${limite}). Pídele a un aprobador con límite suficiente que la apruebe.`);
     return { parcial: false, explicacion: `Aprobada por ${aprobador.nombre}: «${comentario}».` };
   }
-  const primera = firmas[0];
+  // Solo cuentan las firmas de quienes hoy pueden aprobar (#51): la de una cuenta a la que le quitaron el rol se
+  // ignora, y la factura vuelve a necesitar dos firmas vigentes.
+  const primera = firmas.find((f) => aprobadores.some((a) => a.id === f.aprobador_id));
   if (!primera) {
     // Primera firma: puede ser de control (sin límite suficiente) si la segunda sí lo tiene (§10).
     return { parcial: true, explicacion: `Primera aprobación (1 de 2) por ${aprobador.nombre}: «${comentario}». Falta una segunda firma.` };
@@ -209,6 +212,9 @@ function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnTyp
   const ultimos4 = origen.extraccion?.cuenta_destino_ultimos4.valor ?? null;
   if (!nombre || !ultimos4) throw new ErrorDecision(400, "Sin nombre o cuenta confiables en la factura no se puede agregar a la lista.");
   const rem = documento?.remitente;
+  // Enlace de invitación (#28): se vincula el correo verificado de quien envió (sus próximas facturas por correo
+  // pasan R11), nunca el remitente `invitacion:*`, que seguiría sin verificar a nadie.
+  const correoInvitacion = rem ? correoDeInvitacion(rem.valor) : null;
   return {
     id: `ben-${slug(nombre)}`,
     nombre,
@@ -220,9 +226,9 @@ function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnTyp
     limite_mensual_usd: null,
     estado: "activo",
     canales: {
-      correos: rem?.tipo === "correo" ? [rem.valor] : [],
+      correos: correoInvitacion ? [correoInvitacion] : rem?.tipo === "correo" ? [rem.valor] : [],
       telegram_chat_id: rem?.tipo === "telegram" ? rem.valor : null,
-      portal_usuario: rem?.tipo === "portal" ? rem.valor : null,
+      portal_usuario: rem?.tipo === "portal" && !correoInvitacion && !esRemitenteInvitacion(rem.valor) ? rem.valor : null,
     },
   };
 }

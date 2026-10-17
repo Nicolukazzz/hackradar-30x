@@ -1,6 +1,7 @@
 // Explicaciones en lenguaje natural (especificación §7). Salen de las evaluaciones, nunca del LLM.
 // Orden: primero lo que frena, después lo que escala; dentro de cada grupo, R1 → R11. Se unen con "Además,".
 
+import { correoDeInvitacion, esRemitenteInvitacion } from "@/dominio/remitente";
 import { formatear, formatearUsd, porcentaje } from "@/dominio/dinero";
 import type { Beneficiario, DecisionAgente, DocumentoRecibido, EvaluacionRegla, Extraccion, IdRegla, Reglas } from "@/dominio/tipos";
 
@@ -84,9 +85,12 @@ const FRASES: Record<IdRegla, (f: Frase) => string> = {
   R9: ({ d, sujeto }) => `${sujeto} supera el límite de pago automático de ${usd(numero(d.limite_usd))}.`,
   R10: ({ d, x, de }) => `el ${CANAL[x.doc.canal]}${de} traía instrucciones para el agente («${texto(d.frase ?? d.fragmento)}»); se ignoraron.`,
   R11: ({ x, nombre }) => {
+    const v = x.doc.remitente.valor;
+    // Enlace de invitación (#28): se nombra el correo verificado, no el id interno de la invitación.
+    const quien = esRemitenteInvitacion(v) ? `enlace de invitación, ${correoDeInvitacion(v) ?? "correo sin verificar"}` : v;
     // Beneficiario fuera de la lista (R3 ya lo dijo): basta con decir que el remitente tampoco es conocido.
-    if (!x.beneficiario) return `el remitente (${x.doc.remitente.valor}) tampoco está vinculado.`;
-    return `el remitente (${x.doc.remitente.valor}) no está vinculado a ${nombre}.`;
+    if (!x.beneficiario) return `el remitente (${quien}) tampoco está vinculado.`;
+    return `el remitente (${quien}) no está vinculado a ${nombre}.`;
   },
 };
 

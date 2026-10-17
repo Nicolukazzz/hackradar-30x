@@ -130,12 +130,12 @@ describe("miembros", () => {
     const { almacen, nueva } = preparar();
     const beto = nueva("u-beto");
     almacen.agregarMiembro(EMPRESA_ID, beto.usuario_id, "tesoreria");
-    expect(await cambiarMiembro(almacen, "u-beto", { rol: "aprobador", limite_aprobacion_usd: 300000 })).toMatchObject({ rol: "aprobador", limite_aprobacion_usd: 300000 });
-    await falla(cambiarMiembro(almacen, "u-admin", { rol: "aprobador" }), 409, "al menos un administrador");
+    expect(await cambiarMiembro(almacen, "u-beto", { rol: "aprobador", limite_aprobacion_usd: 300000 }, AHORA)).toMatchObject({ rol: "aprobador", limite_aprobacion_usd: 300000 });
+    await falla(cambiarMiembro(almacen, "u-admin", { rol: "aprobador" }, AHORA), 409, "al menos un administrador");
     await falla(quitarMiembro(almacen, "u-admin"), 409);
-    await falla(cambiarMiembro(almacen, "u-beto", { rol: "superadmin" }), 400);
-    await falla(cambiarMiembro(almacen, "u-nadie", { rol: "admin" }), 404);
-    await cambiarMiembro(almacen, "u-beto", { rol: "admin" });
+    await falla(cambiarMiembro(almacen, "u-beto", { rol: "superadmin" }, AHORA), 400);
+    await falla(cambiarMiembro(almacen, "u-nadie", { rol: "admin" }, AHORA), 404);
+    await cambiarMiembro(almacen, "u-beto", { rol: "admin" }, AHORA);
     await quitarMiembro(almacen, "u-admin");
     expect((await almacen.miembros(EMPRESA_ID)).map((m) => [m.usuario_id, m.rol])).toEqual([["u-beto", "admin"]]);
   });

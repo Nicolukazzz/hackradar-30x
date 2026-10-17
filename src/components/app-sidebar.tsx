@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheckIcon, InboxIcon, ListIcon, LogOutIcon, ShieldCheckIcon, SlidersHorizontalIcon, UsersIcon } from "lucide-react";
+import { CircleCheckIcon, InboxIcon, ListIcon, LogOutIcon, SendIcon, ShieldCheckIcon, SlidersHorizontalIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense, use } from "react";
 import { usePathname } from "next/navigation";
@@ -27,6 +27,7 @@ const navegacion = [
   { titulo: "Aprobaciones", href: "/aprobaciones", icono: CircleCheckIcon },
   { titulo: "Reglas", href: "/reglas", icono: SlidersHorizontalIcon },
   { titulo: "Registro", href: "/registro", icono: ListIcon },
+  { titulo: "Proveedores nuevos", href: "/proveedores", icono: SendIcon },
 ] as const;
 
 /** Solo administradores (#51). */

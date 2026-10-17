@@ -5,6 +5,10 @@
 export const PAGINAS_PUBLICAS = ["/entrar", "/sin-permiso"] as const;
 
 /**
+ * Rutas de API que no pasan por `conSesion` (verifican por su cuenta). `/api/enviar/<token>` (#28): quien sube no es
+ * miembro de la empresa, pero la ruta exige sesión, mismo origen y un enlace de invitación válido.
+ */
+export const API_PUBLICAS: readonly string[] = ["/api/enviar"];
  * Rutas de API sin sesión de usuario (webhooks de canales con su propia verificación). Telegram (#13): cabecera
  * X-Telegram-Bot-Api-Secret-Token.
  */

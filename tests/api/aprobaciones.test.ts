@@ -208,15 +208,16 @@ describe("POST /api/aprobaciones/:ref — roles (#51)", () => {
     expect((await firmar(ref, "Segunda firma de control")).cuerpo.decision).toBe("APROBADA_HUMANO");
   });
 
-  it("doble firma: si quien firmó primero perdió el rol, su firma ya no cubre el monto", async () => {
+  it("doble firma: si quien firmó primero perdió el rol, su firma ya no cuenta (ni para cubrir el monto ni como una de las dos)", async () => {
     const repo = await repoProcesado();
     const ref = await escaladaSintetica(repo, 1_200_000);
     comoCuenta("Otro Admin", "admin");
     expect((await firmar(ref, "Primera firma, cubre el monto")).cuerpo.decision).toBeNull();
-    await equipoActual().cambiarMiembro(EMPRESA_ID, "u-otro-admin", "tesoreria", null);
+    await equipoActual().cambiarMiembro(EMPRESA_ID, "u-otro-admin", "tesoreria", null, AHORA);
+    // Ana (admin vigente) firma: pasa a ser la primera firma válida, no la segunda.
+    comoSesion(CUENTA);
+    expect((await firmar(ref, "Firma vigente, cubre el monto")).cuerpo.decision).toBeNull();
     comoCuenta("Andrea Paz", "aprobador", 500_000);
-    const r = await firmar(ref, "Segunda firma de control");
-    expect(r.status).toBe(403);
-    expect(r.cuerpo.error).toContain("la primera firma tampoco lo cubre");
+    expect((await firmar(ref, "Segunda firma de control")).cuerpo.decision).toBe("APROBADA_HUMANO");
   });
 });

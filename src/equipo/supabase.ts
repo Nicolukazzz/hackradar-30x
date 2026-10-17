@@ -57,15 +57,17 @@ export function crearAlmacenEquipoSupabase(config: { url: string; claveSecreta: 
         .map(({ creada_en, correo, ...m }) => ({ ...m, correo: correo ?? "", desde: creada_en }));
     },
 
-    async invitaciones(empresa_id): Promise<Invitacion[]> {
-      const { data, error } = await db
-        .from("invitaciones")
-        .select(COLUMNAS_INVITACION)
-        .eq("empresa_id", empresa_id)
-        .order("creada_en", { ascending: false })
-        .limit(50);
-      if (error) fallar(error, "invitaciones");
-      return z.array(FilaInvitacion).parse(data);
+    async invitaciones(empresa_id, ahora): Promise<Invitacion[]> {
+      // Las vigentes van siempre (vencen en ≤ 30 días, son pocas): una invitación activa que no se ve no se puede revocar.
+      const base = () => db.from("invitaciones").select(COLUMNAS_INVITACION).eq("empresa_id", empresa_id);
+      const [vigentes, recientes] = await Promise.all([
+        base().is("revocada_en", null).gt("expira_en", new Date(Date.parse(ahora)).toISOString()),
+        base().order("creada_en", { ascending: false }).limit(50),
+      ]);
+      if (vigentes.error) fallar(vigentes.error, "invitaciones");
+      if (recientes.error) fallar(recientes.error, "invitaciones");
+      const porId = new Map(z.array(FilaInvitacion).parse([...vigentes.data, ...recientes.data]).map((i) => [i.id, i]));
+      return [...porId.values()].sort((a, b) => Date.parse(b.creada_en) - Date.parse(a.creada_en));
     },
 
     async invitacionPorHash(empresa_id, token_hash) {
@@ -107,10 +109,10 @@ export function crearAlmacenEquipoSupabase(config: { url: string; claveSecreta: 
       return Resultado.parse(data);
     },
 
-    async cambiarMiembro(empresa_id, usuario_id, rol: Rol, limite_aprobacion_usd) {
+    async cambiarMiembro(empresa_id, usuario_id, rol: Rol, limite_aprobacion_usd, ahora) {
       const { error } = await db
         .from("membresias")
-        .update({ rol, limite_aprobacion_usd, actualizada_en: new Date().toISOString() })
+        .update({ rol, limite_aprobacion_usd, actualizada_en: new Date(Date.parse(ahora)).toISOString() })
         .eq("empresa_id", empresa_id)
         .eq("usuario_id", usuario_id);
       if (error) fallar(error, "cambiar miembro");

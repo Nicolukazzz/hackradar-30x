@@ -1,15 +1,15 @@
 "use client";
 
-import { CheckIcon, CopyIcon, Loader2Icon, UserPlusIcon } from "lucide-react";
+import { Loader2Icon, UserPlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Boton } from "@/app/_componentes";
+import { BotonCopiar, EnlaceGenerado, SelectorOpciones, VIGENCIAS } from "@/app/_componentes/invitacion";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NOMBRE_ROL, type Rol } from "@/lib/auth/permisos";
 
 import { llamar, usdACentavos } from "./api";
@@ -17,13 +17,6 @@ import { ElegirRol } from "./elegir-rol";
 
 // "Invitar persona" (#51), en 3 pasos: rol → detalles (máx. 3 campos) → enlace para copiar. El enlace lleva el
 // token en claro y solo existe en esta respuesta: se avisa que se copie ahora.
-
-const VIGENCIAS = [
-  { value: "1", label: "1 día" },
-  { value: "7", label: "7 días" },
-  { value: "14", label: "14 días" },
-  { value: "30", label: "30 días" },
-];
 
 type Paso = "rol" | "detalles" | "enlace";
 
@@ -36,7 +29,6 @@ export function Invitar() {
   const [correo, setCorreo] = useState("");
   const [dias, setDias] = useState("7");
   const [enlace, setEnlace] = useState<string | null>(null);
-  const [copiado, setCopiado] = useState(false);
   const [ocupado, iniciar] = useTransition();
 
   const centavos = rol === "aprobador" ? usdACentavos(limite) : null;
@@ -49,7 +41,6 @@ export function Invitar() {
     setCorreo("");
     setDias("7");
     setEnlace(null);
-    setCopiado(false);
   }
 
   function cambiarAbierto(a: boolean) {
@@ -75,17 +66,6 @@ export function Invitar() {
         toast.error("No se creó la invitación", { description: e instanceof Error ? e.message : undefined });
       }
     });
-  }
-
-  async function copiar() {
-    if (!enlace) return;
-    try {
-      await navigator.clipboard.writeText(enlace);
-      setCopiado(true);
-      toast.success("Enlace copiado", { description: "Envíaselo a la persona por el medio que prefieras." });
-    } catch {
-      toast.error("No se pudo copiar", { description: "Selecciona el enlace y cópialo a mano." });
-    }
   }
 
   return (
@@ -136,31 +116,23 @@ export function Invitar() {
               </Field>
               <Field>
                 <FieldLabel htmlFor="vigencia">Vence en</FieldLabel>
-                <Select items={VIGENCIAS} value={dias} onValueChange={(v) => v && setDias(v)}>
-                  <SelectTrigger id="vigencia" className="w-full data-[size=default]:h-11">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VIGENCIAS.map((v) => (
-                      <SelectItem key={v.value} value={v.value}>
-                        {v.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SelectorOpciones id="vigencia" opciones={VIGENCIAS} valor={dias} onCambio={setDias} />
               </Field>
             </FieldGroup>
           ) : null}
 
           {paso === "enlace" && enlace ? (
-            <div className="flex flex-col gap-2">
-              <Input readOnly value={enlace} aria-label="Enlace de invitación" onFocus={(e) => e.target.select()} className="h-11 font-mono text-xs" />
-              <p className="text-[13px] text-muted-foreground">
-                {NOMBRE_ROL[rol]}
-                {rol === "aprobador" ? (centavos === null ? " · sin límite" : ` · hasta USD ${limite}`) : ""} · vence en {VIGENCIAS.find((v) => v.value === dias)?.label}
-                {correo.trim() ? ` · solo ${correo.trim().toLowerCase()}` : ""}
-              </p>
-            </div>
+            <EnlaceGenerado
+              enlace={enlace}
+              etiqueta="Enlace de invitación"
+              resumen={
+                <>
+                  {NOMBRE_ROL[rol]}
+                  {rol === "aprobador" ? (centavos === null ? " · sin límite" : ` · hasta USD ${limite}`) : ""} · vence en {VIGENCIAS.find((v) => v.value === dias)?.label}
+                  {correo.trim() ? ` · solo ${correo.trim().toLowerCase()}` : ""}
+                </>
+              }
+            />
           ) : null}
 
           <DialogFooter className="-mx-6 -mb-6 px-6">
@@ -185,10 +157,7 @@ export function Invitar() {
                 <Boton variante="secundaria" onClick={() => cambiarAbierto(false)}>
                   Listo
                 </Boton>
-                <Boton variante="primaria" onClick={copiar}>
-                  {copiado ? <CheckIcon aria-hidden /> : <CopyIcon aria-hidden />}
-                  {copiado ? "Copiado" : "Copiar enlace"}
-                </Boton>
+                <BotonCopiar enlace={enlace ?? ""} descripcion="Envíaselo a la persona por el medio que prefieras." />
               </>
             ) : null}
           </DialogFooter>

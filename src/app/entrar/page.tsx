@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { FormularioEntrar } from "@/app/entrar/formulario-entrar";
 import { obtenerSesion } from "@/lib/auth/sesion";
 
-export const metadata: Metadata = { title: "Entrar · Agente de cuentas por pagar" };
+// no-referrer: la URL puede traer `siguiente=/unirse/<token>` (invitación); no se manda a ningún otro sitio.
+export const metadata: Metadata = { title: "Entrar · Agente de cuentas por pagar", referrer: "no-referrer" };
 
 export default async function PaginaEntrar({ searchParams }: PageProps<"/entrar">) {
   const sesion = await obtenerSesion();

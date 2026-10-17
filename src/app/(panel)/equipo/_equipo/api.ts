@@ -1,3 +1,5 @@
+import { aCentavos } from "@/dominio/dinero";
+
 // Llamadas del navegador a /api/equipo (#51). Un error del servidor llega como { error } legible; un 502 del
 // proxy o una página de error de Next no traen JSON: no mostrar "Unexpected token <".
 
@@ -17,5 +19,5 @@ export function usdACentavos(texto: string): number | null {
   const limpio = texto.replaceAll(/[\s$USD]/gi, "");
   if (!limpio) return null;
   if (!/^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+(,\d{1,2})?$/.test(limpio)) return Number.NaN;
-  return Math.round(Number(limpio.replaceAll(".", "").replace(",", ".")) * 100);
+  return aCentavos(limpio.replaceAll(".", "").replace(",", "."));
 }

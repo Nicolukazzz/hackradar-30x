@@ -8,9 +8,12 @@
 import { obtenerRepositorio } from "@/repositorio";
 import { obtenerAprobaciones as servicio, type OrdenAprobaciones, type RespuestaAprobaciones } from "@/servicios/aprobaciones";
 
+import { exigirMiembro } from "./sesion";
+
 export type { RespuestaAprobaciones, TarjetaAprobacion } from "@/servicios/aprobaciones";
 
 export async function obtenerAprobaciones(orden?: OrdenAprobaciones): Promise<RespuestaAprobaciones> {
+  await exigirMiembro();
   return servicio(await obtenerRepositorio(), orden);
 }
 
