@@ -1,32 +1,37 @@
-// Enlaces de proveedor (#85): la empresa crea un enlace de un solo uso y se lo pasa al proveedor por el medio que ya
-// usan (WhatsApp, llamada, correo propio). Quien lo abre escribe el correo desde el que manda sus facturas y recibe un
-// id de conexión. Para un beneficiario de la lista, ese correo queda vinculado (R11 cumple); para un proveedor nuevo
-// solo queda registrado: sus facturas se escalan (R3) hasta que una persona lo agregue. La app no envía correos.
+// Portal del proveedor (#85). El admin crea un enlace para un proveedor con su nombre, su correo y un código de 8
+// caracteres, y se lo pasa por el medio que ya usan (la app no envía correos). El proveedor abre el enlace, escribe
+// ese correo y ese código, y si coinciden entra a «Ingrese sus facturas» para subir PDF o fotos. Lo que sube entra
+// por la ingesta única con remitente `{ tipo: 'correo', valor: <correo del enlace> }`: R11 cumple solo si ese correo
+// ya es canal del beneficiario que nombra la factura; un proveedor nuevo escala (R3, R11) hasta que alguien lo agregue.
 
 export type EnlaceProveedor = {
   id: string;
-  /** beneficiario de la lista; null = proveedor nuevo */
-  beneficiario_id: string | null;
-  /** nombre del beneficiario o el que escribió quien creó el enlace */
   nombre: string;
+  /** el correo que escribió el admin; el proveedor debe escribir el mismo */
+  correo: string;
+  /** beneficiario de la lista que ya tenía ese correo al crear el enlace; null = proveedor nuevo */
+  beneficiario_id: string | null;
   creado_por: string | null;
   creado_en: string;
   expira_en: string;
   revocado_en: string | null;
-  usado_en: string | null;
-  /** correo que vinculó el proveedor (solo después de usarlo) */
-  correo: string | null;
-  /** id de conexión empresa ↔ proveedor (solo después de usarlo), p. ej. PRV-7K3Q-M2XD */
-  conexion_id: string | null;
+  codigo_cambiado_en: string | null;
+  ultimo_acceso: string | null;
 };
 
-export type EstadoEnlace = "activo" | "usado" | "vencido" | "revocado";
+/** Con el hash del código: solo para verificar en el servidor, nunca sale hacia la pantalla. */
+export type EnlaceConCodigo = EnlaceProveedor & { codigo_hash: string };
 
-export type NuevoEnlace = Pick<EnlaceProveedor, "beneficiario_id" | "nombre" | "creado_por" | "creado_en" | "expira_en"> & { token_hash: string };
+export type EstadoEnlace = "activo" | "vencido" | "revocado";
+
+export type NuevoEnlace = Pick<EnlaceProveedor, "nombre" | "correo" | "beneficiario_id" | "creado_por" | "creado_en" | "expira_en"> & {
+  token_hash: string;
+  codigo_hash: string;
+};
 
 export class ErrorVinculo extends Error {
   constructor(
-    readonly estado: 400 | 403 | 404 | 409,
+    readonly estado: 400 | 401 | 403 | 404 | 409 | 429,
     mensaje: string,
   ) {
     super(mensaje);
@@ -34,8 +39,13 @@ export class ErrorVinculo extends Error {
   }
 }
 
-/** Mismo texto para inexistente, vencido, usado o revocado: no se dice cuál. */
-export const MENSAJE_INVALIDO = "Este enlace ya no sirve: venció, ya se usó o lo revocaron. Pide uno nuevo a tu contacto en la empresa.";
+/** El código ya lo tiene otro enlace (muy raro): se genera otro. */
+export class ErrorCodigoRepetido extends Error {}
 
-/** Mismo texto si el correo es de otro proveedor: no se confirma de quién es. */
-export const MENSAJE_CORREO_OCUPADO = "No se pudo vincular este correo. Usa otro o escríbele a tu contacto en la empresa.";
+/** Mismo texto para inexistente, vencido o revocado: no se dice cuál. */
+export const MENSAJE_INVALIDO = "Este enlace ya no sirve: venció o lo revocaron. Pide uno nuevo a tu contacto en la empresa.";
+
+/** Mismo texto si falla el correo, el código o los dos: no se dice cuál. */
+export const MENSAJE_NO_COINCIDE = "El correo o el código no coinciden. Revisa los datos que te pasó la empresa.";
+
+export const MENSAJE_SIN_ACCESO = "Tu acceso venció. Vuelve a escribir tu correo y tu código.";

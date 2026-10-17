@@ -17,7 +17,7 @@ import { cargarGolden } from "@/evaluacion/escenario";
 import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
 
-import { coincideFiltro, conVinculosCorreo, conVinculosTelegram, crearCola, duenoDelCorreo, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
+import { coincideFiltro, conVinculosTelegram, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
 import type { Repositorio, ResumenVersion } from "./repositorio";
 
 export type ConfigSupabase = { url: string; claveSecreta: string; escenario: string; dir?: string };
@@ -95,16 +95,9 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
     return new Map((data ?? []).map((r) => [r.beneficiario_id as string, r.chat_id as string]));
   }
 
-  /** correo → beneficiario_id (#85). */
-  async function vinculosCorreo(): Promise<Map<string, string>> {
-    const { data, error } = await db.from("vinculos_correo").select("correo, beneficiario_id");
-    fallar("leer correos vinculados", error);
-    return new Map((data ?? []).map((r) => [r.correo as string, r.beneficiario_id as string]));
-  }
-
   async function beneficiarios(): Promise<Beneficiario[]> {
-    const [extra, telegram, correos] = await Promise.all([agregados(), vinculosTelegram(), vinculosCorreo()]);
-    return conVinculosCorreo(conVinculosTelegram([...g.datos.beneficiarios, ...extra], telegram), correos);
+    const [extra, telegram] = await Promise.all([agregados(), vinculosTelegram()]);
+    return conVinculosTelegram([...g.datos.beneficiarios, ...extra], telegram);
   }
 
   async function registro(): Promise<EntradaRegistro[]> {
@@ -170,18 +163,6 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
       // Atómico en la base: borra el vínculo anterior del chat y del beneficiario e inserta el nuevo.
       const { error } = await db.rpc("vincular_telegram", { p_beneficiario: beneficiario_id, p_chat: chat_id });
       fallar("vincular Telegram", error);
-    },
-    async vincularCorreo(beneficiario_id, correo) {
-      const c = correo.trim().toLowerCase();
-      const bs = await beneficiarios();
-      if (!bs.some((b) => b.id === beneficiario_id)) throw new Error(`no existe el beneficiario ${beneficiario_id}`);
-      const dueno = duenoDelCorreo(bs, c);
-      if (dueno && dueno.id !== beneficiario_id) throw new Error(`el correo ${c} ya está vinculado a otro beneficiario`);
-      if (dueno) return;
-      // La clave primaria es el correo: dos enlaces a la vez no lo dejan en dos beneficiarios.
-      const { error } = await db.from("vinculos_correo").insert({ correo: c, beneficiario_id });
-      if (error?.code === "23505") throw new Error(`el correo ${c} ya está vinculado a otro beneficiario`);
-      fallar("vincular correo", error);
     },
     async guardarArchivo(ref, archivo) {
       const corrida = await db.rpc("corrida_vigente");
