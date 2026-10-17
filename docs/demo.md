@@ -5,11 +5,13 @@ Facturas en vivo: `data/escenarios/demo-en-vivo/documentos/` (PDF en `adjuntos/`
 
 ## Antes de presentar (una vez)
 
-1. Producción con `REPOSITORIO=supabase`, `DEMO=1`, `GEMINI_API_KEY` (lee la foto) y las migraciones aplicadas.
-2. Reiniciar la demo y **Procesar facturas nuevas** en la Bandeja: carga el lote del 16 de octubre (5 pagadas, 3 frenadas, 4 escaladas).
-3. Telegram (#13): `npm run telegram -- enlace ben-diego-herrera`, abrir el enlace en el teléfono del presentador → el chat queda vinculado a Diego Herrera.
-4. Proveedores nuevos (#28): crear un enlace en **Proveedores nuevos** para «Lumen Diseño» y tenerlo abierto en otra pestaña, con una cuenta que no sea del equipo.
-5. Tener a mano `adjuntos/003-ml-560.pdf`, `adjuntos/004-lum-0007.pdf`, `001-f-0106.png` y `002-inv-2216.eml`.
+Ya configurado en producción (#74): `REPOSITORIO=supabase`, `DEMO=1`, `GEMINI_API_KEY`, buzón `CORREO_IMAP_*` (se revisa cada minuto), bot **@nebula_facturas_bot** con webhook y migraciones aplicadas.
+
+1. El lote del 16 de octubre ya está procesado en producción (5 pagadas, 3 frenadas, 4 escaladas) y **sin decisiones humanas**. Con `REPOSITORIO=supabase` el registro es append-only y **no se puede reiniciar**: cada paso del guion se hace una sola vez en producción. **Ensayar en local** (`npm run dev`, repositorio en memoria: ahí sí funciona Reiniciar demo) y en producción solo presentar. También quedan en la Bandeja un correo viejo del buzón («no es factura») y la vinculación de Telegram en el Registro: son reales, se pueden mostrar.
+2. Telegram (#13): el chat del presentador ya está vinculado a Diego Herrera. Si se cambia de teléfono: `npm run telegram -- enlace ben-diego-herrera` (con las variables de Railway) y abrir el enlace.
+3. Proveedores nuevos (#28): crear un enlace en **Proveedores nuevos** para «Lumen Diseño» y tenerlo abierto en otra pestaña, con una cuenta que no sea del equipo.
+4. En el teléfono o el Gmail del presentador: un correo **borrador** a `facturas.nebula.demo@gmail.com` con `adjuntos/003-ml-560.pdf` adjunto (asunto «Factura ML-560»). El correo del presentador **no** está vinculado a ningún proveedor, a propósito.
+5. Tener a mano `001-f-0106.png` (en el teléfono, para Telegram) y `002-inv-2216.eml`, `004-lum-0007.pdf`.
 
 ## En vivo
 
@@ -22,7 +24,7 @@ Facturas en vivo: `data/escenarios/demo-en-vivo/documentos/` (PDF en `adjuntos/`
 | 5 | **Reglas**: bajar el límite automático a 2.000 | La simulación cambia al instante (F-0093 escala); subirlo a 5.000 bloquea guardar (pagaría LF sin persona) | seguridad |
 | 6 | Telegram: mandar la **foto** `001-f-0106.png` al bot | El bot responde la ref y «no se pagará: ya habíamos recibido esta factura»: mismo cobro que F-0093 con otro número (R2) | seguridad |
 | 7 | Bandeja → **Recibir factura → correo**: `002-inv-2216.eml` | PAGADA sola: coincide con la OC-118 y la cuenta | autonomía |
-| 8 | Bandeja → **Recibir factura → correo** con `003-ml-560.pdf` adjunto (o el `.eml`) | ESCALADA: el PDF trae una orden al agente en **texto blanco**, invisible al imprimir; la Traza la muestra (R10) | seguridad · explicabilidad |
+| 8 | **Correo real**: enviar el borrador con `003-ml-560.pdf` desde el Gmail del presentador. Mientras llega (≤ 1 min), seguir con el paso 9 | ESCALADA por dos causas: el PDF trae una orden al agente en **texto blanco**, invisible al imprimir (R10, la Traza la resalta), y el remitente no está vinculado a Mesa Legal (R11: una factura «de Mesa Legal» desde cualquier correo nunca se paga sola). El presentador recibe la respuesta automática con la ref y los aprobadores el aviso de #68 | seguridad · explicabilidad |
 | 9 | Pestaña del proveedor: subir `004-lum-0007.pdf` por el enlace | ESCALADA (R3 + R11): proveedor nuevo; el proveedor ve «en revisión», no reglas internas. Aprobar con «Agregar a la lista» vincula su correo | seguridad |
 
 Cierre: «El modelo solo lee; las reglas deciden en código, y todo lo que no cumple espera a una persona con la explicación escrita».
@@ -31,4 +33,5 @@ Cierre: «El modelo solo lee; las reglas deciden en código, y todo lo que no cu
 
 - Sin `GEMINI_API_KEY`, la foto escala por R1 (no se puede leer sin LLM): sigue siendo seguro; mostrar el PDF de Mesa Legal en su lugar.
 - Si el presupuesto no alcanza (pasos 3 o 7 hechos en otro orden), R7 frena: también es una decisión explicada.
-- Sin red: `POST /api/canales/telegram/simular` y `/api/canales/correo/simular` reproducen los pasos 6–8 desde el panel.
+- Sin red o si el correo tarda: Bandeja → **Recibir factura → correo** con `003-ml-560.eml` reproduce el paso 8 (ese .eml sí viene de Mesa Legal, así que escala solo por R10). `POST /api/canales/telegram/simular` reproduce el 6.
+- El bot no responde: `curl https://api.telegram.org/bot<token>/getWebhookInfo` muestra el último error; `npm run telegram -- webhook` lo vuelve a registrar.
