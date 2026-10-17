@@ -68,7 +68,7 @@ export function AppSidebar() {
       <SidebarFooter className="gap-3 px-4 pb-6">
         <span className="flex items-center gap-2 text-sm">
           <span aria-hidden className="size-2 rounded-full bg-sidebar-primary" />
-          Agente activo
+          <span>Agente activo</span>
         </span>
         <SidebarSeparator className="mx-0" />
         <p className="text-xs leading-relaxed text-sidebar-foreground/60">
