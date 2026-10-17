@@ -10,6 +10,7 @@ import { BotonCopiar, EnlaceGenerado } from "@/app/_componentes/invitacion";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { fechaVencimiento } from "@/equipo/correo";
 import { NOMBRE_ROL, type Rol } from "@/lib/auth/permisos";
 
 import { llamar, usdACentavos } from "./api";
@@ -24,8 +25,7 @@ type Creado = { enlace: string; correo_enviado: boolean; invitacion: { expira_en
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const vence = (iso: string) =>
-  new Intl.DateTimeFormat("es-CO", { timeZone: "America/Bogota", dateStyle: "long", timeStyle: "short" }).format(new Date(iso));
+const vence = fechaVencimiento;
 
 export function CrearEmpleado() {
   const router = useRouter();

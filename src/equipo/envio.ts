@@ -11,13 +11,18 @@ export const enviarCorreoInvitacion: EnviarCorreo = async (para, correo, remiten
   const { configBuzonDesdeEntorno, crearTransporte } = await import("@/canales/correo/buzon");
   const buzon = configBuzonDesdeEntorno();
   if (!buzon) return false;
-  await crearTransporte(buzon).sendMail({
+  const transporte = crearTransporte(buzon);
+  try {
+    await transporte.sendMail({
     from: { name: remitente, address: buzon.usuario },
     to: para,
     subject: correo.asunto,
     text: correo.texto,
     html: correo.html,
     headers: { "Auto-Submitted": "auto-generated" },
-  });
+    });
+  } finally {
+    transporte.close(); // un correo cada tanto: no dejar conexiones SMTP abiertas
+  }
   return true;
 };

@@ -3,11 +3,6 @@
 Una entrada por decisión, la más nueva arriba. Formato:
 
 ```
-## 2026-10-17 — Crear empleado por correo (#80)
-- Estado: propuesta
-- Decisión: «Invitar persona» pasa a **Crear empleado**: el admin elige rol (y límite) y el **correo, ahora obligatorio**; se envía un correo formal (HTML + texto, `src/equipo/correo.ts`) por el SMTP del buzón del equipo (#14, mismo transporte que los avisos de #68) con un enlace `/unirse/<token>` de un solo uso que **vence en 72 h**. `/unirse` es página pública: sin sesión pide **nombre + contraseña** y la cuenta se crea con la admin API de Supabase ya confirmada (abrir el enlace enviado a ese correo prueba que es su dueño), inicia sesión y acepta la invitación (atómica). Si el correo no sale (sin buzón en desarrollo, o falla SMTP), la invitación queda y la pantalla muestra el enlace para copiarlo. «Reenviar» revoca el enlace y manda uno nuevo. El paso siguiente (#81) quita «Crear cuenta» de `/entrar`.
-- Por qué: que solo existan las cuentas que el admin quiere; hoy cualquiera de internet podía registrarse.
-- Quién: J
 
 ## AAAA-MM-DD — Título corto
 - Estado: propuesta | aceptada | descartada | reemplazada por <título>
@@ -17,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 ```
 
 ---
+## 2026-10-17 — Crear empleado por correo (#80)
+- Estado: propuesta
+- Decisión: «Invitar persona» pasa a **Crear empleado**: el admin elige rol (y límite) y el **correo, ahora obligatorio**; se envía un correo formal (HTML + texto, `src/equipo/correo.ts`) por el SMTP del buzón del equipo (#14, mismo transporte que los avisos de #68) con un enlace `/unirse/<token>` de un solo uso que **vence en 72 h**. `/unirse` es página pública: sin sesión pide **nombre + contraseña** y la cuenta se crea con la admin API de Supabase ya confirmada (abrir el enlace enviado a ese correo prueba que es su dueño), inicia sesión y acepta la invitación (atómica). Si el correo no sale (sin buzón en desarrollo, o falla SMTP), la invitación queda y la pantalla muestra el enlace para copiarlo. «Reenviar» revoca el enlace y manda uno nuevo. El paso siguiente (#81) quita «Crear cuenta» de `/entrar`.
+- Por qué: que solo existan las cuentas que el admin quiere; hoy cualquiera de internet podía registrarse.
+- Quién: J
+
 
 ## 2026-10-17 — Corridas de demo: reiniciar sin borrar (#76)
 - Estado: propuesta

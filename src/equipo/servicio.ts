@@ -71,12 +71,10 @@ export async function crearEmpleado(
   deps: DependenciasCorreo,
 ): Promise<{ invitacion: InvitacionConEstado; enlace: string; correo_enviado: boolean }> {
   const r = await invitar(almacen, autor, entrada, ahora);
-  const para = r.invitacion.correo_esperado;
-  let correo_enviado = false;
-  if (para) {
-    const mensaje = correoInvitacion({ empresa: deps.empresa, rol: r.invitacion.rol, invitador: autor.nombre, enlace: r.enlace, expira_en: r.invitacion.expira_en });
-    correo_enviado = await deps.enviar(para, mensaje, deps.empresa).catch(() => false);
-  }
+  // El esquema exige el correo (#80); las invitaciones viejas sin correo no pasan por aquí.
+  const para = r.invitacion.correo_esperado ?? "";
+  const mensaje = correoInvitacion({ empresa: deps.empresa, rol: r.invitacion.rol, invitador: autor.nombre, enlace: r.enlace, expira_en: r.invitacion.expira_en });
+  const correo_enviado = await deps.enviar(para, mensaje, deps.empresa).catch(() => false);
   return { ...r, correo_enviado };
 }
 
@@ -84,8 +82,10 @@ export async function crearEmpleado(
 export async function reenviar(almacen: AlmacenEquipo, autor: Sesion, id: string, ahora: string, deps: DependenciasCorreo) {
   const inv = z.uuid().safeParse(id).success ? (await almacen.invitaciones(EMPRESA_ID, ahora)).find((i) => i.id === id) : undefined;
   if (!inv || !inv.correo_esperado || estadoInvitacion(inv, ahora) !== "activa") throw new ErrorEquipo(404, "No hay una invitación activa con ese id.");
+  // Primero la nueva: si algo falla, la persona conserva el enlace que ya tiene.
+  const nueva = await crearEmpleado(almacen, autor, { rol: inv.rol, limite_aprobacion_usd: inv.limite_aprobacion_usd, correo_esperado: inv.correo_esperado }, ahora, deps);
   await revocar(almacen, id, ahora);
-  return crearEmpleado(almacen, autor, { rol: inv.rol, limite_aprobacion_usd: inv.limite_aprobacion_usd, correo_esperado: inv.correo_esperado }, ahora, deps);
+  return nueva;
 }
 
 export async function revocar(almacen: AlmacenEquipo, id: string, ahora: string): Promise<void> {

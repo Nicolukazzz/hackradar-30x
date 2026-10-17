@@ -1,6 +1,7 @@
 import { LinkIcon, UserPlusIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { formatearUsd } from "@/dominio/dinero";
 import { salir } from "@/app/entrar/acciones";
@@ -17,7 +18,8 @@ import { FormularioCrearCuenta } from "./formulario";
 
 export const metadata: Metadata = { title: "Unirme al equipo · Agente de cuentas por pagar", referrer: "no-referrer" };
 
-// Enlace de invitación (#51). Sin sesión, el proxy manda a /entrar y vuelve aquí. Un enlace inválido, vencido,
+// Enlace de invitación (#51, #80). Sin sesión: si la invitación trae correo, la persona crea aquí su cuenta; si es
+// anterior a #80 (sin correo), va a /entrar y vuelve. Un enlace inválido, vencido,
 // revocado o usado muestra la misma página: no se dice cuál de los cuatro.
 const MENSAJES: Record<string, string> = {
   invalida: "Este enlace ya no sirve: venció, se usó o lo revocaron. Pide uno nuevo a quien te invitó.",
@@ -91,6 +93,8 @@ export default async function PaginaUnirse({ params, searchParams }: PageProps<"
       </Marco>
     );
   }
+  // Invitación anterior a #80 (sin correo): la persona entra con su cuenta y vuelve aquí a aceptarla.
+  if (vista && !sesion) redirect(`/entrar?siguiente=${encodeURIComponent(`/unirse/${token}`)}`);
   if (!vista || !sesion) {
     return (
       <Marco>

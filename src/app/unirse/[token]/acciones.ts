@@ -55,11 +55,17 @@ export async function crearCuentaYUnirme(token: string, _previo: EstadoCrearCuen
     };
   }
 
+  // Primero la membresía (atómica, valida el enlace otra vez): si falla, la cuenta recién creada se borra y no queda
+  // una cuenta huérfana que bloquee el siguiente intento con «ya hay una cuenta».
+  const resultado = await almacen.aceptarInvitacion(hashToken(token), data.user.id, correo).catch(() => "invalida" as const);
+  auditar({ tipo: "equipo", usuario_id: data.user.id, ruta: "/unirse", motivo: `cuenta creada por invitación: ${resultado}` });
+  if (resultado !== "aceptada") {
+    await crearClienteAdmin().auth.admin.deleteUser(data.user.id).catch(() => undefined);
+    return { error: "Este enlace ya no sirve: venció, se usó o lo revocaron. Pide uno nuevo a tu administrador." };
+  }
   const supabase = await crearClienteServidor();
   const entrada = await supabase.auth.signInWithPassword({ email: correo, password: contrasena });
-  if (entrada.error) return { error: "La cuenta se creó, pero no se pudo iniciar sesión. Entra con tu correo y tu contraseña." };
-  const resultado = await almacen.aceptarInvitacion(hashToken(token), data.user.id, correo);
-  auditar({ tipo: "equipo", usuario_id: data.user.id, ruta: "/unirse", motivo: `cuenta creada por invitación: ${resultado}` });
-  if (resultado !== "aceptada") return { error: "La cuenta se creó, pero el enlace ya no sirve. Pide a tu administrador que te agregue." };
+  // La cuenta y la membresía ya existen: si falla solo el inicio de sesión, que entre desde /entrar.
+  if (entrada.error) redirect("/entrar");
   redirect("/");
 }

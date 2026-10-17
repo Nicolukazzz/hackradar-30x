@@ -2,42 +2,92 @@
 
 import { Loader2Icon, MailIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { fechaCorta, hora } from "@/app/_componentes";
-import { BotonRevocar } from "@/app/_componentes/invitacion";
+import { BotonCopiar, BotonRevocar, EnlaceGenerado } from "@/app/_componentes/invitacion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { InvitacionConEstado } from "@/equipo/servicio";
 import type { EstadoInvitacion } from "@/equipo/tipos";
 import { NOMBRE_ROL } from "@/lib/auth/permisos";
 import { cn } from "@/lib/utils";
 
-/** Reenviar (#80): revoca el enlace y manda uno nuevo al mismo correo. */
-function Reenviar({ id }: { id: string }) {
+/**
+ * Reenviar (#80): pide confirmar (el enlace actual deja de servir), crea uno nuevo y lo envía al mismo correo. Si el
+ * correo no sale, muestra el enlace nuevo para copiarlo: es la única vez que existe.
+ */
+function Reenviar({ id, correo }: { id: string; correo: string }) {
   const router = useRouter();
   const [ocupado, iniciar] = useTransition();
+  const [enlace, setEnlace] = useState<string | null>(null);
   function reenviar() {
     iniciar(async () => {
       const res = await fetch(`/api/equipo/invitaciones/${id}/reenviar`, { method: "POST" });
-      const datos = (await res.json().catch(() => ({}))) as { correo_enviado?: boolean; error?: string };
+      const datos = (await res.json().catch(() => ({}))) as { correo_enviado?: boolean; enlace?: string; error?: string };
       if (!res.ok) {
         toast.error("No se pudo reenviar", { description: datos.error ?? "Intenta de nuevo." });
         return;
       }
-      toast.success(datos.correo_enviado ? "Correo reenviado" : "Enlace nuevo creado", {
-        description: datos.correo_enviado ? "El enlace anterior ya no sirve." : "No hay buzón configurado: crea el empleado de nuevo para copiar el enlace.",
-      });
-      router.refresh();
+      if (datos.correo_enviado) {
+        toast.success("Correo reenviado", { description: `${correo} recibió un enlace nuevo; el anterior ya no sirve.` });
+        router.refresh();
+      } else {
+        // Se refresca al cerrar: refrescar ahora desmonta esta fila (ya revocada) y el enlace se perdería.
+        setEnlace(datos.enlace ?? null);
+      }
     });
   }
   return (
-    <Button variant="ghost" className="h-11 gap-1.5 px-3" onClick={reenviar} disabled={ocupado}>
-      {ocupado ? <Loader2Icon className="animate-spin" aria-hidden /> : <MailIcon aria-hidden />}
-      Reenviar
-    </Button>
+    <>
+      <AlertDialog>
+        <AlertDialogTrigger render={<Button variant="ghost" className="h-11 gap-1.5 px-3" disabled={ocupado} />}>
+          {ocupado ? <Loader2Icon className="animate-spin" aria-hidden /> : <MailIcon aria-hidden />}
+          Reenviar
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Reenviar el correo a {correo}?</AlertDialogTitle>
+            <AlertDialogDescription>Le llega un enlace nuevo que vence en 72 horas. El enlace que ya tiene deja de servir.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={reenviar}>Reenviar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <Dialog
+        open={enlace !== null}
+        onOpenChange={(a) => {
+          if (a) return;
+          setEnlace(null);
+          router.refresh();
+        }}
+      >
+        <DialogContent className="gap-5 p-6 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enlace nuevo</DialogTitle>
+            <DialogDescription>No hay buzón de correo configurado: copia el enlace y envíaselo a {correo}. Por seguridad no se vuelve a mostrar.</DialogDescription>
+          </DialogHeader>
+          {enlace ? <EnlaceGenerado enlace={enlace} etiqueta="Enlace para crear la cuenta" resumen={`Solo ${correo} · vence en 72 horas`} /> : null}
+          <DialogFooter className="-mx-6 -mb-6 px-6">{enlace ? <BotonCopiar enlace={enlace} descripcion="Envíaselo por un medio seguro." /> : null}</DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -80,10 +130,10 @@ export function Invitaciones({ invitaciones }: { invitaciones: InvitacionConEsta
               </span>
             </TableCell>
             <TableCell className="pr-2 text-right md:pr-6">
-              {i.estado === "activa" || i.estado === "vencida" ? (
+              {i.estado === "activa" ? (
                 <span className="inline-flex flex-wrap justify-end gap-1">
-                  {i.correo_esperado && i.estado === "activa" ? <Reenviar id={i.id} /> : null}
-                  {i.estado === "activa" ? <BotonRevocar url={`/api/equipo/invitaciones/${i.id}`} exito="El enlace ya no sirve." /> : null}
+                  {i.correo_esperado ? <Reenviar id={i.id} correo={i.correo_esperado} /> : null}
+                  <BotonRevocar url={`/api/equipo/invitaciones/${i.id}`} exito="El enlace ya no sirve." />
                 </span>
               ) : null}
             </TableCell>
