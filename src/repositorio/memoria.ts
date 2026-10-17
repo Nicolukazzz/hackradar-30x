@@ -11,7 +11,7 @@ import { cargarGolden, cargarSinDocumentos, type DocGolden } from "@/evaluacion/
 import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
 
-import { coincideFiltro, crearCola, formatoRef, maxRef, versionVigente } from "./comun";
+import { coincideFiltro, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
 import type { ArchivoGuardado, EscenarioCargado, Repositorio, ResumenVersion } from "./repositorio";
 
 
@@ -100,14 +100,7 @@ export async function crearRepositorioMemoria(
       return { nombre: a.nombre, mime: a.mime, bytes: await readFile(a.ruta) };
     },
     async leerAdjunto(ref, indice) {
-      const adj = s.documentos.get(ref)?.adjuntos[indice];
-      if (!adj) return null;
-      if (adj.bytes_base64 !== undefined) return { nombre: adj.nombre, mime: adj.mime, bytes: Buffer.from(adj.bytes_base64, "base64") };
-      if (adj.ruta === undefined) return null;
-      const base = path.resolve(s.carpeta);
-      const ruta = path.resolve(base, adj.ruta);
-      if (!ruta.startsWith(base + path.sep)) return null; // nunca fuera de la carpeta del escenario
-      return { nombre: adj.nombre, mime: adj.mime, bytes: await readFile(ruta) };
+      return leerAdjuntoDe(s.documentos.get(ref), indice, s.carpeta);
     },
     async siguienteRef(anio) {
       // Las refs del escenario ya están reservadas para sus documentos (aunque aún no se procesen), y cada

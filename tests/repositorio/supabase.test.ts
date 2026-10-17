@@ -22,6 +22,21 @@ describe.skipIf(!url || !claveSecreta)("contrato del repositorio: Supabase", () 
     expect(borrar?.message).toMatch(/permission denied|append-only/);
   });
 
+  it("más de 1000 filas en el registro: se leen todas (PostgREST corta en 1000) y el siguiente id es el correcto", async () => {
+    const db = createClient(url!, claveSecreta!, { auth: { persistSession: false } });
+    const repo = await crear();
+    const antes = (await repo.registro()).length;
+    const [base] = await repo.registro({ tipo: ["DECISION_AGENTE"] });
+    const nuevas = Array.from({ length: 1100 }, (_, i) => {
+      const id = `REG-2027-${String(i + 1).padStart(6, "0")}`;
+      return { id, ref_interna: `INT-2027-${String(i + 1).padStart(6, "0")}`, tipo: "DECISION_AGENTE", decision: "FRENAR", entrada: { ...base, id } };
+    });
+    const { error } = await db.from("registro").insert(nuevas);
+    expect(error).toBeNull();
+    expect(await repo.registro()).toHaveLength(antes + 1100);
+    expect(await repo.siguienteIdRegistro(2027)).toBe("REG-2027-001101");
+  });
+
   it("sin llave secreta no se lee nada (anon)", async () => {
     const anon = createClient(url!, process.env.SUPABASE_PRUEBA_PUBLICA ?? "", { auth: { persistSession: false } });
     const { data } = await anon.from("registro").select("id").limit(1);

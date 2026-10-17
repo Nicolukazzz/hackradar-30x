@@ -1,8 +1,11 @@
 // Piezas que comparten el repositorio en memoria y el de Supabase, para que se comporten igual.
 
-import type { EntradaRegistro, Reglas } from "@/dominio/tipos";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 
-import type { FiltroRegistro } from "./repositorio";
+import type { DocumentoRecibido, EntradaRegistro, Reglas } from "@/dominio/tipos";
+
+import type { ArchivoGuardado, FiltroRegistro } from "./repositorio";
 
 export function coincideFiltro(e: EntradaRegistro, f?: FiltroRegistro): boolean {
   return (
@@ -42,4 +45,16 @@ export function crearCola(): <T>(fn: () => Promise<T>) => Promise<T> {
     cola = turno.catch(() => undefined);
     return turno;
   };
+}
+
+/** Adjunto n.º `indice` de un documento: bytes guardados o archivo del escenario, nunca fuera de su carpeta. */
+export async function leerAdjuntoDe(doc: DocumentoRecibido | null | undefined, indice: number, carpeta: string): Promise<ArchivoGuardado | null> {
+  const adj = doc?.adjuntos[indice];
+  if (!adj) return null;
+  if (adj.bytes_base64 !== undefined) return { nombre: adj.nombre, mime: adj.mime, bytes: Buffer.from(adj.bytes_base64, "base64") };
+  if (adj.ruta === undefined) return null;
+  const base = path.resolve(/*turbopackIgnore: true*/ carpeta);
+  const ruta = path.resolve(/*turbopackIgnore: true*/ base, adj.ruta);
+  if (!ruta.startsWith(base + path.sep)) return null; // nunca fuera de la carpeta del escenario
+  return { nombre: adj.nombre, mime: adj.mime, bytes: await readFile(/*turbopackIgnore: true*/ ruta) };
 }

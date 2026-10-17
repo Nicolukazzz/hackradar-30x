@@ -81,6 +81,8 @@ alter table public.secuencias enable row level security;
 
 revoke all on table public.registro, public.documentos, public.reglas_versiones, public.beneficiarios_agregados, public.secuencias
   from anon, authenticated;
+-- Segunda capa del append-only: service_role recibe ALL por defecto en public; se le quita explícitamente.
+revoke update, delete, truncate on table public.registro from service_role;
 grant select, insert on table public.registro to service_role;
 grant all on table public.documentos, public.reglas_versiones, public.beneficiarios_agregados, public.secuencias to service_role;
 revoke all on function public.siguiente_secuencia(text, bigint) from public, anon, authenticated;
