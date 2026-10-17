@@ -1,0 +1,612 @@
+[
+  {
+    "id": "ben-ana-maria-gomez",
+    "nombre": "Ana María Gómez",
+    "pais": "CO",
+    "categoria": "diseño",
+    "tipo": "contratista",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Cafetal",
+      "numero_enmascarado": "•••• 3021",
+      "ultimos4": "3021"
+    },
+    "acuerdo": {
+      "tipo": "contrato_mensual",
+      "referencia": "CT-AMG",
+      "descripcion": "Contrato mensual de diseño",
+      "lineas": [
+        {
+          "codigo": "AMG-DIS",
+          "concepto": "Diseño de producto mensual",
+          "palabras_clave": [
+            "diseño",
+            "producto"
+          ],
+          "monto": {
+            "centavos": 840000000,
+            "moneda": "COP"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 600000,
+    "estado": "activo",
+    "canales": {
+      "correos": [
+        "ana.gomez@amg-estudio.example"
+      ],
+      "telegram_chat_id": null,
+      "portal_usuario": "ana.gomez"
+    }
+  },
+  {
+    "id": "ben-cloudnorte",
+    "nombre": "CloudNorte S.A.S.",
+    "pais": "CO",
+    "categoria": "hosting",
+    "tipo": "proveedor",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Llanos Unidos",
+      "numero_enmascarado": "•••• 5530",
+      "ultimos4": "5530"
+    },
+    "acuerdo": {
+      "tipo": "orden_compra",
+      "referencia": "OC-118",
+      "descripcion": "Orden de compra abierta OC-118 (mensual)",
+      "lineas": [
+        {
+          "codigo": "OC-118",
+          "concepto": "Hosting y CDN mensual",
+          "palabras_clave": [
+            "hosting",
+            "cdn"
+          ],
+          "monto": {
+            "centavos": 124000,
+            "moneda": "USD"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 300000,
+    "estado": "activo",
+    "canales": {
+      "correos": [
+        "billing@cloudnorte.example"
+      ],
+      "telegram_chat_id": null,
+      "portal_usuario": null
+    }
+  },
+  {
+    "id": "ben-diego-herrera",
+    "nombre": "Diego Herrera",
+    "pais": "MX",
+    "categoria": "desarrollo",
+    "tipo": "contratista",
+    "cuenta": {
+      "tipo": "CLABE",
+      "banco": "Banco Nopal",
+      "numero_enmascarado": "CLABE •••• 4471",
+      "ultimos4": "4471"
+    },
+    "acuerdo": {
+      "tipo": "contrato_mensual",
+      "referencia": "CT-DH",
+      "descripcion": "Contrato mensual de desarrollo",
+      "lineas": [
+        {
+          "codigo": "DH-DEV",
+          "concepto": "Desarrollo backend mensual",
+          "palabras_clave": [
+            "desarrollo",
+            "backend"
+          ],
+          "monto": {
+            "centavos": 3800000,
+            "moneda": "MXN"
+          }
+        },
+        {
+          "codigo": "DH-ONCALL",
+          "concepto": "Soporte on-call mensual",
+          "palabras_clave": [
+            "on-call",
+            "guardia"
+          ],
+          "monto": {
+            "centavos": 1200000,
+            "moneda": "MXN"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 600000,
+    "estado": "activo",
+    "canales": {
+      "correos": [],
+      "telegram_chat_id": "700100003",
+      "portal_usuario": "diego.herrera"
+    }
+  },
+  {
+    "id": "ben-juan-pablo-ortiz",
+    "nombre": "Juan Pablo Ortiz",
+    "pais": "CO",
+    "categoria": "datos",
+    "tipo": "contratista",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Cafetal",
+      "numero_enmascarado": "•••• 8812",
+      "ultimos4": "8812"
+    },
+    "acuerdo": {
+      "tipo": "hitos",
+      "referencia": "CT-JPO",
+      "descripcion": "Contrato por hitos (3)",
+      "lineas": [
+        {
+          "codigo": "JPO-HITO",
+          "concepto": "Hito de tablero de datos",
+          "palabras_clave": [
+            "hito",
+            "tablero"
+          ],
+          "monto": {
+            "centavos": 90000,
+            "moneda": "USD"
+          },
+          "hitos_total": 3
+        }
+      ]
+    },
+    "limite_mensual_usd": 270000,
+    "estado": "activo",
+    "canales": {
+      "correos": [],
+      "telegram_chat_id": "700100004",
+      "portal_usuario": null
+    }
+  },
+  {
+    "id": "ben-mesa-legal",
+    "nombre": "Mesa Legal S.A.S.",
+    "pais": "CO",
+    "categoria": "legal",
+    "tipo": "proveedor",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Cafetal",
+      "numero_enmascarado": "•••• 1907",
+      "ultimos4": "1907"
+    },
+    "acuerdo": {
+      "tipo": "honorario",
+      "referencia": "HON-ML",
+      "descripcion": "Honorario mensual",
+      "lineas": [
+        {
+          "codigo": "ML-HON",
+          "concepto": "Asesoría legal mensual",
+          "palabras_clave": [
+            "asesoría",
+            "legal"
+          ],
+          "monto": {
+            "centavos": 525000000,
+            "moneda": "COP"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 300000,
+    "estado": "activo",
+    "canales": {
+      "correos": [
+        "facturas@mesalegal.example"
+      ],
+      "telegram_chat_id": null,
+      "portal_usuario": null
+    }
+  },
+  {
+    "id": "ben-pixel-co",
+    "nombre": "Pixel & Co.",
+    "pais": "AR",
+    "categoria": "ilustración",
+    "tipo": "proveedor",
+    "cuenta": {
+      "tipo": "CBU",
+      "banco": "Banco Pampero Sur",
+      "numero_enmascarado": "CBU •••• 6634",
+      "ultimos4": "6634"
+    },
+    "acuerdo": {
+      "tipo": "orden_compra",
+      "referencia": "OC-121",
+      "descripcion": "Orden de compra OC-121",
+      "lineas": [
+        {
+          "codigo": "OC-121",
+          "concepto": "Ilustraciones campaña Q4",
+          "palabras_clave": [
+            "ilustraciones",
+            "campaña"
+          ],
+          "monto": {
+            "centavos": 180000,
+            "moneda": "USD"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 300000,
+    "estado": "activo",
+    "canales": {
+      "correos": [],
+      "telegram_chat_id": null,
+      "portal_usuario": "pixel.co"
+    }
+  },
+  {
+    "id": "ben-lucia-fernandez",
+    "nombre": "Lucía Fernández",
+    "pais": "AR",
+    "categoria": "app móvil",
+    "tipo": "contratista",
+    "cuenta": {
+      "tipo": "CBU",
+      "banco": "Banco Pampero Sur",
+      "numero_enmascarado": "CBU •••• 2058",
+      "ultimos4": "2058"
+    },
+    "acuerdo": {
+      "tipo": "hitos",
+      "referencia": "CT-LF",
+      "descripcion": "Contrato app · hito final",
+      "lineas": [
+        {
+          "codigo": "LF-FINAL",
+          "concepto": "Hito final app móvil",
+          "palabras_clave": [
+            "app",
+            "móvil"
+          ],
+          "monto": {
+            "centavos": 450000,
+            "moneda": "USD"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 600000,
+    "estado": "activo",
+    "canales": {
+      "correos": [],
+      "telegram_chat_id": null,
+      "portal_usuario": "lucia.fernandez"
+    }
+  },
+  {
+    "id": "ben-estudio-sonoro",
+    "nombre": "Estudio Sonoro Ltda.",
+    "pais": "BR",
+    "categoria": "audio",
+    "tipo": "proveedor",
+    "cuenta": {
+      "tipo": "PIX",
+      "banco": "Banco Ipê Dourado",
+      "numero_enmascarado": "PIX •••• 7340",
+      "ultimos4": "7340"
+    },
+    "acuerdo": {
+      "tipo": "orden_compra",
+      "referencia": "OC-124",
+      "descripcion": "Orden de compra OC-124",
+      "lineas": [
+        {
+          "codigo": "OC-124",
+          "concepto": "Trilha sonora campanha",
+          "palabras_clave": [
+            "trilha",
+            "sonora"
+          ],
+          "monto": {
+            "centavos": 2200000,
+            "moneda": "BRL"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 600000,
+    "estado": "activo",
+    "canales": {
+      "correos": [],
+      "telegram_chat_id": "700100008",
+      "portal_usuario": null
+    }
+  },
+  {
+    "id": "ben-kora-digital",
+    "nombre": "Kora Digital S.A.S.",
+    "pais": "CO",
+    "categoria": "marketing",
+    "tipo": "proveedor",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Llanos Unidos",
+      "numero_enmascarado": "•••• 6120",
+      "ultimos4": "6120"
+    },
+    "acuerdo": {
+      "tipo": "licencia",
+      "referencia": "KX",
+      "descripcion": "Licencia anual de marketing",
+      "lineas": [
+        {
+          "codigo": "KX-LIC",
+          "concepto": "Licencia anual plataforma de marketing",
+          "palabras_clave": [
+            "licencia",
+            "marketing"
+          ],
+          "monto": {
+            "centavos": 340000,
+            "moneda": "USD"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 600000,
+    "estado": "activo",
+    "canales": {
+      "correos": [
+        "finanzas@koradigital.example"
+      ],
+      "telegram_chat_id": null,
+      "portal_usuario": null
+    }
+  },
+  {
+    "id": "ben-grupo-alba",
+    "nombre": "Grupo Alba Logística S.A. de C.V.",
+    "pais": "MX",
+    "categoria": "logística",
+    "tipo": "proveedor",
+    "cuenta": {
+      "tipo": "CLABE",
+      "banco": "Banco Nopal",
+      "numero_enmascarado": "CLABE •••• 2290",
+      "ultimos4": "2290"
+    },
+    "acuerdo": {
+      "tipo": "orden_compra",
+      "referencia": "OC-115",
+      "descripcion": "Orden de compra OC-115",
+      "lineas": [
+        {
+          "codigo": "OC-115",
+          "concepto": "Logística regional Q4",
+          "palabras_clave": [
+            "logística",
+            "transporte"
+          ],
+          "monto": {
+            "centavos": 25900000,
+            "moneda": "MXN"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 1500000,
+    "estado": "activo",
+    "canales": {
+      "correos": [
+        "cxc@grupoalba.example"
+      ],
+      "telegram_chat_id": null,
+      "portal_usuario": null
+    }
+  },
+  {
+    "id": "ben-rio-verde",
+    "nombre": "Rio Verde Traduções Ltda.",
+    "pais": "BR",
+    "categoria": "traducción",
+    "tipo": "proveedor",
+    "cuenta": {
+      "tipo": "PIX",
+      "banco": "Banco Ipê Dourado",
+      "numero_enmascarado": "PIX •••• 5512",
+      "ultimos4": "5512"
+    },
+    "acuerdo": {
+      "tipo": "honorario",
+      "referencia": "HON-RV",
+      "descripcion": "Honorario mensual",
+      "lineas": [
+        {
+          "codigo": "RV-TRAD",
+          "concepto": "Tradução mensal",
+          "palabras_clave": [
+            "tradução",
+            "localização"
+          ],
+          "monto": {
+            "centavos": 1100000,
+            "moneda": "BRL"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 300000,
+    "estado": "activo",
+    "canales": {
+      "correos": [
+        "financeiro@rioverde.example"
+      ],
+      "telegram_chat_id": null,
+      "portal_usuario": null
+    }
+  },
+  {
+    "id": "ben-valeria-ruiz",
+    "nombre": "Valeria Ruiz",
+    "pais": "AR",
+    "categoria": "QA",
+    "tipo": "contratista",
+    "cuenta": {
+      "tipo": "CBU",
+      "banco": "Banco Pampero Sur",
+      "numero_enmascarado": "CBU •••• 7781",
+      "ultimos4": "7781"
+    },
+    "acuerdo": {
+      "tipo": "contrato_mensual",
+      "referencia": "CT-VR",
+      "descripcion": "Contrato mensual de QA",
+      "lineas": [
+        {
+          "codigo": "VR-QA",
+          "concepto": "QA funcional mensual",
+          "palabras_clave": [
+            "qa",
+            "calidad"
+          ],
+          "monto": {
+            "centavos": 250000,
+            "moneda": "USD"
+          }
+        },
+        {
+          "codigo": "VR-SOP",
+          "concepto": "Soporte a usuarios mensual",
+          "palabras_clave": [
+            "soporte",
+            "usuarios"
+          ],
+          "monto": {
+            "centavos": 200000,
+            "moneda": "USD"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 300000,
+    "estado": "activo",
+    "canales": {
+      "correos": [],
+      "telegram_chat_id": null,
+      "portal_usuario": "valeria.ruiz"
+    }
+  },
+  {
+    "id": "ben-bitacora-contable",
+    "nombre": "Bitácora Contable S.A.S.",
+    "pais": "CO",
+    "categoria": "contabilidad",
+    "tipo": "proveedor",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Cafetal",
+      "numero_enmascarado": "•••• 4408",
+      "ultimos4": "4408"
+    },
+    "acuerdo": {
+      "tipo": "honorario",
+      "referencia": "HON-BC",
+      "descripcion": "Honorario mensual",
+      "lineas": [
+        {
+          "codigo": "BC-CONT",
+          "concepto": "Contabilidad mensual",
+          "palabras_clave": [
+            "contabilidad",
+            "contable"
+          ],
+          "monto": {
+            "centavos": 1260000000,
+            "moneda": "COP"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 300000,
+    "estado": "activo",
+    "canales": {
+      "correos": [
+        "facturacion@bitacoracontable.example"
+      ],
+      "telegram_chat_id": null,
+      "portal_usuario": null
+    }
+  },
+  {
+    "id": "ben-pampa-hardware",
+    "nombre": "Pampa Hardware S.A.",
+    "pais": "AR",
+    "categoria": "equipos",
+    "tipo": "proveedor",
+    "cuenta": {
+      "tipo": "CBU",
+      "banco": "Banco Pampero Sur",
+      "numero_enmascarado": "CBU •••• 3365",
+      "ultimos4": "3365"
+    },
+    "acuerdo": {
+      "tipo": "orden_compra",
+      "referencia": "OC-119/OC-120/OC-126",
+      "descripcion": "Órdenes de compra de equipos",
+      "lineas": [
+        {
+          "codigo": "OC-119",
+          "concepto": "Estaciones de trabajo",
+          "palabras_clave": [
+            "estaciones"
+          ],
+          "monto": {
+            "centavos": 1200000,
+            "moneda": "USD"
+          }
+        },
+        {
+          "codigo": "OC-120",
+          "concepto": "Monitores y periféricos",
+          "palabras_clave": [
+            "monitores",
+            "periféricos"
+          ],
+          "monto": {
+            "centavos": 410000,
+            "moneda": "USD"
+          }
+        },
+        {
+          "codigo": "OC-126",
+          "concepto": "Servidores de rack",
+          "palabras_clave": [
+            "servidores",
+            "rack"
+          ],
+          "monto": {
+            "centavos": 1800000,
+            "moneda": "USD"
+          }
+        }
+      ]
+    },
+    "limite_mensual_usd": 2000000,
+    "estado": "activo",
+    "canales": {
+      "correos": [
+        "ventas@pampahardware.example"
+      ],
+      "telegram_chat_id": null,
+      "portal_usuario": null
+    }
+  }
+]

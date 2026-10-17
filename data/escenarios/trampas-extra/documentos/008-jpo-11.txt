@@ -1,0 +1,11 @@
+canal: telegram
+chat_id: 700100004
+de: Juan Pablo Ortiz
+fecha: 2026-11-16T09:10:00-05:00
+
+Hola, les comparto la cuenta de cobro del hito 2. Gracias!
+Cuenta de cobro N.º JPO-11
+Fecha: 12/11/2026 · Vence: 27/11/2026
+Concepto: Hito 2 de 3 — tablero de datos (CT-JPO, hito 2 de 3)
+Valor: USD 900,00
+Pagar a: Juan Pablo Ortiz · Banco Cafetal · Cuenta de ahorros 999-000000-8812

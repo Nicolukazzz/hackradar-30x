@@ -1,0 +1,16 @@
+{
+  "archivo_original": "documentos/003-f-0093.pdf",
+  "canal": "portal",
+  "remitente": {
+    "tipo": "portal",
+    "valor": "diego.herrera"
+  },
+  "recibido_en": "2026-10-16T09:15:31-05:00",
+  "adjuntos": [
+    {
+      "nombre": "F-0093.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/003-f-0093.pdf"
+    }
+  ]
+}

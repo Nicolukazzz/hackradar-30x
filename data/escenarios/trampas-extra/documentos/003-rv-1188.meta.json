@@ -1,0 +1,18 @@
+{
+  "archivo_original": "documentos/003-rv-1188.eml",
+  "canal": "correo",
+  "remitente": {
+    "tipo": "correo",
+    "valor": "financeiro@rioverde.example"
+  },
+  "recibido_en": "2026-11-16T08:20:00-05:00",
+  "asunto": "Fatura RV-1188",
+  "texto_mensaje": "Olá,\n\nSegue foto da fatura RV-1188 de novembro.\n\nAtenciosamente,\nRio Verde Traduções",
+  "adjuntos": [
+    {
+      "nombre": "RV-1188.png",
+      "mime": "image/png",
+      "ruta": "documentos/adjuntos/003-rv-1188.png"
+    }
+  ]
+}

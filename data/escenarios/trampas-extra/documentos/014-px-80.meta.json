@@ -1,0 +1,16 @@
+{
+  "archivo_original": "documentos/014-px-80.pdf",
+  "canal": "portal",
+  "remitente": {
+    "tipo": "portal",
+    "valor": "pixel.co"
+  },
+  "recibido_en": "2026-11-16T09:45:00-05:00",
+  "adjuntos": [
+    {
+      "nombre": "PX-80.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/014-px-80.pdf"
+    }
+  ]
+}
