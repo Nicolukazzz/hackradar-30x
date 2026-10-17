@@ -7,6 +7,7 @@ import path from "node:path";
 
 import { z } from "zod";
 
+import { instante } from "./reloj";
 import {
   AprobadoresSchema,
   BeneficiariosSchema,
@@ -82,29 +83,36 @@ export async function cargarDatosComunes(dir: string = DIR_DATA_POR_DEFECTO): Pr
     leerJson(path.join(dir, "proveedores.json"), BeneficiariosSchema),
   ]);
 
-  const versiones: Reglas[] = [];
-  for (const nombre of await archivosJson(path.join(dir, "reglas"))) {
-    const ruta = path.join(dir, "reglas", nombre);
-    const reglas = await leerJson(ruta, ReglasSchema);
-    if (nombre !== `v${reglas.version}.json`) throw new ErrorDatos(ruta, `el archivo debe llamarse v${reglas.version}.json`);
-    versiones.push(reglas);
-  }
+  const versiones = await Promise.all(
+    (await archivosJson(path.join(dir, "reglas"))).map(async (nombre) => {
+      const ruta = path.join(dir, "reglas", nombre);
+      const reglas = await leerJson(ruta, ReglasSchema);
+      if (nombre !== `v${reglas.version}.json`) throw new ErrorDatos(ruta, `el archivo debe llamarse v${reglas.version}.json`);
+      return reglas;
+    }),
+  );
   versiones.sort((a, b) => a.version - b.version);
   const vigente = versiones.at(-1);
   if (!vigente) throw new ErrorDatos(path.join(dir, "reglas"), "no hay ninguna versión de reglas");
 
-  const tasas: Record<string, TablaTasas> = {};
-  for (const nombre of await archivosJson(path.join(dir, "tasas"))) {
-    const ruta = path.join(dir, "tasas", nombre);
-    const tabla = await leerJson(ruta, TablaTasasSchema);
-    if (nombre !== `${tabla.periodo}.json`) throw new ErrorDatos(ruta, `el archivo debe llamarse ${tabla.periodo}.json`);
-    tasas[tabla.periodo] = tabla;
-  }
+  const tablas = await Promise.all(
+    (await archivosJson(path.join(dir, "tasas"))).map(async (nombre) => {
+      const ruta = path.join(dir, "tasas", nombre);
+      const tabla = await leerJson(ruta, TablaTasasSchema);
+      if (nombre !== `${tabla.periodo}.json`) throw new ErrorDatos(ruta, `el archivo debe llamarse ${tabla.periodo}.json`);
+      return tabla;
+    }),
+  );
+  const tasas: Record<string, TablaTasas> = Object.fromEntries(tablas.map((t) => [t.periodo, t]));
 
   return { empresa, aprobadores, beneficiarios, reglas: { vigente, versiones }, tasas };
 }
 
+/** Ids de escenario: minúsculas, dígitos y guiones. Evita salir de data/escenarios con "../". */
+const ID_ESCENARIO = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
 export async function cargarEscenario(id: string, dir: string = DIR_DATA_POR_DEFECTO): Promise<Escenario> {
+  if (!ID_ESCENARIO.test(id)) throw new Error(`id de escenario inválido: "${id}"`);
   const carpeta = path.join(dir, "escenarios", id);
   const [config, historial, esperado] = await Promise.all([
     leerJson(path.join(carpeta, "escenario.json"), ConfigEscenarioSchema),
@@ -116,18 +124,26 @@ export async function cargarEscenario(id: string, dir: string = DIR_DATA_POR_DEF
   const carpetaDocs = path.join(carpeta, "documentos");
   const metas = (await readdir(carpetaDocs)).filter((n) => n.endsWith(".meta.json")).sort();
   const documentos = await Promise.all(metas.map((n) => leerJson(path.join(carpetaDocs, n), MetaDocumentoSchema)));
-  documentos.sort((a, b) => a.recibido_en.localeCompare(b.recibido_en));
-
-  const conMeta = new Set(documentos.map((d) => d.archivo_original));
-  for (const e of esperado) {
-    if (!conMeta.has(e.documento)) {
-      throw new ErrorDatos(path.join(carpeta, "esperado.json"), `${e.documento} no tiene .meta.json`);
-    }
-  }
-  if (esperado.length !== documentos.length) {
-    throw new ErrorDatos(carpeta, `${documentos.length} documentos pero ${esperado.length} entradas en esperado.json`);
-  }
+  // Orden de llegada por instante real (no por texto: "…14:15Z" es antes que "…09:20-05:00").
+  documentos.sort(
+    (a, b) => instante(a.recibido_en) - instante(b.recibido_en) || a.archivo_original.localeCompare(b.archivo_original),
+  );
+  validarCorrespondencia(path.join(carpeta, "esperado.json"), documentos, esperado);
   return { config, historial, esperado, documentos, carpeta };
+}
+
+/** Cada documento tiene exactamente una entrada en esperado.json y viceversa. */
+function validarCorrespondencia(ruta: string, documentos: MetaDocumento[], esperado: EsperadoDocumento[]): void {
+  const documentosPorArchivo = new Set(documentos.map((d) => d.archivo_original));
+  const vistos = new Set<string>();
+  for (const e of esperado) {
+    if (vistos.has(e.documento)) throw new ErrorDatos(ruta, `${e.documento} aparece más de una vez`);
+    vistos.add(e.documento);
+    if (!documentosPorArchivo.has(e.documento)) throw new ErrorDatos(ruta, `${e.documento} no tiene .meta.json`);
+  }
+  for (const archivo of documentosPorArchivo) {
+    if (!vistos.has(archivo)) throw new ErrorDatos(ruta, `${archivo} no tiene entrada en esperado.json`);
+  }
 }
 
 /** Reglas de una versión concreta (la del escenario, por ejemplo). */

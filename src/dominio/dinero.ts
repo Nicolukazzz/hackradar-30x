@@ -32,15 +32,22 @@ export function aUsd(d: Dinero, tabla: TablaTasas): { usd_centavos: number; tasa
   return { usd_centavos: usd.toNumber(), tasa_usada: formatearTasa(d.moneda, tabla) };
 }
 
+/** "8400000" → "8.400.000" (sin regex: recorre de a tres dígitos desde la derecha). */
 function agrupar(entero: string): string {
-  return entero.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const grupos: string[] = [];
+  for (let fin = entero.length; fin > 0; fin -= 3) grupos.unshift(entero.slice(Math.max(0, fin - 3), fin));
+  return grupos.join(".");
 }
 
 /** 744405 → "7.444,05" · decimales=false: 840000000 → "8.400.000" */
 export function formatearNumero(centavos: number, decimales = true): string {
   if (!Number.isInteger(centavos) || centavos < 0) throw new RangeError(`centavos inválidos: ${centavos}`);
   const enteros = agrupar(Math.trunc(centavos / 100).toString());
-  if (!decimales) return enteros;
+  if (!decimales) {
+    // Igual que dinero.py: una moneda sin decimales con centavos es un error de datos, no se redondea en silencio.
+    if (centavos % 100 !== 0) throw new RangeError(`monto con centavos en moneda sin decimales: ${centavos}`);
+    return enteros;
+  }
   return `${enteros},${(centavos % 100).toString().padStart(2, "0")}`;
 }
 
@@ -70,6 +77,7 @@ export function diferenciaPct(actual: number, acordado: number): Decimal {
 /** 44.444 → "+44,4%" · -3.2 → "-3,2%" · 0 → "0,0%" */
 export function porcentaje(valor: Decimal.Value, decimales = 1): string {
   const v = new Dec(valor).toDecimalPlaces(decimales, Dec.ROUND_HALF_UP);
-  const signo = v.isPositive() && !v.isZero() ? "+" : v.isNegative() && !v.isZero() ? "-" : "";
+  let signo = "";
+  if (!v.isZero()) signo = v.isPositive() ? "+" : "-";
   return `${signo}${v.abs().toFixed(decimales).replace(".", ",")}%`;
 }

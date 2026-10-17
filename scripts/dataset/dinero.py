@@ -70,7 +70,7 @@ def tasa_texto(moneda: str, tasas: dict[str, str]) -> str | None:
     """'MXN 18,50' o None si es USD (formato de EntradaRegistro.tasa_usada)."""
     if moneda == "USD":
         return None
-    entero, _, dec = Decimal(tasas[moneda]).quantize(Decimal("0.01")).to_eng_string().partition(".")
+    entero, _, dec = Decimal(tasas[moneda]).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP).to_eng_string().partition(".")
     return f"{moneda} {_agrupar(int(entero), '.')},{dec}"
 
 

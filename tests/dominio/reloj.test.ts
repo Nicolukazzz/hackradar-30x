@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { relojFijo } from "@/dominio/reloj";
+import { instante, relojFijo } from "@/dominio/reloj";
 import { relojSistema } from "@/lib/reloj-sistema";
 
 describe("reloj", () => {
@@ -13,6 +13,14 @@ describe("reloj", () => {
   it("relojFijo rechaza momentos sin zona", () => {
     expect(() => relojFijo("2026-10-16T09:24:00")).toThrow("momento inválido");
     expect(() => relojFijo("16/10/2026")).toThrow("momento inválido");
+  });
+
+  it("relojFijo rechaza fechas imposibles", () => {
+    expect(() => relojFijo("2026-13-45T99:99:99Z")).toThrow("momento inválido");
+  });
+
+  it("instante ordena por tiempo real entre zonas", () => {
+    expect(instante("2026-10-16T14:15:00Z")).toBeLessThan(instante("2026-10-16T09:20:00-05:00"));
   });
 
   it("relojSistema usa el formato del registro en hora de Bogotá", () => {

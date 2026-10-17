@@ -90,3 +90,64 @@ describe("errores de datos", () => {
     await expect(cargarEscenario("otro", copia)).rejects.toThrow('no coincide con la carpeta "otro"');
   });
 });
+
+describe("hallazgos de la revisión del PR #22", () => {
+  let copia: string;
+  const carpetaLote = () => path.join(copia, "escenarios", "lote-demo-oct");
+
+  beforeAll(async () => {
+    copia = await mkdtemp(path.join(tmpdir(), "blinka-data-rev-"));
+  });
+
+  afterAll(async () => {
+    await rm(copia, { recursive: true, force: true });
+  });
+
+  const restaurar = () => cp("data", copia, { recursive: true, force: true });
+
+  it("ordena por instante real aunque mezclen zonas horarias (R7 depende del orden)", async () => {
+    await restaurar();
+    // 003 llega 09:15:31 -05:00; escrito en UTC queda "14:15:31Z", que como texto iría después de 09:20.
+    const ruta = path.join(carpetaLote(), "documentos", "003-f-0093.meta.json");
+    const meta = JSON.parse(await readFile(ruta, "utf8"));
+    meta.recibido_en = "2026-10-16T14:15:31Z";
+    await writeFile(ruta, JSON.stringify(meta));
+    const { documentos } = await cargarEscenario("lote-demo-oct", copia);
+    expect(documentos.map((d) => d.archivo_original).slice(0, 4)).toEqual([
+      "documentos/001-fac-1041.pdf",
+      "documentos/002-inv-2210.eml",
+      "documentos/003-f-0093.pdf",
+      "documentos/004-jpo-10.txt",
+    ]);
+  });
+
+  it("rechaza un esperado.json con un documento repetido y otro faltante", async () => {
+    await restaurar();
+    const ruta = path.join(carpetaLote(), "esperado.json");
+    const esperado = JSON.parse(await readFile(ruta, "utf8"));
+    esperado[11] = { ...esperado[0] };
+    await writeFile(ruta, JSON.stringify(esperado));
+    await expect(cargarEscenario("lote-demo-oct", copia)).rejects.toThrow("aparece más de una vez");
+  });
+
+  it("rechaza un documento sin entrada en esperado.json", async () => {
+    await restaurar();
+    const ruta = path.join(carpetaLote(), "esperado.json");
+    const esperado = JSON.parse(await readFile(ruta, "utf8"));
+    await writeFile(ruta, JSON.stringify(esperado.slice(0, 11)));
+    await expect(cargarEscenario("lote-demo-oct", copia)).rejects.toThrow("012-es-4410.png no tiene entrada");
+  });
+
+  it.each(["../../etc", "lote-demo-oct/..", "Lote", "", "a--b"])("rechaza el id de escenario %j sin tocar el disco", async (id) => {
+    await expect(cargarEscenario(id)).rejects.toThrow("id de escenario inválido");
+  });
+
+  it("rechaza una tasa de cambio 0 (dividiría por cero)", async () => {
+    await restaurar();
+    const ruta = path.join(copia, "tasas", "2026-10.json");
+    const tabla = JSON.parse(await readFile(ruta, "utf8"));
+    tabla.tasas.MXN = "0.00";
+    await writeFile(ruta, JSON.stringify(tabla));
+    await expect(cargarDatosComunes(copia)).rejects.toThrow("la tasa debe ser mayor que 0");
+  });
+});

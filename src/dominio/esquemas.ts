@@ -28,10 +28,15 @@ import {
 
 const centavos = z.int().nonnegative();
 const fecha = z.iso.date();
-const momento = z.iso.datetime({ offset: true });
+/** Momento ISO-8601 válido con zona (Z o ±hh:mm). Exportado para reloj.ts. */
+export const MomentoSchema = z.iso.datetime({ offset: true });
+const momento = MomentoSchema;
 const texto = z.string().min(1);
-/** "4200.00", "18.50", "1": decimal positivo como string (nunca float). */
-const tasa = z.string().regex(/^\d+(\.\d+)?$/, "tasa debe ser un decimal en texto, p. ej. \"18.50\"");
+/** "4200.00", "18.50", "1": decimal estrictamente positivo como string (nunca float; 0 dividiría por cero). */
+const tasa = z
+  .string()
+  .regex(/^\d+(\.\d+)?$/, "tasa debe ser un decimal en texto, p. ej. \"18.50\"")
+  .refine((v) => Number(v) > 0, "la tasa debe ser mayor que 0");
 
 export const MonedaSchema = z.enum(MONEDAS);
 export const IdReglaSchema = z.enum(ID_REGLAS);

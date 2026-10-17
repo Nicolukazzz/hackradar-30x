@@ -144,7 +144,7 @@ export type Extraccion = {
   referencia_acuerdo?: Campo<string>;
   hito_numero?: Campo<number>;
   idioma: Idioma;
-  /** todo el texto visto (para R10 y auditoría) */
+  /** texto completo visto en el documento (para R10 y auditoría) */
   texto_crudo: string;
   /** el LLM reporta, el código decide */
   senales_llm: { instrucciones_sospechosas: string[] };

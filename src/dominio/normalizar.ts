@@ -12,8 +12,9 @@ const SUFIJOS: readonly (readonly string[])[] = [
   ["LLC"],
 ];
 
+/** Quita marcas diacríticas sin espacio (categoría Mn), igual que `sin_tildes` del oráculo Python. */
 export function sinTildes(texto: string): string {
-  return texto.normalize("NFD").replace(/\p{M}/gu, "");
+  return texto.normalize("NFD").replace(/\p{Mn}/gu, "");
 }
 
 /** Minúsculas y sin tildes: para buscar palabras clave y patrones (R5, R10). */
@@ -43,5 +44,5 @@ export function normalizarNombre(nombre: string): string {
 
 /** "INV 2210" → "INV-2210" · "fac_1041" → "FAC-1041" */
 export function normalizarNumeroFactura(numero: string): string {
-  return sinTildes(numero).toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return sinTildes(numero).toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean).join("-");
 }

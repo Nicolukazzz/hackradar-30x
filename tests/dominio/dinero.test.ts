@@ -42,15 +42,19 @@ describe("conversión a USD (§6, valores del lote demo)", () => {
   });
 
   it("USD nunca cambia de valor (propiedad)", () => {
-    fc.assert(fc.property(fc.nat(), (c) => aUsd({ centavos: c, moneda: "USD" }, OCT).usd_centavos === c));
+    expect(() =>
+      fc.assert(fc.property(fc.nat(), (c) => aUsd({ centavos: c, moneda: "USD" }, OCT).usd_centavos === c)),
+    ).not.toThrow();
   });
 
   it("siempre devuelve centavos enteros (propiedad)", () => {
-    fc.assert(
-      fc.property(fc.nat({ max: 10 ** 12 }), fc.constantFrom<Moneda>("COP", "MXN", "BRL", "ARS"), (c, m) =>
-        Number.isInteger(aUsd({ centavos: c, moneda: m }, OCT).usd_centavos),
+    expect(() =>
+      fc.assert(
+        fc.property(fc.nat({ max: 10 ** 12 }), fc.constantFrom<Moneda>("COP", "MXN", "BRL", "ARS"), (c, m) =>
+          Number.isInteger(aUsd({ centavos: c, moneda: m }, OCT).usd_centavos),
+        ),
       ),
-    );
+    ).not.toThrow();
   });
 
   it("tasaDe(USD) es 1 aunque la tabla no lo traiga", () => {
@@ -92,6 +96,14 @@ describe("formatos es-CO", () => {
     expect(porcentaje(0)).toBe("0,0%");
     expect(porcentaje(-3.25)).toBe("-3,3%");
     expect(() => diferenciaPct(1, 0)).toThrow(RangeError);
+  });
+
+  it("una moneda sin decimales con centavos es un error (igual que dinero.py), no se redondea en silencio", () => {
+    expect(() => formatear({ centavos: 441176550, moneda: "COP" })).toThrow("monto con centavos en moneda sin decimales");
+  });
+
+  it("formatearTasa redondea half-up como el generador (18.505 → 18,51)", () => {
+    expect(formatearTasa("MXN", { ...OCT, tasas: { MXN: "18.505" } })).toBe("MXN 18,51");
   });
 
   it("formatearTasa agrupa miles", () => {
