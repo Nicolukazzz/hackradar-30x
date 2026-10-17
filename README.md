@@ -2,7 +2,7 @@
 
 Proyecto del equipo para el hackathon HackRadar 30X. Reto elegido: **Blinka — Agentes que pagan por la empresa** ([brief](docs/retos/blinka.md)).
 
-Estado: investigación y diseño. Stack por definir.
+Estado: especificación v1 lista ([`docs/especificacion.md`](docs/especificacion.md)); stack propuesto, por aceptar en #1. Prototipo visual: [`docs/diseno/prototipo-ui.html`](docs/diseno/prototipo-ui.html) (descargar y abrir en el navegador).
 
 Requisitos: Claude Code, Node 18+, [`gh`](https://cli.github.com/) con `gh auth login` hecho.
 
@@ -28,10 +28,13 @@ Verificar: `/mcp` muestra `playwright` conectado; `/` lista las skills del proye
 | Ruta | Para qué |
 |---|---|
 | `CLAUDE.md` | Contexto que Claude carga siempre: reto, invariantes, forma de trabajo |
+| `docs/producto.md` | Qué construimos y por qué (producto, canales, LLM, roles) |
+| `docs/especificacion.md` | Contrato técnico: tipos, reglas R1–R11, dataset, API, pantallas, evaluación |
+| `docs/diseno/` | Prototipo navegable de las 5 pantallas |
 | `docs/retos/` | Brief de los 4 retos copiados de la plataforma |
 | `docs/decisiones.md` | Registro de decisiones del equipo |
 | `docs/research/` | Hallazgos de investigación, un archivo por tema |
-| `data/` | Dataset simulado: empresa, reglas, proveedores, facturas, respuestas esperadas |
+| `data/` | Dataset simulado: empresa, reglas, proveedores y escenarios (documentos + respuestas esperadas) |
 | `.claude/settings.json` | Plugins, permisos y hooks compartidos |
 | `.claude/skills/` | Skills del proyecto |
 | `.mcp.json` | Servidores MCP compartidos |
