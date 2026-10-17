@@ -51,7 +51,7 @@ Frenar si falla: R2 duplicado · R5 no cuadra con lo acordado (±2 %) · R6 sobr
 
 ## Stack y comandos
 
-Aceptado en #1: **Next.js 16.4 (App Router, Turbopack) + React 19 + TypeScript estricto** (`strict`, `noUncheckedIndexedAccess`) + **Tailwind v4 + shadcn/ui** (estilo `base-nova`, Base UI, iconos `lucide-react`) + **Vitest + fast-check** + `zod` + `decimal.js` + fuentes `geist`. Persistencia detrás de interfaz `Repositorio` (memoria/JSON para tests y demo local, Supabase para deploy). Generador de dataset en Python (`scripts/dataset/requirements.txt`: reportlab + Pillow). Alias `@/` → `src/`.
+Aceptado en #1: **Next.js 16.4 (App Router, Turbopack) + React 19 + TypeScript estricto** (`strict`, `noUncheckedIndexedAccess`) + **Tailwind v4 + shadcn/ui** (estilo `base-nova`, Base UI, iconos `lucide-react`) + **Vitest + fast-check** + `zod` + `decimal.js` + fuentes `geist`. Persistencia detrás de interfaz `Repositorio`: memoria (tests, demo local) o Supabase (`REPOSITORIO=supabase`, #44, `src/repositorio/supabase.ts`; contrato común en `tests/repositorio/contrato.ts`, `npm run test:supabase` con Docker). Generador de dataset en Python (`scripts/dataset/requirements.txt`: reportlab + Pillow). Alias `@/` → `src/`.
 
 Next 16.4 cambia APIs respecto a versiones anteriores: antes de usar una API de Next, leer `AGENTS.md` y la guía en `node_modules/next/dist/docs/` (o MCP `next-devtools`). `cacheComponents` está apagado a propósito (renderizado dinámico clásico, más simple para el equipo).
 

@@ -12,10 +12,14 @@ type Global = typeof globalThis & { [CLAVE]?: Promise<Repositorio> };
 
 function crear(): Promise<Repositorio> {
   const tipo = process.env.REPOSITORIO ?? "memoria";
+  const escenario = process.env.ESCENARIO ?? "lote-demo-oct";
   if (tipo === "supabase") {
-    return Promise.reject(new Error("REPOSITORIO=supabase aún no está implementado (#17): usar REPOSITORIO=memoria"));
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const claveSecreta = process.env.SUPABASE_SECRET_KEY;
+    if (!url || !claveSecreta) return Promise.reject(new Error("REPOSITORIO=supabase necesita NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SECRET_KEY"));
+    return import("./supabase").then((m) => m.crearRepositorioSupabase({ url, claveSecreta, escenario }));
   }
-  return crearRepositorioMemoria(process.env.ESCENARIO ?? "lote-demo-oct");
+  return crearRepositorioMemoria(escenario);
 }
 
 export function obtenerRepositorio(): Promise<Repositorio> {
