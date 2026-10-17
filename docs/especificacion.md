@@ -63,9 +63,12 @@ Stack **aceptado en #1**: **Next.js 16.4 (App Router) + TypeScript estricto + Vi
 ```
 src/
   dominio/
-    tipos.ts              # TODOS los tipos de §3. Única fuente.
+    tipos.ts              # TODOS los tipos de §3 y §9 + tipos del dataset. Única fuente.
+    esquemas.ts           # zod estricto de cada tipo que entra por disco o HTTP (coincidencia exacta comprobada en compilación)
+    normalizar.ts         # nombres, números de factura y texto (misma lógica que el oráculo del dataset)
+    cargar.ts             # lee y valida data/ (comunes + escenarios); solo servidor
     dinero.ts             # centavos, conversión, formato es-CO (§6)
-    reloj.ts              # `ahora` inyectado; prohibido Date.now() en dominio
+    reloj.ts              # tipo Reloj + relojFijo; prohibido Date.now() en dominio
   reglas/
     r01-extraccion.ts … r11-remitente.ts   # una regla por archivo, firma §4.1
     motor.ts              # evaluarFactura(): corre R1–R11 en orden y combina (§5)
@@ -110,6 +113,8 @@ Comandos (fijados en #1; lista completa en `CLAUDE.md` "Stack y comandos"):
 | `npm run dataset` | `scripts/dataset/generar.py` (con `.venv/bin/python` si existe, si no `python3`) |
 
 ## 3. Modelo de datos
+
+Implementado en `src/dominio/tipos.ts` (tipos) y `src/dominio/esquemas.ts` (zod). Además de lo de abajo, `tipos.ts` define los tipos del dataset (§11): `MetaDocumento` (DocumentoEntrante + `archivo_original`), `ExtraccionPlana`, `EsperadoDocumento`, `ConfigEscenario` y `Trampa`. El reloj real (`relojSistema`) vive en `src/lib/reloj-sistema.ts` porque el dominio no puede leer la hora.
 
 Convenciones: montos en **centavos enteros** (`number` entero, nunca float para dinero); tasas como **string decimal** (`"18.50"`); fechas `YYYY-MM-DD`; momentos ISO-8601 con zona `-05:00`; ids en kebab/mayúsculas como se indica. Archivos JSON de `data/` usan exactamente estos nombres de campo.
 
