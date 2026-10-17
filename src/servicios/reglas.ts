@@ -1,0 +1,123 @@
+// GET/POST /api/reglas y POST /api/reglas/simular (§12, pantalla §13.4).
+
+import type { Aprobador, Beneficiario, EntradaRegistro, Moneda, Reglas, TablaTasas } from "@/dominio/tipos";
+import { evaluarLote, type ReporteEvaluacion } from "@/evaluacion/evaluar";
+import type { Repositorio, ResumenVersion } from "@/repositorio/repositorio";
+
+export type UsoTasa = { moneda: Moneda; tasa: string; facturas: number };
+
+export type RespuestaReglas = {
+  vigente: Reglas;
+  historial: ResumenVersion[];
+  beneficiarios: Beneficiario[];
+  aprobadores: Aprobador[];
+  tasas: TablaTasas | null;
+  /** cuántas facturas del lote usaron cada tasa ("uso en el lote") */
+  uso_tasas: UsoTasa[];
+};
+
+export class ErrorReglas extends Error {
+  constructor(
+    readonly estado: 400 | 403 | 409,
+    mensaje: string,
+    readonly reporte?: ReporteEvaluacion,
+  ) {
+    super(mensaje);
+    this.name = "ErrorReglas";
+  }
+}
+
+/** Reglas sin el número de versión (lo asigna el repositorio al guardar). */
+export function sinVersion(r: Reglas): Omit<Reglas, "version"> {
+  const copia: Partial<Reglas> = { ...r };
+  delete copia.version;
+  return copia as Omit<Reglas, "version">;
+}
+
+export async function obtenerReglas(repo: Repositorio): Promise<RespuestaReglas> {
+  const [datos, vigente, historial, esc, registro] = await Promise.all([
+    repo.datosComunes(),
+    repo.reglasVigentes(),
+    repo.historialReglas(),
+    repo.escenario(),
+    repo.registro({ tipo: ["DECISION_AGENTE"] }),
+  ]);
+  const tasas = esc ? (datos.tasas[esc.config.periodo] ?? null) : null;
+  const periodo = esc?.config.periodo;
+  const uso_tasas: UsoTasa[] = Object.entries(tasas?.tasas ?? {})
+    .filter(([m]) => m !== "USD")
+    .map(([m, tasa]) => ({
+      moneda: m as Moneda,
+      tasa: tasa ?? "",
+      facturas: registro.filter((e) => e.monto_original?.moneda === m && (!periodo || e.momento.startsWith(periodo))).length,
+    }));
+  return { vigente, historial, beneficiarios: datos.beneficiarios, aprobadores: datos.aprobadores, tasas, uso_tasas };
+}
+
+/**
+ * Corre el lote del escenario con `reglas` sobre el historial previo al lote, sin registrar nada,
+ * y compara con el esperado (§14, modo golden).
+ */
+export async function simularReglas(repo: Repositorio, reglas: Reglas): Promise<ReporteEvaluacion> {
+  const [esc, datos, registro] = await Promise.all([repo.escenario(), repo.datosComunes(), repo.registro()]);
+  if (!esc) throw new ErrorReglas(409, "No hay un escenario cargado para simular.");
+  // El lote completo del escenario: los procesados y los que aún esperan.
+  const golden = await repo.documentosEscenario();
+  const historial = registro.slice(0, esc.entradas_importadas);
+  return evaluarLote(golden, { datos, reglas, historial, ahora: esc.config.ahora });
+}
+
+/**
+ * Guarda una versión nueva. Antes la simula: si aprobaría algún pago fuera de reglas, se rechaza (409),
+ * igual que el botón bloqueado de la pantalla (§13.4). Escribe CAMBIO_REGLAS en el registro.
+ */
+export async function guardarReglas(
+  repo: Repositorio,
+  nuevas: Omit<Reglas, "version">,
+  autor: Aprobador,
+  ahora: string,
+): Promise<{ version: number; reporte: ReporteEvaluacion; entrada: EntradaRegistro }> {
+  if (!autor.principal) throw new ErrorReglas(403, "Solo el aprobador principal puede guardar una versión nueva de las reglas.");
+  return repo.enExclusiva(() => guardarEnExclusiva(repo, nuevas, autor, ahora));
+}
+
+async function guardarEnExclusiva(
+  repo: Repositorio,
+  nuevas: Omit<Reglas, "version">,
+  autor: Aprobador,
+  ahora: string,
+): Promise<{ version: number; reporte: ReporteEvaluacion; entrada: EntradaRegistro }> {
+  const actual = await repo.reglasVigentes();
+  const candidata: Reglas = { ...nuevas, version: actual.version + 1, editada_por: autor.nombre, editada_en: ahora };
+  const reporte = await simularReglas(repo, candidata);
+  if (reporte.pagos_indebidos > 0) {
+    throw new ErrorReglas(409, `Con estas reglas el agente aprobaría ${reporte.pagos_indebidos} pago(s) fuera de reglas en el set de prueba. No se guardó.`, reporte);
+  }
+  const version = await repo.guardarReglas(sinVersion(candidata));
+  const entrada: EntradaRegistro = {
+    id: await repo.siguienteIdRegistro(Number(ahora.slice(0, 4))),
+    momento: ahora,
+    actor: { tipo: "humano", aprobador_id: autor.id, nombre: autor.nombre },
+    tipo: "CAMBIO_REGLAS",
+    ref_interna: `CONFIG-REGLAS-V${version}`,
+    factura_numero: null,
+    beneficiario: null,
+    canal: "carga_manual",
+    formato: "xml",
+    monto_original: null,
+    monto_usd_centavos: null,
+    tasa_usada: null,
+    decision: null,
+    reglas_version: version,
+    evaluaciones: [],
+    reglas_que_fallaron: [],
+    comparaciones: [],
+    explicacion: `${autor.nombre} guardó la versión ${version} de las reglas. Simulación: ${reporte.coinciden} de ${reporte.total} coinciden, ${reporte.pagos_indebidos} pagos fuera de reglas.`,
+    comentario: null,
+    entrada_origen: null,
+    extraccion: null,
+    sha256: null,
+  };
+  await repo.agregarEntrada(entrada);
+  return { version, reporte, entrada };
+}
