@@ -1,28 +1,24 @@
-// Quién está decidiendo. Única puerta: NINGUNA ruta lee aprobador_id del body.
-//
-// Hoy (sin login) es la elección demo "Actuar como" de la pantalla Aprobaciones, guardada en la cookie
-// `actuar_como`. #25 reemplaza esta función por `exigirRol('aprobador')` con la sesión verificada de
-// Supabase; las rutas no cambian.
-
-import { cookies } from "next/headers";
+// Quién está decidiendo. Única puerta: NINGUNA ruta lee aprobador_id del body; sale de la sesión de
+// Supabase (#25) que `conRol` ya verificó.
 
 import type { Aprobador } from "@/dominio/tipos";
+import type { Rol, Sesion } from "@/lib/auth/permisos";
 import type { Repositorio } from "@/repositorio/repositorio";
 
-export const COOKIE_ACTUAR_COMO = "actuar_como";
+/** Panel interno: tesorería ve y procesa; los aprobadores además deciden. Los proveedores no entran. */
+export const PANEL: Rol[] = ["tesoreria", "aprobador"];
 
 /**
- * Rutas y cookie de demo (actuar como, reiniciar): siempre en desarrollo; en producción solo con DEMO=1.
- * Sin login (#25), cualquiera que llegue a la URL podría actuar como la CFO: activarlo a propósito y solo para la demo.
+ * Ruta de demo (reiniciar el escenario): siempre en desarrollo; en producción solo con DEMO=1.
+ * Igual exige sesión del panel (`conRol`).
  */
 export function demoActiva(): boolean {
   return process.env.NODE_ENV !== "production" || process.env.DEMO === "1";
 }
 
-export async function aprobadorDeLaPeticion(repo: Repositorio): Promise<Aprobador | null> {
-  if (!demoActiva()) return null;
-  const id = (await cookies()).get(COOKIE_ACTUAR_COMO)?.value;
-  if (!id) return null;
+/** Aprobador de la sesión (rol `aprobador` con `aprobador_id`), o null. */
+export async function aprobadorDeLaSesion(sesion: Sesion, repo: Repositorio): Promise<Aprobador | null> {
+  if (sesion.rol !== "aprobador" || !sesion.aprobador_id) return null;
   const { aprobadores } = await repo.datosComunes();
-  return aprobadores.find((a) => a.id === id) ?? null;
+  return aprobadores.find((a) => a.id === sesion.aprobador_id) ?? null;
 }

@@ -1,31 +1,49 @@
 // Repositorio fresco del lote demo por test, y helpers para entradas sintéticas.
 
 import type { EntradaRegistro } from "@/dominio/tipos";
+import type { Sesion } from "@/lib/auth/permisos";
 import { fijarRepositorio } from "@/repositorio";
 import { crearRepositorioMemoria } from "@/repositorio/memoria";
 import type { Repositorio } from "@/repositorio/repositorio";
 import { procesarPendientes } from "@/servicios/lote";
 
 /**
- * Cookie "actuar_como" simulada para las rutas (next/headers no existe fuera de una petición).
- * Cada archivo de test que llama rutas declara:
- *   vi.mock("next/headers", () => ({ cookies: async () => cookiesFalsas() }));
+ * Sesión simulada para las rutas (`conRol` de #25). Cada archivo de test que llama rutas declara:
+ *   vi.mock("server-only", () => ({}));
+ *   vi.mock("@/lib/auth/sesion", async () => (await import("./ayuda")).sesionFalsa);
+ *   vi.mock("@/lib/auth/auditoria", () => ({ auditar: () => undefined }));
+ * Por defecto actúa tesorería; `comoAprobador("lm")` cambia a un aprobador.
  */
-export const galletas = new Map<string, string>();
-export function cookiesFalsas() {
-  return {
-    get: (k: string) => (galletas.has(k) ? { name: k, value: galletas.get(k) } : undefined),
-    set: (k: string, v: string) => {
-      galletas.set(k, v);
-    },
-  };
+export const TESORERIA: Sesion = {
+  usuario_id: "u-tesoreria",
+  correo: "tesoreria@nebula.example",
+  rol: "tesoreria",
+  aprobador_id: null,
+  beneficiario_id: null,
+  nombre: "Tesorería",
+};
+let sesionActual: Sesion | null = TESORERIA;
+export const sesionFalsa = { obtenerSesion: async () => sesionActual };
+export function comoSesion(s: Sesion | null) {
+  sesionActual = s;
+}
+export function comoAprobador(aprobador_id: string) {
+  sesionActual = { ...TESORERIA, usuario_id: `u-${aprobador_id}`, rol: "aprobador", aprobador_id, nombre: aprobador_id };
+}
+export function comoProveedor(beneficiario_id: string) {
+  sesionActual = { ...TESORERIA, usuario_id: `u-${beneficiario_id}`, rol: "proveedor", beneficiario_id, nombre: beneficiario_id };
+}
+
+/** Petición del mismo origen (la guardia rechaza escrituras sin Origin, CSRF). */
+export function peticion(url: string, init: RequestInit = {}): Request {
+  return new Request(url, { ...init, headers: { origin: new URL(url).origin, ...init.headers } });
 }
 
 export async function repoProcesado(): Promise<Repositorio> {
   const repo = await crearRepositorioMemoria("lote-demo-oct");
   await procesarPendientes(repo);
   fijarRepositorio(repo);
-  galletas.clear();
+  comoSesion(TESORERIA);
   return repo;
 }
 

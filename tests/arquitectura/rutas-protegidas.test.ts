@@ -6,11 +6,7 @@ import { describe, expect, it } from "vitest";
 import { API_PUBLICAS } from "@/lib/auth/rutas";
 
 // Issue #25 (mínimo privilegio): cada route handler de src/app/api declara su rol con `conRol`,
-// salvo las rutas públicas declaradas en API_PUBLICAS (webhooks con verificación propia).
-//
-// TODO(#26): las rutas de src/app/api existentes son de #17 y todavía usan `aprobadorDeLaPeticion()`
-// o chequeos propios en vez de `conRol`. Hasta que #26 las migre, este test solo AVISA (no falla);
-// al cerrar #26 hay que volver a exigirlo con `expect(...)` como estaba antes.
+// salvo las rutas públicas declaradas en API_PUBLICAS (webhooks con verificación propia). Migradas en #26.
 const RAIZ_API = "src/app/api";
 
 async function rutas(dir: string): Promise<string[]> {
@@ -31,7 +27,7 @@ function urlDe(archivo: string): string {
 }
 
 describe("rutas de API protegidas", () => {
-  it("advierte qué rutas aún no usan conRol (pendiente #26)", async () => {
+  it("toda ruta no pública usa conRol", async () => {
     const pendientes: string[] = [];
     for (const archivo of await rutas(RAIZ_API)) {
       const url = urlDe(archivo);
@@ -40,10 +36,6 @@ describe("rutas de API protegidas", () => {
       const usaConRol = /from "@\/lib\/auth\/ruta"/.test(codigo) && /conRol\(/.test(codigo);
       if (!usaConRol) pendientes.push(archivo);
     }
-    if (pendientes.length > 0) {
-      console.warn(`[#26] ${pendientes.length} ruta(s) de API todavía sin conRol:\n  ${pendientes.join("\n  ")}`);
-    }
-    // No falla a propósito hasta #26 (ver TODO arriba).
-    expect(pendientes).toBeInstanceOf(Array);
+    expect(pendientes).toEqual([]);
   });
 });

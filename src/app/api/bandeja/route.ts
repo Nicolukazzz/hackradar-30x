@@ -1,9 +1,11 @@
 import { z } from "zod";
 
 import { obtenerRepositorio } from "@/repositorio";
+import { conRol } from "@/lib/auth/ruta";
 import { obtenerBandeja } from "@/servicios/bandeja";
 
 import { error, manejar, ok } from "../_http";
+import { PANEL } from "../_identidad";
 
 const Consulta = z.object({
   periodo: z.string().regex(/^\d{4}-\d{2}$/).optional(),
@@ -12,7 +14,7 @@ const Consulta = z.object({
 });
 
 /** GET /api/bandeja?periodo=2026-10&decision=todas&q= (§12) */
-export async function GET(req: Request) {
+export const GET = conRol(PANEL, async (req: Request) => {
   try {
     const c = Consulta.safeParse(Object.fromEntries(new URL(req.url).searchParams));
     if (!c.success) return error(400, "Parámetros inválidos: decision es todas|pagar|frenar|escalar y periodo AAAA-MM.");
@@ -23,4 +25,4 @@ export async function GET(req: Request) {
   } catch (e) {
     return manejar(e);
   }
-}
+});

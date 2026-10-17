@@ -9,16 +9,15 @@ import type { Reglas } from "@/dominio/tipos";
 import { COLUMNAS_CSV, registroACsv } from "@/servicios/registro";
 import { obtenerReglas, simularReglas } from "@/servicios/reglas";
 
-import { entradaDe, galletas, repoProcesado } from "./ayuda";
+import { comoAprobador, entradaDe, peticion, repoProcesado } from "./ayuda";
 
 
-vi.mock("next/headers", async () => {
-  const { cookiesFalsas } = await import("./ayuda");
-  return { cookies: async () => cookiesFalsas() };
-});
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/auth/sesion", async () => (await import("./ayuda")).sesionFalsa);
+vi.mock("@/lib/auth/auditoria", () => ({ auditar: () => undefined }));
 
 const conAutomatico = (r: Reglas, usd: number): Reglas => ({ ...r, limites: { ...r.limites, pago_automatico_usd: usd } });
-const json = (url: string, body: unknown) => new Request(url, { method: "POST", body: JSON.stringify(body) });
+const json = (url: string, body: unknown) => peticion(url, { method: "POST", body: JSON.stringify(body) });
 
 describe("reglas: simular y guardar (§13.4, §14)", () => {
   it("v7 sobre el lote demo: 12/12, 0 pagos fuera de reglas, autonomía 8/12", async () => {
@@ -37,7 +36,7 @@ describe("reglas: simular y guardar (§13.4, §14)", () => {
 
   it("subir el límite automático a USD 5.000 paga LF-2026-10 → pagos fuera de reglas → no se guarda (409)", async () => {
     const repo = await repoProcesado();
-    galletas.set("actuar_como", "lm");
+    comoAprobador("lm");
     const v7 = await repo.reglasVigentes();
     const res = await postReglas(json("http://x/api/reglas", conAutomatico(v7, 500000)));
     expect(res.status).toBe(409);
@@ -48,9 +47,9 @@ describe("reglas: simular y guardar (§13.4, §14)", () => {
   it("guardar como v8: solo el aprobador principal; escribe CAMBIO_REGLAS; R9 > R6 → 400", async () => {
     const repo = await repoProcesado();
     const v7 = await repo.reglasVigentes();
-    galletas.set("actuar_como", "ap");
+    comoAprobador("ap");
     expect((await postReglas(json("http://x/api/reglas", conAutomatico(v7, 200000)))).status).toBe(403);
-    galletas.set("actuar_como", "lm");
+    comoAprobador("lm");
     expect((await postReglas(json("http://x/api/reglas", conAutomatico(v7, 2000000)))).status).toBe(400);
     const res = await postReglas(json("http://x/api/reglas", conAutomatico(v7, 200000)));
     expect(res.status).toBe(201);
@@ -75,11 +74,11 @@ describe("registro (§9, §13.5)", () => {
     const largo = (await repo.registro()).length;
     const lf = await entradaDe(repo, "LF-2026-10");
     await decidir({ ref: lf.ref_interna, accion: "aprobar", comentario: "Hito final entregado.", aprobador_id: "lm" }, { repo, ahora: "2026-10-16T15:10:00-05:00" });
-    const r = await (await getRegistro(new Request("http://x/api/registro"))).json();
+    const r = await (await getRegistro(peticion("http://x/api/registro"))).json();
     expect(r.total).toBe(largo + 1);
     expect(r.dias[0].fecha).toBe("2026-10-16");
     expect(r.dias[0].entradas[0]).toMatchObject({ tipo: "DECISION_HUMANA", factura_numero: "LF-2026-10" });
-    const humanas = await (await getRegistro(new Request("http://x/api/registro?decision=humanas"))).json();
+    const humanas = await (await getRegistro(peticion("http://x/api/registro?decision=humanas"))).json();
     expect(humanas.dias.flatMap((d: { entradas: unknown[] }) => d.entradas).every((e: { tipo: string }) => e.tipo === "DECISION_HUMANA")).toBe(true);
     // la interfaz no tiene update ni delete; agregar una entrada con id repetido falla
     await expect(repo.agregarEntrada({ ...lf })).rejects.toThrow("no se sobrescribe");
@@ -88,7 +87,7 @@ describe("registro (§9, §13.5)", () => {
 
   it("export.csv: 15 columnas de §9, BOM, sin inyección de fórmulas", async () => {
     await repoProcesado();
-    const bytes = new Uint8Array(await (await exportCsv()).arrayBuffer());
+    const bytes = new Uint8Array(await (await exportCsv(peticion("http://x/api/registro/export.csv"))).arrayBuffer());
     expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
     const [cabecera] = new TextDecoder().decode(bytes).split("\r\n");
     expect(cabecera?.split(",")).toEqual([...COLUMNAS_CSV]);

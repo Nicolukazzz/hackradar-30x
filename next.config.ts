@@ -11,6 +11,11 @@ const cabecerasSeguridad = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // Con proxy (src/proxy.ts) Next copia el cuerpo y lo corta en 10 MB por defecto: una factura de 9,9 MB en
+    // multipart pasa ese tope y llegaría truncada. 11 MB deja margen; POST /api/documentos corta en 10 MB + 64 KB.
+    proxyClientMaxBodySize: "11mb",
+  },
   async headers() {
     return [{ source: "/:path*", headers: cabecerasSeguridad }];
   },

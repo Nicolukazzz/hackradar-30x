@@ -7,18 +7,17 @@ import type { EntradaRegistro } from "@/dominio/tipos";
 import { obtenerAprobaciones } from "@/servicios/aprobaciones";
 import { obtenerBandeja } from "@/servicios/bandeja";
 
-import { entradaDe, escaladaSintetica, galletas, repoProcesado } from "./ayuda";
+import { TESORERIA, comoAprobador, comoProveedor, comoSesion, entradaDe, escaladaSintetica, peticion, repoProcesado } from "./ayuda";
 
 
-vi.mock("next/headers", async () => {
-  const { cookiesFalsas } = await import("./ayuda");
-  return { cookies: async () => cookiesFalsas() };
-});
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/auth/sesion", async () => (await import("./ayuda")).sesionFalsa);
+vi.mock("@/lib/auth/auditoria", () => ({ auditar: () => undefined }));
 
 const AHORA = "2026-10-16T15:00:00-05:00";
 const ctx = (ref: string) => ({ params: Promise.resolve({ ref }) }) as RouteContext<"/api/aprobaciones/[ref]">;
 const post = (ref: string, body: unknown) =>
-  postDecision(new Request(`http://x/api/aprobaciones/${ref}`, { method: "POST", body: JSON.stringify(body) }), ctx(ref));
+  postDecision(peticion(`http://x/api/aprobaciones/${ref}`, { method: "POST", body: JSON.stringify(body) }), ctx(ref));
 
 async function falla(p: Promise<unknown>, estado: number, texto?: string) {
   const e = await p.then(
@@ -33,11 +32,11 @@ async function falla(p: Promise<unknown>, estado: number, texto?: string) {
 describe("GET /api/aprobaciones (§13.3)", () => {
   it("4 pendientes, F-0101 primero (vence hoy), reservado USD 9.278,65", async () => {
     await repoProcesado();
-    const r = await (await getAprobaciones(new Request("http://x/api/aprobaciones"))).json();
+    const r = await (await getAprobaciones(peticion("http://x/api/aprobaciones"))).json();
     expect(r.pendientes.map((p: { factura_numero: string }) => p.factura_numero)).toEqual(["F-0101", "OMI-3381", "LF-2026-10", "TD-001"]);
     expect(r.reservado_usd).toBe(927865);
     expect(r.pendientes[1]).toMatchObject({ reglas_ok: 8, reglas_total: 11, puede_agregar_a_lista: true, asignacion: { aprobador: { id: "lm" } } });
-    const porMonto = await (await getAprobaciones(new Request("http://x/api/aprobaciones?orden=monto"))).json();
+    const porMonto = await (await getAprobaciones(peticion("http://x/api/aprobaciones?orden=monto"))).json();
     expect(porMonto.pendientes[0].factura_numero).toBe("LF-2026-10");
   });
 });
@@ -108,18 +107,24 @@ describe("decidir() — reglas de §10", () => {
 });
 
 describe("POST /api/aprobaciones/:ref (ruta)", () => {
-  it("sin elegir aprobador → 401; aprobador_id en el body → 400 (la identidad no sale del body)", async () => {
+  it("sin sesión → 401; tesorería o proveedor → 403; aprobador_id en el body → 400 (la identidad sale de la sesión)", async () => {
     const repo = await repoProcesado();
     const lf = await entradaDe(repo, "LF-2026-10");
-    expect((await post(lf.ref_interna, { accion: "aprobar", comentario: "Hito final revisado" })).status).toBe(401);
-    galletas.set("actuar_como", "ap");
+    const cuerpoOk = { accion: "aprobar", comentario: "Hito final revisado" };
+    comoSesion(null);
+    expect((await post(lf.ref_interna, cuerpoOk)).status).toBe(401);
+    comoSesion(TESORERIA);
+    expect((await post(lf.ref_interna, cuerpoOk)).status).toBe(403);
+    comoProveedor("ben-lucia-fernandez");
+    expect((await post(lf.ref_interna, cuerpoOk)).status).toBe(403);
+    comoAprobador("ap");
     expect((await post(lf.ref_interna, { accion: "aprobar", comentario: "Hito final revisado", aprobador_id: "lm" })).status).toBe(400);
     expect((await post(lf.ref_interna, { accion: "aprobar", comentario: "" })).status).toBe(400);
   });
 
   it("aprobar como la persona elegida → 201 con la entrada nueva; errores con { error }", async () => {
     const repo = await repoProcesado();
-    galletas.set("actuar_como", "lm");
+    comoAprobador("lm");
     const lf = await entradaDe(repo, "LF-2026-10");
     const res = await post(lf.ref_interna, { accion: "aprobar", comentario: "Hito final entregado y revisado." });
     expect(res.status).toBe(201);

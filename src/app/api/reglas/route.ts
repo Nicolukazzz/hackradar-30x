@@ -1,30 +1,31 @@
 import { ReglasSchema } from "@/dominio/esquemas";
+import { conRol } from "@/lib/auth/ruta";
 import { obtenerRepositorio } from "@/repositorio";
 import { ahoraHumano } from "@/servicios/comun";
 import { guardarReglas, obtenerReglas, sinVersion } from "@/servicios/reglas";
 
 import { error, json, manejar, ok, validar } from "../_http";
-import { aprobadorDeLaPeticion } from "../_identidad";
+import { aprobadorDeLaSesion, PANEL } from "../_identidad";
 
 /** GET /api/reglas (§12): versión vigente, historial, beneficiarios, aprobadores y tasas. */
-export async function GET() {
+export const GET = conRol(PANEL, async () => {
   try {
     return ok(await obtenerReglas(await obtenerRepositorio()));
   } catch (e) {
     return manejar(e);
   }
-}
+});
 
 /**
  * POST /api/reglas (§12): guarda una versión nueva ("Guardar como v8"). Cuerpo: Reglas sin `version`
  * (editada_por y editada_en los pone el servidor). Solo el aprobador principal; 409 si la simulación
  * da algún pago fuera de reglas.
  */
-export async function POST(req: Request) {
+export const POST = conRol(["aprobador"], async (req: Request, _ctx, sesion) => {
   try {
     const repo = await obtenerRepositorio();
-    const autor = await aprobadorDeLaPeticion(repo);
-    if (!autor) return error(401, "Elige con qué aprobador actúas antes de guardar reglas.");
+    const autor = await aprobadorDeLaSesion(sesion, repo);
+    if (!autor) return error(403, "Tu usuario no está asociado a un aprobador.");
     const ahora = await ahoraHumano(repo);
     const actual = await repo.reglasVigentes();
     const crudo = await json(req);
@@ -36,4 +37,4 @@ export async function POST(req: Request) {
   } catch (e) {
     return manejar(e);
   }
-}
+});

@@ -1,9 +1,11 @@
+import { conRol } from "@/lib/auth/ruta";
 import { obtenerRepositorio } from "@/repositorio";
 
 import { manejar } from "../../_http";
+import { PANEL } from "../../_identidad";
 
 /** GET /api/registro/export.json (§9): el registro completo, en orden de inserción. */
-export async function GET() {
+export const GET = conRol(PANEL, async () => {
   try {
     const entradas = await (await obtenerRepositorio()).registro();
     return new Response(JSON.stringify(entradas, null, 2), {
@@ -12,4 +14,4 @@ export async function GET() {
   } catch (e) {
     return manejar(e);
   }
-}
+});

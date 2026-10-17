@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { GET as getBandeja } from "@/app/api/bandeja/route";
 import { POST as postProcesar } from "@/app/api/procesar/route";
@@ -8,12 +8,16 @@ import type { RespuestaBandeja } from "@/servicios/bandeja";
 import { obtenerBandeja } from "@/servicios/bandeja";
 import { obtenerFactura } from "@/servicios/facturas";
 
-import { repoProcesado } from "./ayuda";
+import { peticion, repoProcesado } from "./ayuda";
+
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/auth/sesion", async () => (await import("./ayuda")).sesionFalsa);
+vi.mock("@/lib/auth/auditoria", () => ({ auditar: () => undefined }));
 
 describe("lote demo de punta a punta (§11.4)", () => {
   it("antes de procesar: bandeja vacía con 12 por procesar", async () => {
     fijarRepositorio(await crearRepositorioMemoria("lote-demo-oct"));
-    const b = (await (await getBandeja(new Request("http://x/api/bandeja"))).json()) as RespuestaBandeja;
+    const b = (await (await getBandeja(peticion("http://x/api/bandeja"))).json()) as RespuestaBandeja;
     expect(b.filas).toEqual([]);
     expect(b.por_procesar).toBe(12);
     expect(b.procesado_en).toBeNull();
@@ -21,12 +25,12 @@ describe("lote demo de punta a punta (§11.4)", () => {
 
   it("POST /api/procesar deja la bandeja igual al prototipo", async () => {
     fijarRepositorio(await crearRepositorioMemoria("lote-demo-oct"));
-    const r = await (await postProcesar()).json();
+    const r = await (await postProcesar(peticion("http://x/api/procesar", { method: "POST" }))).json();
     expect(r).toEqual({ procesadas: 12, resumen: { PAGAR: 5, FRENAR: 3, ESCALAR: 4, RECHAZADA_NO_FACTURA: 0 } });
     // idempotente
-    expect((await (await postProcesar()).json()).procesadas).toBe(0);
+    expect((await (await postProcesar(peticion("http://x/api/procesar", { method: "POST" }))).json()).procesadas).toBe(0);
 
-    const b = (await (await getBandeja(new Request("http://x/api/bandeja"))).json()) as RespuestaBandeja;
+    const b = (await (await getBandeja(peticion("http://x/api/bandeja"))).json()) as RespuestaBandeja;
     expect(b.kpis).toMatchObject({
       total: 12,
       coinciden: 12,
@@ -51,7 +55,7 @@ describe("lote demo de punta a punta (§11.4)", () => {
     expect(diego.conteos).toEqual({ todas: 2, pagar: 1, frenar: 0, escalar: 1 });
     expect((await obtenerBandeja(repo, { decision: "frenar" })).filas.map((f) => f.factura_numero)).toEqual(["INV-2210", "PX-77", "ES-4410"]);
     expect((await obtenerBandeja(repo, { q: "omicron" })).filas.map((f) => f.factura_numero)).toEqual(["OMI-3381"]);
-    const res = await getBandeja(new Request("http://x/api/bandeja?decision=raro"));
+    const res = await getBandeja(peticion("http://x/api/bandeja?decision=raro"));
     expect(res.status).toBe(400);
   });
 

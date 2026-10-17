@@ -1,17 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { POST as postActuarComo } from "@/app/api/demo/actuar-como/route";
 import { POST as postReiniciar } from "@/app/api/demo/reiniciar/route";
 import { decidir, ErrorDecision } from "@/aprobaciones/decidir";
 import { crearRepositorioMemoria } from "@/repositorio/memoria";
 import { procesarPendientes } from "@/servicios/lote";
 
-import { entradaDe, repoProcesado } from "./ayuda";
+import { comoProveedor, entradaDe, peticion, repoProcesado } from "./ayuda";
 
-vi.mock("next/headers", async () => {
-  const { cookiesFalsas } = await import("./ayuda");
-  return { cookies: async () => cookiesFalsas() };
-});
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/auth/sesion", async () => (await import("./ayuda")).sesionFalsa);
+vi.mock("@/lib/auth/auditoria", () => ({ auditar: () => undefined }));
 
 const AHORA = "2026-10-16T15:00:00-05:00";
 
@@ -54,15 +52,15 @@ describe("hallazgos de /code-review en #17", () => {
     expect(await repo.registro()).toHaveLength(largo);
   });
 
-  it("en producción sin DEMO=1, 'actuar como' y 'reiniciar' no existen (404)", async () => {
+  it("en producción sin DEMO=1, 'reiniciar' no existe (404); con DEMO=1 sí, y siempre exige sesión del panel", async () => {
     await repoProcesado();
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("DEMO", "");
-    const req = new Request("http://x/api/demo/actuar-como", { method: "POST", body: JSON.stringify({ aprobador_id: "lm" }) });
-    expect((await postActuarComo(req)).status).toBe(404);
-    expect((await postReiniciar()).status).toBe(404);
+    const reiniciar = () => postReiniciar(peticion("http://x/api/demo/reiniciar", { method: "POST" }));
+    expect((await reiniciar()).status).toBe(404);
     vi.stubEnv("DEMO", "1");
-    const req2 = new Request("http://x/api/demo/actuar-como", { method: "POST", body: JSON.stringify({ aprobador_id: "lm" }) });
-    expect((await postActuarComo(req2)).status).toBe(200);
+    expect((await reiniciar()).status).toBe(200);
+    comoProveedor("ben-pixel-co");
+    expect((await reiniciar()).status).toBe(403);
   });
 });

@@ -22,7 +22,8 @@ export function r11Remitente(ctx: ContextoRegla) {
   const vinculado =
     (rem.tipo === "correo" && c.correos.some((x) => x.toLowerCase() === rem.valor.toLowerCase())) ||
     (rem.tipo === "telegram" && c.telegram_chat_id === rem.valor) ||
-    (rem.tipo === "portal" && c.portal_usuario === rem.valor);
+    // Portal: el remitente lo pone el servidor desde la sesión verificada (usuario de portal o id del beneficiario).
+    (rem.tipo === "portal" && (c.portal_usuario === rem.valor || beneficiario.id === rem.valor));
   if (!vinculado) return evaluacion("R11", "FALLA", `${rem.valor} no está vinculado a ${beneficiario.nombre}`, datos);
   const como = { correo: "correo", telegram: "Telegram", portal: "sesión de portal" }[rem.tipo];
   return evaluacion("R11", "CUMPLE", `${como} ${rem.valor} vinculado a ${beneficiario.nombre}`, datos);
