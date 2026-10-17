@@ -70,7 +70,7 @@ export default async function EquipoPage() {
                 <MailIcon />
               </EmptyMedia>
               <EmptyTitle>No hay cuentas por activar</EmptyTitle>
-              <EmptyDescription>Usa Crear empleado: eliges el rol y le llega un correo para crear su contraseña.</EmptyDescription>
+              <EmptyDescription>Usa Crear empleado: eliges el rol y le pasas el enlace para que cree su contraseña.</EmptyDescription>
             </EmptyHeader>
           </Empty>
         )}

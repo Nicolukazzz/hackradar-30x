@@ -67,3 +67,17 @@ export function conVinculosTelegram(beneficiarios: readonly Beneficiario[], vinc
     return chat === b.canales.telegram_chat_id ? b : { ...b, canales: { ...b.canales, telegram_chat_id: chat } };
   });
 }
+
+/** Aplica los correos vinculados por enlace de proveedor (#85): correo → beneficiario. Un correo, un beneficiario. */
+export function conVinculosCorreo(beneficiarios: readonly Beneficiario[], vinculos: ReadonlyMap<string, string>): Beneficiario[] {
+  return beneficiarios.map((b) => {
+    const nuevos = [...vinculos].filter(([c, id]) => id === b.id && !b.canales.correos.includes(c)).map(([c]) => c);
+    return nuevos.length === 0 ? b : { ...b, canales: { ...b.canales, correos: [...b.canales.correos, ...nuevos] } };
+  });
+}
+
+/** El beneficiario que ya tiene este correo como canal (base, agregado o vinculado), o undefined. */
+export function duenoDelCorreo(beneficiarios: readonly Beneficiario[], correo: string): Beneficiario | undefined {
+  const c = correo.trim().toLowerCase();
+  return beneficiarios.find((b) => b.canales.correos.some((x) => x.trim().toLowerCase() === c));
+}

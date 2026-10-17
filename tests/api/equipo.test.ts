@@ -34,8 +34,9 @@ describe("/api/equipo (#51)", () => {
     await repoProcesado();
     const res = await invitarCon({ rol: "aprobador", limite_aprobacion_usd: 500000, correo_esperado: "nueva@x.example" });
     expect(res.status).toBe(201);
-    const { invitacion, enlace, correo_enviado } = await res.json();
-    expect(correo_enviado).toBe(false); // sin buzón configurado en tests: la pantalla muestra el enlace
+    const body = await res.json();
+    const { invitacion, enlace } = body;
+    expect(body).not.toHaveProperty("correo_enviado"); // no se envía correo: el admin copia el enlace
     expect(enlace).toMatch(/^http:\/\/localhost:3000\/unirse\/[A-Za-z0-9_-]{43}$/);
     expect(invitacion).not.toHaveProperty("token_hash");
     equipoActual().agregarCuenta({ usuario_id: "u-nueva", nombre: "Nueva", correo: "nueva@x.example" });

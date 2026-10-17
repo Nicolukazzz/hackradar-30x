@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { Boton } from "./boton";
 
-// Piezas comunes de los enlaces de invitación: equipo (#51, /ajustes/equipo) y proveedores nuevos (#28, /proveedores).
+// Piezas comunes de los enlaces: equipo (#51, /ajustes/equipo) y proveedores (#85, /proveedores).
 
 export type Opcion = { value: string; label: string };
 
@@ -51,13 +51,13 @@ export function EnlaceGenerado({ enlace, etiqueta, resumen }: { enlace: string; 
 }
 
 /** "Copiar enlace" con su toast; el texto de éxito dice a quién mandarlo. */
-export function BotonCopiar({ enlace, descripcion }: { enlace: string; descripcion: string }) {
+export function BotonCopiar({ enlace, descripcion, texto = "Copiar enlace" }: { enlace: string; descripcion: string; texto?: string }) {
   const [copiado, setCopiado] = useState(false);
   async function copiar() {
     try {
       await navigator.clipboard.writeText(enlace);
       setCopiado(true);
-      toast.success("Enlace copiado", { description: descripcion });
+      toast.success(texto === "Copiar enlace" ? "Enlace copiado" : "Copiado", { description: descripcion });
     } catch {
       toast.error("No se pudo copiar", { description: "Selecciona el enlace y cópialo a mano." });
     }
@@ -65,7 +65,7 @@ export function BotonCopiar({ enlace, descripcion }: { enlace: string; descripci
   return (
     <Boton variante="primaria" onClick={copiar}>
       {copiado ? <CheckIcon aria-hidden /> : <CopyIcon aria-hidden />}
-      {copiado ? "Copiado" : "Copiar enlace"}
+      {copiado ? "Copiado" : texto}
     </Boton>
   );
 }

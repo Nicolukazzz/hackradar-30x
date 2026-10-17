@@ -7,7 +7,6 @@ import { rolPuede, type Sesion } from "@/lib/auth/permisos";
 import { urlPublica } from "@/lib/url-publica";
 
 import type { AlmacenEquipo } from "./almacen";
-import { correoInvitacion } from "./correo";
 import { EsquemaCambioMiembro, EsquemaNuevaInvitacion, estadoInvitacion, validarCambio, validarQuitar, venceEn } from "./reglas";
 import { generarToken, hashToken, pareceToken } from "./token";
 import { EMPRESA_ID, ErrorEquipo, type EstadoInvitacion, type Invitacion, type Miembro, type ResultadoAceptar } from "./tipos";
@@ -52,38 +51,20 @@ export async function invitar(
   return { invitacion: { ...invitacion, estado: "activa" }, enlace: urlPublica(`/unirse/${token}`) };
 }
 
-export type DependenciasCorreo = {
-  /** nombre visible de la empresa (correo y remitente) */
-  empresa: string;
-  /** false si no hay buzón configurado: la pantalla muestra el enlace para copiarlo */
-  enviar: (para: string, correo: ReturnType<typeof correoInvitacion>, remitente: string) => Promise<boolean>;
-};
-
 /**
- * Crear empleado (#80): la invitación de un solo uso más el correo formal a la persona. Si el correo no sale (sin
- * buzón o falla SMTP), la invitación queda creada y la respuesta lo dice: el admin puede copiar el enlace.
+ * Crear empleado (#80): la invitación de un solo uso atada al correo de la persona. No se envía correo: la pantalla
+ * muestra el enlace para que el admin se lo pase por un medio seguro (Railway Hobby bloquea SMTP, #96).
  */
-export async function crearEmpleado(
-  almacen: AlmacenEquipo,
-  autor: Sesion,
-  entrada: unknown,
-  ahora: string,
-  deps: DependenciasCorreo,
-): Promise<{ invitacion: InvitacionConEstado; enlace: string; correo_enviado: boolean }> {
-  const r = await invitar(almacen, autor, entrada, ahora);
-  // El esquema exige el correo (#80); las invitaciones viejas sin correo no pasan por aquí.
-  const para = r.invitacion.correo_esperado ?? "";
-  const mensaje = correoInvitacion({ empresa: deps.empresa, rol: r.invitacion.rol, invitador: autor.nombre, enlace: r.enlace, expira_en: r.invitacion.expira_en });
-  const correo_enviado = await deps.enviar(para, mensaje, deps.empresa).catch(() => false);
-  return { ...r, correo_enviado };
+export async function crearEmpleado(almacen: AlmacenEquipo, autor: Sesion, entrada: unknown, ahora: string): Promise<{ invitacion: InvitacionConEstado; enlace: string }> {
+  return invitar(almacen, autor, entrada, ahora);
 }
 
-/** Reenviar (#80): revoca la invitación y crea otra igual (mismo rol, límite y correo) con un enlace nuevo. */
-export async function reenviar(almacen: AlmacenEquipo, autor: Sesion, id: string, ahora: string, deps: DependenciasCorreo) {
+/** Enlace nuevo (#80): revoca la invitación y crea otra igual (mismo rol, límite y correo) con otro enlace. */
+export async function reenviar(almacen: AlmacenEquipo, autor: Sesion, id: string, ahora: string) {
   const inv = z.uuid().safeParse(id).success ? (await almacen.invitaciones(EMPRESA_ID, ahora)).find((i) => i.id === id) : undefined;
   if (!inv || !inv.correo_esperado || estadoInvitacion(inv, ahora) !== "activa") throw new ErrorEquipo(404, "No hay una invitación activa con ese id.");
   // Primero la nueva: si algo falla, la persona conserva el enlace que ya tiene.
-  const nueva = await crearEmpleado(almacen, autor, { rol: inv.rol, limite_aprobacion_usd: inv.limite_aprobacion_usd, correo_esperado: inv.correo_esperado }, ahora, deps);
+  const nueva = await crearEmpleado(almacen, autor, { rol: inv.rol, limite_aprobacion_usd: inv.limite_aprobacion_usd, correo_esperado: inv.correo_esperado }, ahora);
   await revocar(almacen, id, ahora);
   return nueva;
 }

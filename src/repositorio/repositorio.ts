@@ -49,6 +49,12 @@ export interface Repositorio {
    * Lanza si el beneficiario no existe.
    */
   vincularTelegram(beneficiario_id: string, chat_id: string): Promise<void>;
+  /**
+   * Vincula un correo de facturación a un beneficiario (base o agregado) con un enlace de proveedor (#85): sus facturas
+   * desde ese correo cumplen R11. Un beneficiario puede tener varios correos; un correo, un solo beneficiario. Lanza si
+   * el beneficiario no existe o si el correo ya es de otro beneficiario. Sobrevive a "Reiniciar demo", como Telegram.
+   */
+  vincularCorreo(beneficiario_id: string, correo: string): Promise<void>;
 
   guardarArchivo(ref: string, archivo: ArchivoGuardado): Promise<void>;
   /** Archivo original tal como llegó (PDF, PNG, .eml, chat). */
@@ -82,7 +88,7 @@ export interface Repositorio {
   /**
    * Demo (#76): empieza una corrida nueva, como recién sembrada desde el escenario (historial, reglas, sin
    * documentos ni beneficiarios agregados, refs desde 000001). Nada se borra: en Supabase las corridas
-   * anteriores quedan en las tablas. Los vínculos de Telegram se conservan.
+   * anteriores quedan en las tablas. Los vínculos de Telegram y de correo se conservan.
    */
   reiniciar(iniciada_por: string): Promise<void>;
   /** ¿Ya se usó el enlace de Telegram con esta huella? (#13). Mira todas las corridas: un enlace usado nunca vuelve a valer. */

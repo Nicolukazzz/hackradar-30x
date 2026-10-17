@@ -100,6 +100,16 @@ export function contratoRepositorio(crear: () => Promise<Repositorio>, opciones:
     await expect(repo.vincularTelegram("ben-no-existe", "1")).rejects.toThrow(/no existe/);
   });
 
+  it("vincular correo (#85): se suma a los del beneficiario; un correo, un beneficiario", async () => {
+    await repo.vincularCorreo("ben-cloudnorte", "Facturas@CloudNorte.example");
+    await repo.vincularCorreo("ben-cloudnorte", "facturas@cloudnorte.example"); // repetido: no cambia nada
+    const bs = (await repo.datosComunes()).beneficiarios;
+    expect(bs.find((b) => b.id === "ben-cloudnorte")?.canales.correos).toEqual(["billing@cloudnorte.example", "facturas@cloudnorte.example"]);
+    await expect(repo.vincularCorreo("ben-mesa-legal", "facturas@cloudnorte.example")).rejects.toThrow(/otro beneficiario/);
+    await expect(repo.vincularCorreo("ben-mesa-legal", "billing@cloudnorte.example")).rejects.toThrow(/otro beneficiario/);
+    await expect(repo.vincularCorreo("ben-no-existe", "x@y.example")).rejects.toThrow(/no existe/);
+  });
+
   if (opciones.persistente) {
     it("después de un reinicio (otra instancia) todo sigue ahí", async () => {
       const otro = await crear();

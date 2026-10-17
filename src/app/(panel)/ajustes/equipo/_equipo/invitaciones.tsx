@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2Icon, MailIcon } from "lucide-react";
+import { Loader2Icon, RefreshCwIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -28,45 +28,40 @@ import { NOMBRE_ROL } from "@/lib/auth/permisos";
 import { cn } from "@/lib/utils";
 
 /**
- * Reenviar (#80): pide confirmar (el enlace actual deja de servir), crea uno nuevo y lo envía al mismo correo. Si el
- * correo no sale, muestra el enlace nuevo para copiarlo: es la única vez que existe.
+ * Enlace nuevo (#80): pide confirmar (el enlace actual deja de servir), crea otro para el mismo correo y lo muestra
+ * para copiarlo: es la única vez que existe en claro.
  */
-function Reenviar({ id, correo }: { id: string; correo: string }) {
+function EnlaceNuevo({ id, correo }: { id: string; correo: string }) {
   const router = useRouter();
   const [ocupado, iniciar] = useTransition();
   const [enlace, setEnlace] = useState<string | null>(null);
   function reenviar() {
     iniciar(async () => {
       const res = await fetch(`/api/equipo/invitaciones/${id}/reenviar`, { method: "POST" });
-      const datos = (await res.json().catch(() => ({}))) as { correo_enviado?: boolean; enlace?: string; error?: string };
+      const datos = (await res.json().catch(() => ({}))) as { enlace?: string; error?: string };
       if (!res.ok) {
-        toast.error("No se pudo reenviar", { description: datos.error ?? "Intenta de nuevo." });
+        toast.error("No se creó el enlace", { description: datos.error ?? "Intenta de nuevo." });
         return;
       }
-      if (datos.correo_enviado) {
-        toast.success("Correo reenviado", { description: `${correo} recibió un enlace nuevo; el anterior ya no sirve.` });
-        router.refresh();
-      } else {
-        // Se refresca al cerrar: refrescar ahora desmonta esta fila (ya revocada) y el enlace se perdería.
-        setEnlace(datos.enlace ?? null);
-      }
+      // Se refresca al cerrar: refrescar ahora desmonta esta fila (ya revocada) y el enlace se perdería.
+      setEnlace(datos.enlace ?? null);
     });
   }
   return (
     <>
       <AlertDialog>
         <AlertDialogTrigger render={<Button variant="ghost" className="h-11 gap-1.5 px-3" disabled={ocupado} />}>
-          {ocupado ? <Loader2Icon className="animate-spin" aria-hidden /> : <MailIcon aria-hidden />}
-          Reenviar
+          {ocupado ? <Loader2Icon className="animate-spin" aria-hidden /> : <RefreshCwIcon aria-hidden />}
+          Enlace nuevo
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Reenviar el correo a {correo}?</AlertDialogTitle>
-            <AlertDialogDescription>Le llega un enlace nuevo que vence en 72 horas. El enlace que ya tiene deja de servir.</AlertDialogDescription>
+            <AlertDialogTitle>¿Crear un enlace nuevo para {correo}?</AlertDialogTitle>
+            <AlertDialogDescription>El enlace nuevo vence en 72 horas. El que ya le pasaste deja de servir.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={reenviar}>Reenviar</AlertDialogAction>
+            <AlertDialogAction onClick={reenviar}>Crear enlace nuevo</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -81,7 +76,7 @@ function Reenviar({ id, correo }: { id: string; correo: string }) {
         <DialogContent className="gap-5 p-6 sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Enlace nuevo</DialogTitle>
-            <DialogDescription>No hay buzón de correo configurado: copia el enlace y envíaselo a {correo}. Por seguridad no se vuelve a mostrar.</DialogDescription>
+            <DialogDescription>Copia el enlace y envíaselo a {correo} por un medio seguro. Por seguridad no se vuelve a mostrar.</DialogDescription>
           </DialogHeader>
           {enlace ? <EnlaceGenerado enlace={enlace} etiqueta="Enlace para crear la cuenta" resumen={`Solo ${correo} · vence en 72 horas`} /> : null}
           <DialogFooter className="-mx-6 -mb-6 px-6">{enlace ? <BotonCopiar enlace={enlace} descripcion="Envíaselo por un medio seguro." /> : null}</DialogFooter>
@@ -132,7 +127,7 @@ export function Invitaciones({ invitaciones }: { invitaciones: InvitacionConEsta
             <TableCell className="pr-2 text-right md:pr-6">
               {i.estado === "activa" ? (
                 <span className="inline-flex flex-wrap justify-end gap-1">
-                  {i.correo_esperado ? <Reenviar id={i.id} correo={i.correo_esperado} /> : null}
+                  {i.correo_esperado ? <EnlaceNuevo id={i.id} correo={i.correo_esperado} /> : null}
                   <BotonRevocar url={`/api/equipo/invitaciones/${i.id}`} exito="El enlace ya no sirve." />
                 </span>
               ) : null}

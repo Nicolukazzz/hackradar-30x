@@ -23,7 +23,7 @@ export type OpcionesRuta = { permiso?: Permiso };
 const METODOS_SEGUROS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 /** Los navegadores mandan Origin en todo POST/PUT/DELETE; si falta o es de otro sitio, se rechaza. */
-function mismoOrigen(req: Request): boolean {
+export function mismoOrigen(req: Request): boolean {
   const origen = req.headers.get("origin");
   if (!origen) return false;
   const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? new URL(req.url).host;
