@@ -6,6 +6,7 @@
 // demo dé exactamente el resultado del prototipo sin gastar LLM. EXTRACCION=real usa el extractor de #4
 // (parser sin IA + LLM_PROVIDER) sobre los archivos originales.
 
+import { avisarEscaladas } from "@/avisos";
 import type { DecisionAgente, DocumentoRecibido, Extraccion } from "@/dominio/tipos";
 import { cacheEnDisco } from "@/extraccion/cache";
 import { extraer } from "@/extraccion/extraer";
@@ -52,6 +53,7 @@ async function procesar(repo: Repositorio): Promise<ResumenLote> {
     const doc = porRef.get(e.ref_interna);
     if (doc) await repo.guardarDocumento(doc);
   }
+  avisarEscaladas(entradas, esc.config.ahora); // #68: a quien aprueba, en segundo plano
   for (const r of resultados) resumen[r.decision]++;
   return { procesadas: entradas.length, resumen };
 }

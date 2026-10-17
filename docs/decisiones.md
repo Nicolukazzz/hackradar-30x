@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-17 — Aviso a aprobadores cuando el agente escala (#68)
+- Estado: propuesta
+- Decisión: `src/avisos/`. Después de **registrar** una `DECISION_AGENTE` con `ESCALAR` (en `procesarDocumento`, que usan correo, panel y Telegram, y en "Procesar facturas nuevas"), `avisarEscaladas` manda en segundo plano un aviso armado con plantilla desde la entrada (sin LLM): factura, beneficiario, USD, explicación §7, chips de reglas, asignada a y plazo (§10, `asignacionDe`) y enlace a la traza (`urlPublica`). Destinatarios: los miembros que hoy pueden aprobar (`firmantes()`) cuyo límite cubre el monto; sin monto confiable, todos los firmantes; si nadie lo cubre, los admins. Correo por el SMTP del buzón del equipo (`CORREO_IMAP_*`, #14) con los aprobadores en **Bcc**; Teams opcional (`TEAMS_WEBHOOK_URL`, webhook de Workflows con `{ text }`). Sin buzón ni Teams (dev, tests, CI, CLI) no se avisa; `AVISOS=0` lo apaga. Cada canal falla por su lado y queda en el log: un aviso **nunca** cambia, frena ni retrasa la decisión. Telegram (#13) no debe avisar por su cuenta: ya lo hace `procesarDocumento`.
+- Por qué: el reto parte de que el proceso "depende de que una persona esté disponible"; sin aviso, una escalada esperaba hasta que alguien abriera el panel y el plazo de §10 vencía sin que nadie lo supiera. Reusar el buzón del equipo evita otra cuenta; Teams queda como en `producto.md` §5. WhatsApp al aprobador y recordatorios por vencimiento quedan fuera.
+- Quién: N
+
 ## 2026-10-17 — R10: un solo detector, con texto invisible (Unicode Tags) (#63, #8)
 - Estado: propuesta
 - Decisión: R10 decodifica los caracteres Unicode Tags (U+E0000–E007F, invisibles para una persona pero legibles para un LLM) antes de buscar patrones, y una tira de ellos con texto legible cuenta como hallazgo aunque no diga nada conocido. Solo se exceptúa una bandera real (🏴 + 1–6 letras o dígitos + CANCEL TAG), no "cualquier cosa después de 🏴". Tags sueltos sin texto legible no escalan. La lista de patrones se amplía con los de la investigación de #8 (§4.3); los giros en inglés que aparecen en facturas normales (`new instructions`, `already approved`, `auto approve`) quedan acotados a frases de orden. Hay **un solo detector** (`src/reglas/inyeccion.ts`): el extractor y la Traza lo reusan, así R10, la extracción y lo que resalta la pantalla nunca dicen cosas distintas. Antes de mandar texto al LLM se quitan los Tags y se pliega a NFKC, para que un `</documento>` escrito con ellos no cierre el bloque de datos.
