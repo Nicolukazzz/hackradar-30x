@@ -32,8 +32,21 @@ type Estado = {
   carpeta: string;
 };
 
-export async function crearRepositorioMemoria(idEscenario: string, dir: string = DIR_DATA_POR_DEFECTO): Promise<Repositorio> {
+export type OpcionesMemoria = {
+  /**
+   * "pendiente" (por defecto): los documentos del escenario esperan "Procesar facturas nuevas" con sus refs reservadas.
+   * "vacio": solo historial y configuración; los documentos entran por la ingesta (#11) y toman refs nuevas.
+   */
+  lote?: "pendiente" | "vacio";
+};
+
+export async function crearRepositorioMemoria(
+  idEscenario: string,
+  dir: string = DIR_DATA_POR_DEFECTO,
+  opciones: OpcionesMemoria = {},
+): Promise<Repositorio> {
   const g = await cargarGolden(idEscenario, dir);
+  if (opciones.lote === "vacio") g.docs = [];
   const datos = structuredClone(g.datos);
   const s: Estado = {
     datos,
