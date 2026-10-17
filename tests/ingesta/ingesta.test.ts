@@ -76,6 +76,7 @@ describe("ingerir (§8 pasos 1–2)", () => {
     expect(formatoDe({ canal: "telegram", adjuntos: adj("foto", "image/jpeg") })).toBe("imagen");
     expect(formatoDe({ canal: "portal", adjuntos: adj("cfdi.xml", "text/xml") })).toBe("xml");
     expect(formatoDe({ canal: "portal", adjuntos: adj("factura.pdf", "application/pdf") })).toBe("pdf");
+    expect(formatoDe({ canal: "portal", adjuntos: adj("factura.txt", "text/plain") })).toBe("chat");
   });
 });
 
@@ -103,6 +104,51 @@ describe("procesarDocumento (§8 pasos 3–7)", () => {
     await procesarDocumento(ref_interna, deps);
     await expect(procesarDocumento(ref_interna, deps)).rejects.toThrow(/ya tiene decisión/);
     await expect(procesarDocumento("INT-2026-999999", deps)).rejects.toThrow(/primero ingerir/);
+  });
+});
+
+describe("fallar hacia seguro (review #36)", () => {
+  it("si el extractor lanza, el documento igual queda decidido: ESCALAR por R1", async () => {
+    const repo = await repoVacio();
+    const { entrada, carpeta } = await entradaDelDataset("lote-demo-oct", "001-fac-1041.pdf");
+    const { ref_interna } = await ingerir(entrada, { repo, reloj, dirBase: carpeta });
+    const roto: Extractor = async () => {
+      throw new Error("LLM caído");
+    };
+    const e = await procesarDocumento(ref_interna, { repo, ahora: reloj.ahora(), extractor: roto });
+    expect(e.decision).toBe("ESCALAR");
+    expect(e.reglas_que_fallaron).toContain("R1");
+  });
+
+  it("reenviar el mismo archivo ilegible (sin nombre) frena por R2, no escala ni reserva dos veces", async () => {
+    const repo = await repoVacio();
+    const golden = await extractorGolden("lote-demo-oct");
+    const sinNombre: Extractor = async (doc) => {
+      const ext = await golden(doc);
+      return { ...ext, beneficiario_nombre: { valor: null, confianza: 0, fuente: "llm" } };
+    };
+    const { entrada, carpeta } = await entradaDelDataset("lote-demo-oct", "001-fac-1041.pdf");
+    const deps = { repo, ahora: reloj.ahora(), extractor: sinNombre };
+    const primera = await procesarDocumento((await ingerir(entrada, { repo, reloj, dirBase: carpeta })).ref_interna, deps);
+    const segunda = await procesarDocumento((await ingerir(entrada, { repo, reloj, dirBase: carpeta })).ref_interna, deps);
+    expect(primera.decision).toBe("ESCALAR");
+    expect(segunda.decision).toBe("FRENAR");
+    expect(segunda.reglas_que_fallaron).toContain("R2");
+  });
+
+  it("espacios en el remitente no rompen la vinculación (ingesta y R11 coinciden)", async () => {
+    const repo = await repoVacio();
+    const { entrada, carpeta } = await entradaDelDataset("lote-demo-oct", "004-jpo-10.txt");
+    const conEspacios = { ...entrada, remitente: { ...entrada.remitente, valor: ` ${entrada.remitente.valor}\n` } };
+    const doc = await ingerir(conEspacios, { repo, reloj, dirBase: carpeta });
+    expect(doc.beneficiario_remitente_id).toBe("ben-juan-pablo-ortiz");
+    const e = await procesarDocumento(doc.ref_interna, { repo, ahora: reloj.ahora(), extractor: await espia() });
+    expect(e.evaluaciones.find((x) => x.id === "R11")?.resultado).toBe("CUMPLE");
+  });
+
+  it("el golden del reenvío 'Fwd:' no contamina la extracción del original", async () => {
+    const entradas = await cargarEscenarioPorIngesta("trampas-extra", { repo: await repoVacio("trampas-extra"), extractor: await espia("trampas-extra") });
+    expect(entradas[0]?.extraccion?.texto_crudo).not.toMatch(/Fwd/i);
   });
 });
 
@@ -149,6 +195,9 @@ describe("respuesta al remitente (§8 paso 8)", () => {
     expect(r("PX-77")).toContain("no se pagará: el monto o el concepto no coincide con lo acordado");
     expect(r("LF-2026-10")).toContain("en revisión por el equipo de finanzas");
     expect(r("TD-001")).toContain("vincula este correo en el portal: https://portal.example");
+    // remitente no verificado: no se le confirma el número de factura
+    expect(r("TD-001")).not.toContain("TD-001");
+    expect(r("TD-001")).toContain("en revisión");
     expect(r("INV-2210", "en")).toContain("approved for payment");
   });
 });

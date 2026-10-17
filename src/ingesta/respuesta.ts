@@ -75,10 +75,14 @@ export function textoRespuesta(entrada: EntradaRegistro, idioma: Idioma, opcione
   const t = TEXTOS[idioma];
   if (entrada.decision === "RECHAZADA_NO_FACTURA") return t.no_factura(entrada.ref_interna);
 
+  // Remitente no verificado (R11): puede ser alguien suplantando al proveedor. No se le confirma el número de
+  // factura ni si ya existía: solo la ref de su envío, "en revisión" y cómo vincular su canal.
+  if (entrada.reglas_que_fallaron.includes("R11")) {
+    return [t.recibida(null, entrada.ref_interna), t.escalar, t.vincular(t.medio[entrada.canal], opciones.urlPortal)].join(" ");
+  }
   const partes = [t.recibida(entrada.factura_numero, entrada.ref_interna)];
   if (entrada.decision === "PAGAR") partes.push(t.pagar);
   else if (entrada.decision === "FRENAR") partes.push(t.frenar(motivoFrenar(entrada.reglas_que_fallaron, t)));
   else partes.push(t.escalar);
-  if (entrada.reglas_que_fallaron.includes("R11")) partes.push(t.vincular(t.medio[entrada.canal], opciones.urlPortal));
   return partes.join(" ");
 }

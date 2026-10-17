@@ -7,31 +7,25 @@ import path from "node:path";
 
 import { cargarEscenario, DIR_DATA_POR_DEFECTO } from "@/dominio/cargar";
 import { relojFijo } from "@/dominio/reloj";
-import type { EntradaRegistro } from "@/dominio/tipos";
+import type { DocumentoRecibido, EntradaRegistro } from "@/dominio/tipos";
 import { cargarGolden } from "@/evaluacion/escenario";
+import { mimeDeArchivo } from "@/lib/mime";
 import type { Repositorio } from "@/repositorio/repositorio";
 
 import { ingerir } from "./ingerir";
 import { type Extractor, procesarDocumento } from "./pipeline";
 
-const MIME: Record<string, string> = {
-  ".pdf": "application/pdf",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".eml": "message/rfc822",
-  ".txt": "text/plain; charset=utf-8",
-  ".xml": "application/xml",
-};
-
 /**
- * Extracción golden por hash del archivo: devuelve la `extraccion_esperada` del documento del escenario.
+ * Extracción golden por archivo y texto del envío: devuelve la `extraccion_esperada` del documento del escenario.
  * Sirve para cargar la demo sin LLM con el resultado exacto del prototipo. Un archivo que no es del escenario → error.
  */
 export async function extractorGolden(id: string, dir: string = DIR_DATA_POR_DEFECTO): Promise<Extractor> {
   const golden = await cargarGolden(id, dir);
-  const porHash = new Map(golden.docs.map((d) => [d.doc.sha256, d.ext]));
+  // Clave = archivo + texto del envío: un "Fwd:" con el mismo PDF es otro documento con otro texto (R10 lo lee).
+  const clave = (d: DocumentoRecibido) => [d.sha256, d.asunto ?? "", d.texto_mensaje ?? ""].join("\u0000");
+  const porClave = new Map(golden.docs.map((d) => [clave(d.doc), d.ext]));
   return async (doc) => {
-    const ext = porHash.get(doc.sha256);
+    const ext = porClave.get(clave(doc));
     if (!ext) throw new Error(`${doc.ref_interna} no es un documento del escenario ${id}: no hay extracción golden.`);
     return structuredClone(ext);
   };
@@ -48,7 +42,7 @@ export async function cargarEscenarioPorIngesta(
   for (const { archivo_original, ...entrada } of esc.documentos) {
     const original = {
       nombre: path.basename(archivo_original),
-      mime: MIME[path.extname(archivo_original)] ?? "application/octet-stream",
+      mime: mimeDeArchivo(archivo_original),
       bytes: await readFile(path.join(esc.carpeta, archivo_original)),
     };
     const doc = await ingerir(entrada, { repo: deps.repo, reloj, dirBase: esc.carpeta, original });

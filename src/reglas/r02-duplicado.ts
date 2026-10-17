@@ -9,7 +9,7 @@ import { afectado, type ContextoRegla, montoUsd, SIN_DATO } from "./contexto";
 import { diasEntre, esFechaValida, fechaDe, fechaLegible, horaDe } from "./fechas";
 import { type FacturaVigente, facturasVigentes } from "./libro";
 
-type Criterio = "archivo" | "numero" | "hito" | "parecida";
+type Criterio = "numero" | "hito" | "parecida";
 
 /** "pagada 09:14:10" el mismo día de `ahora`; si no, con fecha: "pagada 08/10/2026 09:30:00". */
 function cuando(f: FacturaVigente, ahora: string): string {
@@ -20,6 +20,15 @@ function cuando(f: FacturaVigente, ahora: string): string {
 
 export function r02Duplicado(ctx: ContextoRegla) {
   const { ext, doc, reglas, ahora } = ctx;
+  // Mismo archivo (sha256) = mismo documento, aunque no se haya podido leer quién cobra: se frena igual.
+  // Sin esto, un reenvío de una factura ilegible escalaría otra vez y reservaría el monto dos veces.
+  const mismoArchivo = doc.sha256 !== "" ? facturasVigentes(ctx.historial).find((f) => f.sha256 === doc.sha256) : undefined;
+  if (mismoArchivo) {
+    const f = mismoArchivo;
+    const datos = { criterio: "archivo", coincide_con: f.id, factura_previa: f.numero, momento_previo: f.momento, estado_previo: f.estado, hito: ext.hito_numero?.valor ?? null };
+    return evaluacion("R2", "FALLA", `mismo archivo (sha256) que ${f.numero ?? f.ref_interna} (${cuando(f, ahora)})`, datos);
+  }
+
   const nombre = ext.beneficiario_nombre.valor;
   if (!nombre || afectado(ctx, "beneficiario_nombre")) return evaluacion("R2", "NO_APLICA", SIN_DATO);
 
@@ -35,7 +44,6 @@ export function r02Duplicado(ctx: ContextoRegla) {
   const dias = (f: FacturaVigente) => (emision && f.fecha_emision && esFechaValida(f.fecha_emision) ? diasEntre(f.fecha_emision, emision) : null);
 
   const criterios: [Criterio, (f: FacturaVigente) => boolean][] = [
-    ["archivo", (f) => doc.sha256 !== "" && f.sha256 === doc.sha256],
     // La fecha de emisión la escribe quien cobra: también cuenta cuándo se registró la previa, que no controla.
     ["numero", (f) => numero !== null && f.numero_normalizado === numero && ((dias(f) ?? 0) <= dup.ventana_dias || registradaHace(f) <= dup.ventana_dias)],
     ["hito", (f) => hito !== null && f.hito === hito && f.estado === "pagada"],
@@ -54,7 +62,6 @@ export function r02Duplicado(ctx: ContextoRegla) {
     if (!f) continue;
     const datos = { criterio, coincide_con: f.id, factura_previa: f.numero, momento_previo: f.momento, estado_previo: f.estado, hito };
     const texto: Record<Criterio, string> = {
-      archivo: `mismo archivo (sha256) que ${f.numero ?? f.ref_interna} (${cuando(f, ahora)})`,
       numero: `mismo emisor + número ${f.numero} (${cuando(f, ahora)})`,
       hito: `hito ${hito} ya pagado con ${f.numero} (${cuando(f, ahora)})`,
       parecida: `monto ±${dup.tolerancia_monto_pct}% y fecha ±${dup.tolerancia_fecha_dias} días de ${f.numero} (${cuando(f, ahora)})`,

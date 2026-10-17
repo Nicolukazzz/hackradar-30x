@@ -8,7 +8,6 @@ import { createHash } from "node:crypto";
 import { DocumentoEntranteSchema } from "@/dominio/esquemas";
 import type { Reloj } from "@/dominio/reloj";
 import type { Beneficiario, DocumentoEntrante, DocumentoRecibido, Formato, Remitente } from "@/dominio/tipos";
-import { leerAdjunto } from "@/extraccion/normalizar";
 import type { ArchivoGuardado, Repositorio } from "@/repositorio/repositorio";
 
 export type DependenciasIngesta = {
@@ -30,6 +29,7 @@ export function formatoDe(entrada: Pick<DocumentoEntrante, "canal" | "adjuntos">
   const mime = principal.mime.toLowerCase();
   if (mime.startsWith("image/") || /\.(png|jpe?g|webp|heic)$/.test(nombre)) return "imagen";
   if (mime.includes("xml") || nombre.endsWith(".xml")) return "xml";
+  if (mime.startsWith("text/plain") || nombre.endsWith(".txt")) return "chat";
   if (mime === "message/rfc822" || nombre.endsWith(".eml")) return "correo";
   return "pdf";
 }
@@ -39,12 +39,12 @@ export function formatoDe(entrada: Pick<DocumentoEntrante, "canal" | "adjuntos">
  * `pagos-cloudnorte@gmail.example` no es `billing@cloudnorte.example`. `interno` → null (R11 lo resuelve con R3).
  */
 export function beneficiarioDelRemitente(remitente: Remitente, beneficiarios: readonly Beneficiario[]): string | null {
+  // Misma comparación que R11 (sin recortar: `ingerir` ya guarda el valor recortado), para que no discrepen.
   const { tipo, valor } = remitente;
-  const limpio = valor.trim();
   const b = beneficiarios.find((x) => {
-    if (tipo === "correo") return x.canales.correos.some((c) => c.toLowerCase() === limpio.toLowerCase());
-    if (tipo === "telegram") return x.canales.telegram_chat_id === limpio;
-    if (tipo === "portal") return x.canales.portal_usuario === limpio;
+    if (tipo === "correo") return x.canales.correos.some((c) => c.toLowerCase() === valor.toLowerCase());
+    if (tipo === "telegram") return x.canales.telegram_chat_id === valor;
+    if (tipo === "portal") return x.canales.portal_usuario === valor;
     return false;
   });
   return b?.id ?? null;
@@ -53,7 +53,10 @@ export function beneficiarioDelRemitente(remitente: Remitente, beneficiarios: re
 /** Bytes del adjunto principal o, sin adjunto, el texto del mensaje en UTF-8 (§11.1). */
 export async function bytesPrincipales(entrada: DocumentoEntrante, dirBase?: string): Promise<Buffer> {
   const principal = entrada.adjuntos[0];
-  return principal ? leerAdjunto(principal, { dirBase }) : Buffer.from(entrada.texto_mensaje ?? "", "utf8");
+  if (!principal) return Buffer.from(entrada.texto_mensaje ?? "", "utf8");
+  // Import dinámico: normalizar arrastra los parsers de PDF y correo; cargar el golden no los necesita.
+  const { leerAdjunto } = await import("@/extraccion/normalizar");
+  return leerAdjunto(principal, { dirBase });
 }
 
 export const sha256 = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
@@ -77,7 +80,9 @@ export async function recibir(
 }
 
 export async function ingerir(entrada: DocumentoEntrante, deps: DependenciasIngesta): Promise<DocumentoRecibido> {
-  const valida = DocumentoEntranteSchema.parse(entrada);
+  const parseada = DocumentoEntranteSchema.parse(entrada);
+  // Espacios o saltos de línea que agregue un canal no cambian quién es el remitente (ni para R11).
+  const valida = { ...parseada, remitente: { ...parseada.remitente, valor: parseada.remitente.valor.trim() } };
   const { repo } = deps;
   // En exclusiva: la ref se calcula y se reserva (guardarDocumento) sin que otro canal tome la misma.
   return repo.enExclusiva(async () => {

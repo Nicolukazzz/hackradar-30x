@@ -28,18 +28,22 @@ export function extractorReal(deps: DependenciasExtraccion): Extractor {
 /**
  * §8 paso 3: si este mismo archivo ya se pagó, está aprobado o espera aprobación, no se extrae de nuevo
  * (no se gasta LLM): se reusa lo que se extrajo la primera vez. Mismo archivo ⇒ mismos datos, y R2 lo
- * frena por el criterio "mismo archivo". Si la entrada previa no guardó extracción (historial importado),
- * se arma una mínima con emisor y número: R2 igual frena y R1 marca el resto.
+ * frena por el criterio "mismo archivo" (R2 lo aplica aunque no haya nombre legible). Si la entrada previa
+ * no guardó extracción (historial importado), se arma una mínima con emisor y número.
  */
 function extraccionDelArchivoRepetido(doc: DocumentoRecibido, historial: readonly EntradaRegistro[]): Extraccion | null {
   if (!doc.sha256) return null;
   const previa = facturasVigentes(historial).find((f) => f.sha256 === doc.sha256);
   if (!previa) return null;
   const entrada = historial.find((e) => e.id === previa.id);
-  if (entrada?.extraccion) return structuredClone(entrada.extraccion);
+  return entrada?.extraccion ? structuredClone(entrada.extraccion) : extraccionMinima(doc, entrada ?? null);
+}
+
+/** Extracción con solo lo que dice la entrada previa (o nada): lo que falta queda en confianza 0 y R1 escala. */
+function extraccionMinima(doc: DocumentoRecibido, entrada: EntradaRegistro | null): Extraccion {
   const dato = <T,>(valor: T | null) => ({ valor, confianza: valor === null ? 0 : 1, fuente: "parser" as const });
   return {
-    es_factura: dato(true),
+    es_factura: { valor: true, confianza: entrada ? 1 : 0, fuente: "parser" },
     beneficiario_nombre: dato(entrada?.beneficiario ?? null),
     numero: dato(entrada?.factura_numero ?? null),
     monto_total: dato(entrada?.monto_original ?? null),
@@ -54,6 +58,18 @@ function extraccionDelArchivoRepetido(doc: DocumentoRecibido, historial: readonl
   };
 }
 
+/**
+ * Si el extractor falla (LLM caído, archivo ilegible), el documento igual recibe decisión: extracción vacía
+ * con confianza 0 → R1 escala. Fallar hacia seguro (§5 paso 4), nunca dejar un documento sin decisión.
+ */
+async function extraerSinFallar(extractor: Extractor, doc: DocumentoRecibido): Promise<Extraccion> {
+  try {
+    return await extractor(doc);
+  } catch {
+    return extraccionMinima(doc, null);
+  }
+}
+
 /** Procesa un documento ya ingerido y agrega su DECISION_AGENTE al registro. Ya procesado → error. */
 export async function procesarDocumento(ref: string, deps: DependenciasPipeline): Promise<EntradaRegistro> {
   const { repo } = deps;
@@ -61,8 +77,9 @@ export async function procesarDocumento(ref: string, deps: DependenciasPipeline)
   if (!doc) throw new Error(`No existe el documento ${ref}: primero ingerir().`);
 
   // Extraer fuera de la exclusiva (puede tardar segundos con LLM); decidir y registrar dentro, con el historial al día.
+  // Dos envíos simultáneos del mismo archivo pueden extraer los dos (se pierde el ahorro), pero R2 frena el segundo dentro.
   const previo = await repo.registro();
-  const ext = extraccionDelArchivoRepetido(doc, previo) ?? (await deps.extractor(doc));
+  const ext = extraccionDelArchivoRepetido(doc, previo) ?? (await extraerSinFallar(deps.extractor, doc));
 
   return repo.enExclusiva(async () => {
     const [datos, reglas, historial] = await Promise.all([repo.datosComunes(), repo.reglasVigentes(), repo.registro()]);

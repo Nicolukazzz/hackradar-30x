@@ -41,6 +41,12 @@ export function extraccionDesdePlana(plana: ExtraccionPlana, texto_crudo: string
   return ext;
 }
 
+/** Datos, escenario y reglas sin los documentos (repositorio con lote vacío: entran por la ingesta). */
+export async function cargarSinDocumentos(id: string, dir?: string): Promise<EscenarioGolden> {
+  const [datos, escenario] = await Promise.all([cargarDatosComunes(dir), cargarEscenario(id, dir)]);
+  return { datos, escenario, reglas: reglasVersion(datos, escenario.config.reglas_version), docs: [] };
+}
+
 export async function cargarGolden(id: string, dir?: string): Promise<EscenarioGolden> {
   const [datos, escenario] = await Promise.all([cargarDatosComunes(dir), cargarEscenario(id, dir)]);
   const docs = await Promise.all(
