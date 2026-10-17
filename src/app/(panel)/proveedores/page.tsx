@@ -1,34 +1,63 @@
-import { LinkIcon, ShieldCheckIcon } from "lucide-react";
+import { BuildingIcon, LinkIcon, ShieldCheckIcon } from "lucide-react";
 import type { Metadata } from "next";
 
 import { Tarjeta, TarjetaEncabezado, TarjetaPie } from "@/app/_componentes";
 import { obtenerProveedores } from "@/app/_datos/proveedores";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
+import { AsistenteProveedor } from "./_proveedores/asistente-proveedor";
 import { CrearEnlace } from "./_proveedores/crear-enlace";
 import { ListaEnlaces } from "./_proveedores/lista";
+import { ListaProveedores } from "./_proveedores/lista-proveedores";
 
 export const metadata: Metadata = { title: "Proveedores · Agente de cuentas por pagar" };
 
-// Proveedores (#85): un portal por proveedor (enlace + su correo + un código) para que suba sus facturas sin cuenta.
-// La app no envía correos: el admin comparte el enlace y el código por el medio que ya usan.
+// Proveedores (#107): a quién puede pagar el agente (nombre, NIT, cuenta, canales, lo acordado). Debajo, los portales
+// (#85): enlace + correo + código para que un proveedor suba sus facturas sin cuenta. La app no envía correos.
 export default async function ProveedoresPage() {
-  const { enlaces, crear } = await obtenerProveedores();
+  const { proveedores, enlaces, crear } = await obtenerProveedores();
   const activos = enlaces.filter((e) => e.estado === "activo").length;
+  const proveedoresActivos = proveedores.filter((p) => p.estado === "activo").length;
 
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div className="flex max-w-[640px] flex-col gap-1.5">
-          <span className="text-[13px] text-muted-foreground">Portal de proveedores</span>
+          <span className="text-[13px] text-muted-foreground">Lista permitida</span>
           <h1 className="text-[32px] leading-tight font-semibold tracking-tight text-balance">Proveedores</h1>
           <p className="text-[15px] leading-relaxed text-pretty text-muted-foreground">
-            Crea un enlace con el nombre y el correo del proveedor y un código. Pásale el enlace y el código por WhatsApp, llamada o el medio que
-            ya usan: entra con su correo y el código, y sube sus facturas. Cada factura la decide el agente con las mismas reglas.
+            El agente solo paga a los proveedores de esta lista, a la cuenta registrada y por lo acordado. Una factura de alguien que no está aquí
+            espera a una persona, que puede agregarlo al aprobarla.
           </p>
         </div>
-        <CrearEnlace permiso={crear} />
+        <AsistenteProveedor permiso={crear} />
       </header>
+
+      <Tarjeta as="section" aria-labelledby="titulo-proveedores">
+        <TarjetaEncabezado
+          id="titulo-proveedores"
+          titulo={
+            <span className="flex items-center gap-2">
+              <BuildingIcon className="size-[18px]" aria-hidden />
+              Proveedores
+            </span>
+          }
+          descripcion={proveedores.length > 0 ? `${proveedoresActivos} de ${proveedores.length} activos.` : "Agrega a quién le pagas: nombre, identificación fiscal y cuenta."}
+        />
+        {proveedores.length > 0 ? (
+          <ListaProveedores proveedores={proveedores} permiso={crear} />
+        ) : (
+          <Empty className="border-t py-12">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <BuildingIcon />
+              </EmptyMedia>
+              <EmptyTitle>Aún no hay proveedores</EmptyTitle>
+              <EmptyDescription>Usa Nuevo proveedor. Mientras la lista esté vacía, toda factura espera a una persona.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        )}
+      </Tarjeta>
 
       <Tarjeta as="section" aria-labelledby="titulo-enlaces">
         <TarjetaEncabezado
@@ -36,7 +65,7 @@ export default async function ProveedoresPage() {
           titulo={
             <span className="flex items-center gap-2">
               <LinkIcon className="size-[18px]" aria-hidden />
-              Enlaces
+              Portal de proveedores
             </span>
           }
           descripcion={
@@ -44,7 +73,9 @@ export default async function ProveedoresPage() {
               ? `${activos} ${activos === 1 ? "activo" : "activos"}. Cada enlace vence en 30 días; el código se puede cambiar cuando quieras.`
               : "Cada enlace vence en 30 días; el código se puede cambiar cuando quieras."
           }
-        />
+        >
+          <CrearEnlace permiso={crear} />
+        </TarjetaEncabezado>
         {enlaces.length > 0 ? (
           <ListaEnlaces enlaces={enlaces} puedeRevocar={crear.ok} />
         ) : (

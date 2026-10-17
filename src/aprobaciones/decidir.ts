@@ -4,6 +4,7 @@
 
 import { correoDeInvitacion, esRemitenteInvitacion } from "@/dominio/remitente";
 import { formatearUsd } from "@/dominio/dinero";
+import { slug } from "@/dominio/normalizar";
 import type { Aprobador, Beneficiario, EntradaRegistro } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
 
@@ -61,15 +62,6 @@ export function decisionAgente(registro: readonly EntradaRegistro[], ref: string
 
 function cubre(a: Aprobador, usd: number): boolean {
   return a.limite_usd === null || usd <= a.limite_usd;
-}
-
-function slug(texto: string): string {
-  return texto
-    .normalize("NFD")
-    .replace(/\p{Mn}/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
 }
 
 /** En exclusiva: leer → validar → agregar sin carreras (dos personas decidiendo a la vez sobre la misma factura). */

@@ -191,6 +191,7 @@ export type Acuerdo = {
 export type Beneficiario = {
   id: string;                       // 'ben-diego-herrera'
   nombre: string;                   // 'Diego Herrera'
+  identificacion_fiscal?: string | null; // NIT/RUT/RFC/CUIT/CNPJ/Tax ID (#107)
   pais: string;                     // 'MX'
   categoria: string;                // 'desarrollo'
   tipo: 'contratista'|'proveedor';
