@@ -6,16 +6,16 @@ import { cn } from "cn";
 
 import { Boton } from "@/app/_componentes";
 import { Progress } from "@/components/ui/progress";
-import type { DecisionAgente } from "@/dominio/tipos";
+import { MAX_BYTES } from "@/ingesta/limites";
+import type { ResultadoSubida } from "@/servicios/subida";
 
 // Subida de una factura (#26): portal del proveedor (#12) y "Cargar factura" del panel (#6).
 // Un archivo por vez, ≤ 10 MB, PDF/PNG/JPG/XML. El navegador solo pre-valida para avisar rápido:
 // el servidor vuelve a validar todo (tipo real por magic bytes) y decide.
+// Hecho a mano y no con el dropzone de @kibo-ui: ese depende de react-dropzone (dependencia nueva) y aquí
+// basta un <label> con <input type="file"> nativo, accesible por teclado, para un solo archivo.
 
-const MAX_BYTES = 10 * 1024 * 1024;
 const ACEPTA = ".pdf,.png,.jpg,.jpeg,.xml,application/pdf,image/png,image/jpeg,application/xml,text/xml";
-
-export type ResultadoSubida = { ref_interna: string; estado: DecisionAgente; mensaje: string };
 
 type Estado =
   | { tipo: "inicial" }

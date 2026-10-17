@@ -4,7 +4,9 @@
 
 import type { Formato } from "@/dominio/tipos";
 
-export const MAX_BYTES = 10 * 1024 * 1024;
+import { MAX_BYTES } from "./limites";
+
+export { MAX_BYTES };
 const LARGO_NOMBRE = 120;
 
 export type ArchivoValido = { ok: true; formato: Extract<Formato, "pdf" | "imagen" | "xml">; mime: string; extension: string };
@@ -17,10 +19,20 @@ const PNG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const JPG = [0xff, 0xd8, 0xff];
 const BOM = [0xef, 0xbb, 0xbf];
 
+/** Texto del inicio del archivo, respetando BOM UTF-8 o UTF-16. */
+function inicioComoTexto(b: Uint8Array): string {
+  const inicio = Buffer.from(b.buffer, b.byteOffset, Math.min(b.byteLength, 512));
+  if (inicio[0] === 0xff && inicio[1] === 0xfe) return inicio.subarray(2).toString("utf16le");
+  if (inicio[0] === 0xfe && inicio[1] === 0xff) return Buffer.from(inicio.subarray(2)).swap16().toString("utf16le");
+  return (empieza(inicio, BOM) ? inicio.subarray(3) : inicio).toString("utf8");
+}
+
+/** XML con o sin declaración (`<?xml` o directo `<cfdi:Comprobante`), pero nunca HTML ni SVG (podrían ejecutar script). */
 function esXml(b: Uint8Array): boolean {
-  let i = empieza(b, BOM) ? 3 : 0;
-  while (i < b.length && (b[i] === 0x20 || b[i] === 0x09 || b[i] === 0x0a || b[i] === 0x0d)) i++;
-  return empieza(b, [...Buffer.from("<?xml")], i);
+  const texto = inicioComoTexto(b).trimStart();
+  if (texto.startsWith("<?xml")) return true;
+  const raiz = /^<([A-Za-z_][\w:.-]*)/.exec(texto)?.[1]?.toLowerCase();
+  return raiz !== undefined && !["html", "svg", "script", "body", "head"].includes(raiz);
 }
 
 /** Texto latin1 del PDF (sin decodificar streams) para buscar marcas de la estructura. */
@@ -32,10 +44,14 @@ export function validarArchivo(bytes: Uint8Array): ArchivoValido | ArchivoInvali
 
   if (empieza(bytes, PDF)) {
     const texto = crudo(bytes);
-    if (/\/Encrypt\b/.test(texto)) {
+    // "/Encrypt 5 0 R" en el trailer o en el diccionario del xref stream (siempre sin comprimir), no la palabra suelta.
+    if (/\/Encrypt\s+\d+\s+\d+\s+R\b/.test(texto)) {
       return { ok: false, estado: 422, mensaje: "El PDF está protegido con contraseña (cifrado). Envíalo sin contraseña." };
     }
-    if (!/\/Type\s*\/Page\b/.test(texto)) return { ok: false, estado: 422, mensaje: "El PDF no tiene páginas." };
+    // PDF 1.5+ puede guardar los objetos (y las páginas) dentro de /ObjStm comprimidos: ahí no se ven sin descomprimir.
+    if (!/\/Type\s*\/Page\b/.test(texto) && !/\/ObjStm\b/.test(texto)) {
+      return { ok: false, estado: 422, mensaje: "El PDF no tiene páginas." };
+    }
     return { ok: true, formato: "pdf", mime: "application/pdf", extension: "pdf" };
   }
   if (empieza(bytes, PNG)) return { ok: true, formato: "imagen", mime: "image/png", extension: "png" };

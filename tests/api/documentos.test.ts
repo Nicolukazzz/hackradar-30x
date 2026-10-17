@@ -82,6 +82,27 @@ describe("POST /api/documentos (#26)", () => {
     expect((await archivo(r.ref_interna)).status).toBe(404);
   });
 
+  it("proveedor sin usuario de portal (CloudNorte): R11 cumple por la sesión y puede ver lo que subió", async () => {
+    await repoSinProcesar();
+    comoProveedor("ben-cloudnorte");
+    const r = await (await subir(await readFile(`${DOCS}/adjuntos/002-inv-2210.pdf`), "inv.pdf")).json();
+    expect((await archivo(r.ref_interna)).status).toBe(200);
+    const { obtenerRepositorio } = await import("@/repositorio");
+    const e = (await (await obtenerRepositorio()).registro({ ref_interna: r.ref_interna, tipo: ["DECISION_AGENTE"] }))[0];
+    expect(e?.evaluaciones.find((x) => x.id === "R11")?.resultado).toBe("CUMPLE");
+  });
+
+  it("si el registro falla después de ingerir: 503 con la ref, sin decir que no se registró nada", async () => {
+    const { subirDocumento } = await import("@/servicios/subida");
+    const base = await crearRepositorioMemoria("lote-demo-oct");
+    const roto = { ...base, agregarEntrada: async () => Promise.reject(new Error("base caída")) };
+    const pdf = await readFile(`${DOCS}/001-fac-1041.pdf`);
+    const extractor = async () => Promise.reject(new Error("sin LLM"));
+    await expect(
+      subirDocumento({ bytes: pdf, nombre: "f.pdf" }, TESORERIA, { repo: roto, ahora: "2026-10-16T10:00:00-05:00", extractor, urlPortal: "x" }),
+    ).rejects.toMatchObject({ estado: 503, message: expect.stringContaining("INT-2026-000013") });
+  });
+
   it("un XML se descarga (attachment), nunca se muestra en el navegador", async () => {
     await repoSinProcesar();
     const xml = new Uint8Array(Buffer.from('<?xml version="1.0"?><factura/>'));

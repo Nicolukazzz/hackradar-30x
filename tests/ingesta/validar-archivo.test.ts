@@ -20,6 +20,19 @@ describe("validarArchivo: tipo real por magic bytes (#26)", () => {
     expect(validarArchivo(bytes('\xEF\xBB\xBF  <?xml version="1.0"?><cfdi/>'))).toMatchObject({ ok: true, formato: "xml" });
   });
 
+  it("XML sin declaración o en UTF-16 sí; HTML o SVG disfrazados de XML no", () => {
+    expect(validarArchivo(bytes('<cfdi:Comprobante Version="4.0"/>'))).toMatchObject({ ok: true, formato: "xml" });
+    const utf16 = new Uint8Array([0xff, 0xfe, ...Buffer.from('<?xml version="1.0"?><Invoice/>', "utf16le")]);
+    expect(validarArchivo(utf16)).toMatchObject({ ok: true, formato: "xml" });
+    expect(validarArchivo(bytes("<svg onload=alert(1)>"))).toMatchObject({ ok: false, estado: 415 });
+    expect(validarArchivo(bytes("  <HTML><body>x</body></HTML>"))).toMatchObject({ ok: false, estado: 415 });
+  });
+
+  it("PDF con páginas dentro de /ObjStm (PDF 1.5+) se acepta; la palabra Encrypt suelta no lo bloquea", () => {
+    expect(validarArchivo(bytes("%PDF-1.7\n5 0 obj << /Type /ObjStm /N 3 /Filter /FlateDecode >> stream x endstream\n%%EOF"))).toMatchObject({ ok: true });
+    expect(validarArchivo(bytes("%PDF-1.4\n1 0 obj << /Type /Page >> endobj\n(texto /Encrypt suelto)\n%%EOF"))).toMatchObject({ ok: true });
+  });
+
   it("un ejecutable renombrado a .pdf → 415, sin importar la extensión", () => {
     const exe = bytes("MZ\x90\x00\x03\x00\x00\x00 This program cannot be run in DOS mode");
     expect(validarArchivo(exe)).toMatchObject({ ok: false, estado: 415 });

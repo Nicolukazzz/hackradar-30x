@@ -1,7 +1,7 @@
 import { cacheEnDisco } from "@/extraccion/cache";
 import { proveedorDesdeEntorno } from "@/extraccion/llm/proveedor";
 import { extractorReal } from "@/ingesta/pipeline";
-import { MAX_BYTES } from "@/ingesta/validar-archivo";
+import { MAX_BYTES } from "@/ingesta/limites";
 import { crearLimitador } from "@/lib/limite";
 import { conRol } from "@/lib/auth/ruta";
 import { obtenerRepositorio } from "@/repositorio";
@@ -16,7 +16,7 @@ const MAX_CUERPO = MAX_BYTES + 64 * 1024;
 const limitador = crearLimitador({ maximo: 20, ventanaMs: 60_000 });
 
 /** Lee el cuerpo cortando apenas pasa el límite: nunca se carga en memoria un cuerpo gigante. */
-async function cuerpoLimitado(req: Request): Promise<Uint8Array<ArrayBuffer>> {
+async function cuerpoLimitado(req: Request): Promise<Buffer<ArrayBuffer>> {
   const declarado = Number(req.headers.get("content-length") ?? "0");
   if (declarado > MAX_CUERPO) throw new ErrorSubida(413, "El archivo supera los 10 MB.");
   if (!req.body) throw new ErrorSubida(400, "Falta el archivo.");
@@ -33,7 +33,7 @@ async function cuerpoLimitado(req: Request): Promise<Uint8Array<ArrayBuffer>> {
     }
     partes.push(value);
   }
-  return new Uint8Array(Buffer.concat(partes));
+  return Buffer.concat(partes);
 }
 
 /** Exactamente un archivo, en el campo `archivo`. */

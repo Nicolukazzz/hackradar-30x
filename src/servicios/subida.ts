@@ -12,7 +12,7 @@ import type { Repositorio } from "@/repositorio/repositorio";
 
 export class ErrorSubida extends Error {
   constructor(
-    readonly estado: 400 | 403 | 413 | 415 | 422 | 429,
+    readonly estado: 400 | 403 | 413 | 415 | 422 | 429 | 503,
     mensaje: string,
   ) {
     super(mensaje);
@@ -39,8 +39,30 @@ async function remitenteDe(sesion: Sesion, repo: Repositorio): Promise<{ canal: 
   const { beneficiarios } = await repo.datosComunes();
   const b = beneficiarios.find((x) => x.id === sesion.beneficiario_id);
   if (!b) throw new ErrorSubida(403, "Tu usuario no está asociado a un proveedor.");
-  // Sin usuario de portal registrado, el remitente es el correo de la sesión: R11 escala y pide vincular.
-  return { canal: "portal", remitente: { tipo: "portal", valor: b.canales.portal_usuario ?? sesion.correo } };
+  // La sesión prueba quién es: su usuario de portal o, si no tiene, el id del beneficiario (R11 acepta los dos).
+  return { canal: "portal", remitente: { tipo: "portal", valor: b.canales.portal_usuario ?? b.id } };
+}
+
+/**
+ * Ya ingerido, el documento tiene que quedar decidido. Un fallo pasajero (repositorio) se reintenta una vez;
+ * si vuelve a fallar se avisa con la ref, para que finanzas lo encuentre, en vez de un "no se registró nada".
+ */
+async function decidirConReintento(ref: string, deps: DependenciasSubida) {
+  const pipeline = { repo: deps.repo, ahora: deps.ahora, extractor: deps.extractor };
+  try {
+    return await procesarDocumento(ref, pipeline);
+  } catch {
+    const ya = (await deps.repo.registro({ ref_interna: ref, tipo: ["DECISION_AGENTE"] }))[0];
+    if (ya) return ya; // otra petición ya lo decidió
+    try {
+      return await procesarDocumento(ref, pipeline);
+    } catch {
+      throw new ErrorSubida(
+        503,
+        `Recibimos el archivo con la referencia ${ref}, pero el agente no pudo revisarlo ahora. El equipo de finanzas lo revisará; no hace falta enviarlo de nuevo.`,
+      );
+    }
+  }
 }
 
 export async function subirDocumento(
@@ -52,7 +74,7 @@ export async function subirDocumento(
   if (!v.ok) throw new ErrorSubida(v.estado, v.mensaje);
 
   const { canal, remitente } = await remitenteDe(sesion, deps.repo);
-  const bytes = Buffer.from(archivo.bytes.buffer, archivo.bytes.byteOffset, archivo.bytes.byteLength);
+  const bytes = Buffer.from(archivo.bytes.buffer, archivo.bytes.byteOffset, archivo.bytes.byteLength); // sin copiar
   const entrada: DocumentoEntrante = {
     canal,
     remitente,
@@ -62,7 +84,7 @@ export async function subirDocumento(
   // Se guarda con nombre generado; el nombre original queda solo como metadato saneado del adjunto.
   const original = { nombre: `${sha256(bytes)}.${v.extension}`, mime: v.mime, bytes };
   const doc = await ingerir(entrada, { repo: deps.repo, reloj: { ahora: () => deps.ahora }, original });
-  const e = await procesarDocumento(doc.ref_interna, { repo: deps.repo, ahora: deps.ahora, extractor: deps.extractor });
+  const e = await decidirConReintento(doc.ref_interna, deps);
   const decision = e.decision as DecisionAgente;
   const mensaje =
     sesion.rol === "proveedor" ? textoRespuesta(e, e.extraccion?.idioma ?? "es", { urlPortal: deps.urlPortal }) : e.explicacion;
