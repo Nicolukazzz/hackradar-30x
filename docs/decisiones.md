@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-16 — Motor de reglas R1–R11 implementado (#5)
+- Estado: propuesta
+- Decisión: `src/reglas/` (una regla por archivo, `evaluarFactura`, `procesarLote`, presupuesto, explicaciones) y `src/registro/registro.ts` (solo crear entradas). Reproduce el lote demo (5/3/4, disponible final 2.277,30) y las 14 trampas de noviembre con `extraccion_esperada`. Ajustes al contrato en especificación §16 punto 7: detector R10 vive en `src/reglas/inyeccion.ts` (el motor no importa `src/extraccion`; #4 puede re-exportarlo), try/catch por regla y global → ESCALAR, guardas extra para PAGAR (R6/R7/R9 CUMPLE y monto no nulo), USD que redondea a 0 cuenta como monto no confiable, `momento` de la entrada = `recibido_en`, explicaciones nombran al beneficiario y ESCALAR dice cuánto reserva.
+- Por qué: el motor tiene que defenderse solo aunque el extractor falle o lo engañen. Los invariantes de §5 corren con 10.000 facturas aleatorias (fast-check) y encontraron un caso real (COP 1 → USD 0,00 se pagaba). Nombrar al beneficiario y el monto en cada explicación cumple el criterio de explicabilidad sin abrir la traza.
+- Quién: N
+
 ## 2026-10-16 — Contrato del dominio en código (#2)
 - Estado: aceptada (#9): aplicada en `src/dominio/`, PR #22 mergeado.
 - Decisión: el contrato de §3 y §9 vive en `src/dominio/`: `tipos.ts` (tipos escritos a mano, incluidos los del dataset: `MetaDocumento`, `ExtraccionPlana`, `EsperadoDocumento`, `ConfigEscenario`, `Trampa`) y `esquemas.ts` (zod estricto; un test de compilación exige que cada esquema produzca exactamente su tipo). Interfaz entre módulos: `cargarDatosComunes()` y `cargarEscenario(id)` (`cargar.ts`, valida todo `data/`, documentos en orden de llegada por instante real), `aUsd`/`formatear*`/`porcentaje` (`dinero.ts`), `normalizarNombre`/`normalizarNumeroFactura` (`normalizar.ts`), `Reloj` + `relojFijo` (`reloj.ts`). El reloj real (`relojSistema`) va en `src/lib/reloj-sistema.ts` porque el lint prohíbe leer la hora en el dominio. Invariantes en los datos: R9 ≤ R6, solo R5/R8 desactivables, tasas > 0, canales únicos por beneficiario, un aprobador principal, cada documento con exactamente una respuesta esperada.

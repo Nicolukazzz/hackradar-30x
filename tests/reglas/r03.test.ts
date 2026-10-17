@@ -1,0 +1,32 @@
+import { beforeAll, describe, expect, it } from "vitest";
+
+import type { DatosComunes } from "@/dominio/cargar";
+import { r03Beneficiario } from "@/reglas/r03-beneficiario";
+
+import { beneficiario, campo, ctx, datosComunes, delLote } from "./fixtures";
+
+let d: DatosComunes;
+beforeAll(async () => {
+  d = await datosComunes();
+});
+
+describe("R3 Beneficiario en la lista permitida", () => {
+  it("CUMPLE si está activo", () => {
+    expect(r03Beneficiario(ctx(d)).comparacion).toBe("Ana María Gómez está entre los 14 permitidos");
+  });
+
+  it("FALLA si no está en la lista", () => {
+    const e = r03Beneficiario(ctx(d, { ext: { beneficiario_nombre: campo("Nova Prints") } }));
+    expect(e.resultado).toBe("FALLA");
+    expect(e.comparacion).toBe("Nova Prints no está entre los 14 permitidos");
+  });
+
+  it("FALLA si está inactivo", () => {
+    const inactivo = { ...beneficiario(d, "Ana María Gómez"), estado: "inactivo" as const };
+    expect(r03Beneficiario(ctx(d, { beneficiario: inactivo })).comparacion).toBe("Ana María Gómez está inactivo en la lista");
+  });
+
+  it("lote demo: OMI-3381", async () => {
+    expect((await delLote("OMI-3381", "R3")).comparacion).toBe("Servicios Ómicron S.A. no está entre los 14 permitidos");
+  });
+});
