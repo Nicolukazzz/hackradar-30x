@@ -929,8 +929,12 @@ Cuerpo `{ "accion": "aprobar"|"rechazar", "comentario": "…", "agregar_a_lista"
 
 Cuerpo: `Reglas`. Sin registrar nada.
 
+`ReporteEvaluacion` de `src/evaluacion/evaluar.ts` (#7). Los conteos (`pagos_indebidos`, `escalados_innecesarios`) son números; el detalle sale de `documentos` (`obtenido = PAGAR` y `esperado ≠ PAGAR`).
+
 ```json
 {
+  "escenario": "lote-demo-oct",
+  "modo": "golden",
   "reglas_version": 7,
   "total": 12,
   "coinciden": 12,
@@ -939,28 +943,36 @@ Cuerpo: `Reglas`. Sin registrar nada.
   "autonomia": 0.6666666666666666,
   "escalados_innecesarios": 0,
   "reglas_correctas": 12,
+  "matriz": {
+    "PAGAR": { "PAGAR": 5, "FRENAR": 0, "ESCALAR": 0, "RECHAZADA_NO_FACTURA": 0 },
+    "FRENAR": { "PAGAR": 0, "FRENAR": 3, "ESCALAR": 0, "RECHAZADA_NO_FACTURA": 0 },
+    "ESCALAR": { "PAGAR": 0, "FRENAR": 0, "ESCALAR": 4, "RECHAZADA_NO_FACTURA": 0 },
+    "RECHAZADA_NO_FACTURA": { "PAGAR": 0, "FRENAR": 0, "ESCALAR": 0, "RECHAZADA_NO_FACTURA": 0 }
+  },
+  "por_trampa": {
+    "normal": { "total": 5, "correctas": 5 },
+    "duplicado": { "total": 1, "correctas": 1 },
+    "…": "6 más"
+  },
+  "explicabilidad": [
+    { "documento": "documentos/011-omi-3381.eml", "problemas": ["452 caracteres (máximo 280)"] }
+  ],
   "documentos": [
     {
+      "documento": "documentos/001-fac-1041.pdf",
       "ref_interna": "INT-2026-000001",
       "factura_numero": "FAC-1041",
       "beneficiario": "Ana María Gómez",
+      "trampa": [],
       "esperado": "PAGAR",
       "obtenido": "PAGAR",
       "coincide": true,
       "reglas_esperadas": [],
-      "reglas_obtenidas": []
+      "reglas_obtenidas": [],
+      "explicacion": "Pagada: coincide con lo acordado en AMG-DIS (COP 8.400.000). La cuenta •••• 3021 es la registrada para Ana María Gómez. Bajo el límite automático (COP 8.400.000 = USD 2.000,00 ≤ USD 3.000,00).",
+      "problemas": []
     },
-    {
-      "ref_interna": "INT-2026-000002",
-      "factura_numero": "INV-2210",
-      "beneficiario": "CloudNorte S.A.S.",
-      "esperado": "PAGAR",
-      "obtenido": "PAGAR",
-      "coincide": true,
-      "reglas_esperadas": [],
-      "reglas_obtenidas": []
-    },
-    "… 10 más"
+    "… 11 más"
   ]
 }
 ```
