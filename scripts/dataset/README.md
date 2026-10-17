@@ -8,7 +8,7 @@ Genera todo `data/` (datos comunes + escenarios) y lo verifica. Contrato: `docs/
 python3 -m venv .venv
 .venv/bin/pip install -r scripts/dataset/requirements.txt
 .venv/bin/python scripts/dataset/generar.py      # regenera data/ y verifica; exit 1 si algo no cuadra
-.venv/bin/pytest scripts/dataset -q              # 25 tests
+.venv/bin/pytest scripts/dataset -q              # 27 tests
 ```
 
 `--salida <carpeta>` escribe en otro lugar (lo usan los tests). `--silencioso` omite la tabla resumen.

@@ -30,6 +30,7 @@ APROBADORES = [
 ]
 
 _ACTIVAS = {f"R{i}": True for i in range(1, 12)}
+HONORARIO_MENSUAL = "Honorario mensual"
 
 
 def _reglas(version: int, editada_en: str, pago_automatico: int) -> dict:
@@ -155,7 +156,7 @@ BENEFICIARIOS = [
          ciudad="Cali, Colombia", id_fiscal="C.C. 999.000.104 (ficticio)"),
     _ben("ben-mesa-legal", "Mesa Legal S.A.S.", "CO", "legal", "proveedor",
          _cuenta("cuenta", BANCOS["CO"], "1907"),
-         {"tipo": "honorario", "referencia": "HON-ML", "descripcion": "Honorario mensual",
+         {"tipo": "honorario", "referencia": "HON-ML", "descripcion": HONORARIO_MENSUAL,
           "lineas": [_linea("ML-HON", "Asesoría legal mensual", ["asesoría", "legal"], c(5250000), "COP")]},
          c(3000), correos=["facturas@mesalegal.example"],
          ciudad="Bogotá, Colombia", id_fiscal="NIT 999.000.105-3 (ficticio)"),
@@ -191,7 +192,7 @@ BENEFICIARIOS = [
          ciudad="Monterrey, México", id_fiscal="RFC FICT990010GA1 (ficticio)"),
     _ben("ben-rio-verde", "Rio Verde Traduções Ltda.", "BR", "traducción", "proveedor",
          _cuenta("PIX", BANCOS["BR"], "5512"),
-         {"tipo": "honorario", "referencia": "HON-RV", "descripcion": "Honorario mensual",
+         {"tipo": "honorario", "referencia": "HON-RV", "descripcion": HONORARIO_MENSUAL,
           "lineas": [_linea("RV-TRAD", "Tradução mensal", ["tradução", "localização"], c("11000.00"), "BRL")]},
          c(3000), correos=["financeiro@rioverde.example"],
          ciudad="Curitiba, Brasil", id_fiscal="CNPJ 99.900.011/0001-11 (fictício)"),
@@ -204,7 +205,7 @@ BENEFICIARIOS = [
          ciudad="Rosario, Argentina", id_fiscal="CUIT 99-90001120-2 (ficticio)"),
     _ben("ben-bitacora-contable", "Bitácora Contable S.A.S.", "CO", "contabilidad", "proveedor",
          _cuenta("cuenta", BANCOS["CO"], "4408"),
-         {"tipo": "honorario", "referencia": "HON-BC", "descripcion": "Honorario mensual",
+         {"tipo": "honorario", "referencia": "HON-BC", "descripcion": HONORARIO_MENSUAL,
           "lineas": [_linea("BC-CONT", "Contabilidad mensual", ["contabilidad", "contable"], c(12600000), "COP")]},
          c(3000), correos=["facturacion@bitacoracontable.example"],
          ciudad="Bucaramanga, Colombia", id_fiscal="NIT 999.000.113-4 (ficticio)"),

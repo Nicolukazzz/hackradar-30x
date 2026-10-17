@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -61,7 +62,7 @@ def _dias(a: str, b: str) -> int:
 class Libro:
     """Facturas vigentes (pagadas o reservadas) a partir del historial y de lo ya procesado."""
 
-    def __init__(self, historial: list[dict], beneficiarios: list[dict]):
+    def __init__(self, historial: list[dict]):
         self.facturas: list[dict] = []
         resuelta = {}
         for e in historial:
@@ -113,17 +114,123 @@ def _linea_acordada(ben: dict, ext: dict) -> tuple[dict | None, str]:
     return None, f"{len(candidatas)} líneas candidatas"
 
 
+def _falla_si(condicion: bool) -> str:
+    return "FALLA" if condicion else "CUMPLE"
+
+
+@dataclass
+class Caso:
+    """Un documento en evaluación, con lo derivado de su extracción."""
+    doc: dict
+    ext: dict
+    ben: dict | None
+    ben_norm: str
+    numero: str
+    usd: int | None
+    afectados: set[str]
+
+    @property
+    def monto_ok(self) -> bool:
+        return "monto_total" not in self.afectados
+
+
+def _campos_afectados(ext: dict, hoy: str) -> set[str]:
+    """R1: obligatorios faltantes + campos que participan en una validación fallida."""
+    afectados = {k for k in CAMPOS_OBLIGATORIOS if ext.get(k) is None}
+    subtotal, impuestos, total = ext.get("subtotal"), ext.get("impuestos"), ext.get("monto_total")
+    if subtotal and impuestos and total and subtotal["centavos"] + impuestos["centavos"] != total["centavos"]:
+        afectados.add("monto_total")
+    emision, vence = ext.get("fecha_emision"), ext.get("fecha_vencimiento")
+    if emision and emision > hoy:
+        afectados.add("fecha_emision")
+    if emision and vence and vence < emision:
+        afectados.add("fecha_vencimiento")
+    return afectados
+
+
+def _es_duplicado(caso: Caso, f: dict, dup: dict) -> bool:
+    """R2 contra una factura vigente del mismo beneficiario (§4.3)."""
+    ext = caso.ext
+    mismo_hash = bool(caso.doc["sha256"]) and f["sha256"] == caso.doc["sha256"]
+    mismo_numero = f["numero"] == caso.numero and _dias(f["emision"], ext["fecha_emision"]) <= dup["ventana_dias"]
+    parecida = (caso.monto_ok and "fecha_emision" not in caso.afectados
+                and abs(Decimal(f["usd"] - caso.usd)) <= Decimal(caso.usd) * dup["tolerancia_monto_pct"] / 100
+                and _dias(f["emision"], ext["fecha_emision"]) <= dup["tolerancia_fecha_dias"])
+    hito_pagado = bool(ext.get("hito_numero")) and f["hito"] == ext["hito_numero"] and f["estado"] == "pagada"
+    return mismo_hash or mismo_numero or parecida or hito_pagado
+
+
+def _r4(caso: Caso) -> str:
+    if caso.ben is None or "cuenta_destino_ultimos4" in caso.afectados:
+        return "NO_APLICA"
+    return _falla_si(caso.ext["cuenta_destino_ultimos4"] != caso.ben["cuenta"]["ultimos4"])
+
+
+def _r5(caso: Caso, tolerancia_pct: int) -> str:
+    if caso.ben is None:
+        return "NO_APLICA"
+    linea, _ = _linea_acordada(caso.ben, caso.ext)
+    total = caso.ext.get("monto_total")
+    if linea is None or total is None or linea["monto"]["moneda"] != total["moneda"]:
+        return "INDETERMINADO"
+    acordado = linea["monto"]["centavos"]
+    return _falla_si(abs(Decimal(total["centavos"] - acordado)) / acordado * 100 > tolerancia_pct)
+
+
+def _reglas_de_monto(caso: Caso, libro: "Libro", periodo: str, lim: dict, disponible: int) -> dict[str, str]:
+    """R5–R9. Si R1 marcó el monto como no confiable, todas NO_APLICA (§4.3)."""
+    if not caso.monto_ok:
+        return dict.fromkeys(DEPENDEN_DEL_MONTO, "NO_APLICA")
+    usd = caso.usd
+    r = {"R5": _r5(caso, lim["tolerancia_acordado_pct"]),
+         "R6": _falla_si(usd > lim["maximo_absoluto_usd"]),
+         "R7": _falla_si(usd > disponible),
+         "R9": _falla_si(usd > lim["pago_automatico_usd"])}
+    if caso.ben is None:
+        r["R8"] = "NO_APLICA"
+    else:
+        tope = caso.ben["limite_mensual_usd"] or lim["mensual_por_beneficiario_default_usd"]
+        acumulado = libro.total(periodo, "pagada", caso.ben_norm) + libro.total(periodo, "reservada", caso.ben_norm)
+        r["R8"] = _falla_si(acumulado + usd > tope)
+    return r
+
+
+def _r11(caso: Caso) -> str:
+    if caso.ben is None:
+        return "FALLA"
+    rem, canales = caso.doc["remitente"], caso.ben["canales"]
+    vinculado = {
+        "portal": rem["valor"] == canales["portal_usuario"],
+        "correo": rem["valor"].lower() in [x.lower() for x in canales["correos"]],
+        "telegram": rem["valor"] == canales["telegram_chat_id"],
+    }[rem["tipo"]]
+    return _falla_si(not vinculado)
+
+
+def _combinar(r: dict[str, str]) -> tuple[str, list[str]]:
+    fallan = sorted((k for k, v in r.items() if v in ("FALLA", "INDETERMINADO")), key=lambda k: int(k[1:]))
+    if any(r[k] == "FALLA" for k in FRENAN):
+        return "FRENAR", fallan
+    return ("ESCALAR" if fallan else "PAGAR"), fallan
+
+
+def _asignacion(r: dict[str, str], caso: Caso, ahora: str) -> tuple[str, str]:
+    """Aprobador y plazo de respuesta (§10)."""
+    asignado = "lm" if r["R9"] == "FALLA" or r["R10"] == "FALLA" or (caso.usd or 0) > 500000 else "ap"
+    hoy, zona = ahora[:10], ahora[19:]
+    limite = date.fromisoformat(caso.ext["fecha_vencimiento"]) - timedelta(days=3)
+    if limite <= date.fromisoformat(hoy):
+        return asignado, f"{hoy}T18:00:00{zona}"
+    return asignado, f"{limite.isoformat()}T12:00:00{zona}"
+
+
 def evaluar(escenario: dict, documentos: list[dict], historial: list[dict], datos: dict) -> list[dict]:
     """documentos: [{recibido_en, canal, remitente, sha256, texto_crudo, ext (plana)}] en orden de llegada."""
     reglas = datos["reglas"][escenario["reglas_version"]]
-    lim = reglas["limites"]
     tasas = datos["tasas"][escenario["periodo"]]["tasas"]
     por_nombre = {normalizar_nombre(b["nombre"]): b for b in datos["beneficiarios"]}
-    libro = Libro(historial, datos["beneficiarios"])
-    periodo = escenario["periodo"]
-    ahora = escenario["ahora"]
-    hoy = ahora[:10]
-    presupuesto = reglas["presupuesto"]["monto_usd"]
+    libro = Libro(historial)
+    periodo, ahora = escenario["periodo"], escenario["ahora"]
     resultados = []
 
     for d in documentos:
@@ -132,111 +239,30 @@ def evaluar(escenario: dict, documentos: list[dict], historial: list[dict], dato
             resultados.append({"decision": "RECHAZADA_NO_FACTURA", "reglas_que_fallan": [], "asignado_a": None,
                                "responder_antes_de": None, "usd": None, "disponible_antes": None})
             continue
-        r: dict[str, str] = {}
-        afectados = {k for k in CAMPOS_OBLIGATORIOS if ext.get(k) is None}
-        # R1: obligatorios + validaciones.
-        if ext.get("subtotal") and ext.get("monto_total") and \
-                ext["subtotal"]["centavos"] + ext["impuestos"]["centavos"] != ext["monto_total"]["centavos"]:
-            afectados.add("monto_total")
-        if ext.get("fecha_emision") and ext["fecha_emision"] > hoy:
-            afectados.add("fecha_emision")
-        if ext.get("fecha_emision") and ext.get("fecha_vencimiento") and ext["fecha_vencimiento"] < ext["fecha_emision"]:
-            afectados.add("fecha_vencimiento")
-        r["R1"] = "FALLA" if afectados else "CUMPLE"
-
-        monto_ok = "monto_total" not in afectados
-        usd = dinero.a_usd(ext["monto_total"]["centavos"], ext["monto_total"]["moneda"], tasas) \
-            if ext.get("monto_total") else None
+        total = ext.get("monto_total")
         ben_norm = normalizar_nombre(ext["beneficiario_nombre"])
-        ben = por_nombre.get(ben_norm)
-        numero = normalizar_numero(ext["numero"])
+        caso = Caso(doc=d, ext=ext, ben=por_nombre.get(ben_norm), ben_norm=ben_norm,
+                    numero=normalizar_numero(ext["numero"]),
+                    usd=dinero.a_usd(total["centavos"], total["moneda"], tasas) if total else None,
+                    afectados=_campos_afectados(ext, ahora[:10]))
+        disponible = reglas["presupuesto"]["monto_usd"] - libro.total(periodo, "pagada") - libro.total(periodo, "reservada")
 
-        # R2: duplicados.
-        dup = False
-        for f in libro.facturas:
-            if f["ben"] != ben_norm:
-                continue
-            if d["sha256"] and f["sha256"] == d["sha256"]:
-                dup = True
-            elif f["numero"] == numero and _dias(f["emision"], ext["fecha_emision"]) <= reglas["duplicados"]["ventana_dias"]:
-                dup = True
-            elif monto_ok and "fecha_emision" not in afectados and \
-                    abs(Decimal(f["usd"] - usd)) <= Decimal(usd) * reglas["duplicados"]["tolerancia_monto_pct"] / 100 and \
-                    _dias(f["emision"], ext["fecha_emision"]) <= reglas["duplicados"]["tolerancia_fecha_dias"]:
-                dup = True
-            elif ext.get("hito_numero") and f["hito"] == ext["hito_numero"] and f["estado"] == "pagada":
-                dup = True
-        r["R2"] = "FALLA" if dup else "CUMPLE"
-
-        r["R3"] = "CUMPLE" if ben and ben["estado"] == "activo" else "FALLA"
-        if ben is None or "cuenta_destino_ultimos4" in afectados:
-            r["R4"] = "NO_APLICA"
-        else:
-            r["R4"] = "CUMPLE" if ext["cuenta_destino_ultimos4"] == ben["cuenta"]["ultimos4"] else "FALLA"
-
-        if ben is None:
-            r["R5"] = "NO_APLICA"
-        else:
-            linea, _ = _linea_acordada(ben, ext)
-            if linea is None or linea["monto"]["moneda"] != (ext.get("monto_total") or {}).get("moneda"):
-                r["R5"] = "INDETERMINADO"
-            else:
-                dif = abs(Decimal(ext["monto_total"]["centavos"] - linea["monto"]["centavos"])) / linea["monto"]["centavos"] * 100
-                r["R5"] = "FALLA" if dif > lim["tolerancia_acordado_pct"] else "CUMPLE"
-
-        disponible = presupuesto - libro.total(periodo, "pagada") - libro.total(periodo, "reservada")
-        if monto_ok:
-            r["R6"] = "FALLA" if usd > lim["maximo_absoluto_usd"] else "CUMPLE"
-            r["R7"] = "FALLA" if usd > disponible else "CUMPLE"
-            if ben is None:
-                r["R8"] = "NO_APLICA"
-            else:
-                tope = ben["limite_mensual_usd"] or lim["mensual_por_beneficiario_default_usd"]
-                acumulado = libro.total(periodo, "pagada", ben_norm) + libro.total(periodo, "reservada", ben_norm)
-                r["R8"] = "FALLA" if acumulado + usd > tope else "CUMPLE"
-            r["R9"] = "FALLA" if usd > lim["pago_automatico_usd"] else "CUMPLE"
-        for regla in DEPENDEN_DEL_MONTO:
-            if not monto_ok:
-                r[regla] = "NO_APLICA"
-
-        r["R10"] = "FALLA" if detectar_instrucciones(d["texto_crudo"]) else "CUMPLE"
-
-        rem = d["remitente"]
-        if ben is None:
-            r["R11"] = "FALLA"
-        else:
-            canales = ben["canales"]
-            vinculado = {
-                "portal": rem["valor"] == canales["portal_usuario"],
-                "correo": rem["valor"].lower() in [x.lower() for x in canales["correos"]],
-                "telegram": rem["valor"] == canales["telegram_chat_id"],
-            }[rem["tipo"]]
-            r["R11"] = "CUMPLE" if vinculado else "FALLA"
-
-        fallan = sorted((k for k, v in r.items() if v in ("FALLA", "INDETERMINADO")), key=lambda k: int(k[1:]))
-        if any(r[k] == "FALLA" for k in FRENAN):
-            decision = "FRENAR"
-        elif fallan:
-            decision = "ESCALAR"
-        else:
-            decision = "PAGAR"
-
-        asignado = plazo = None
-        if decision == "ESCALAR":
-            asignado = "lm" if r["R9"] == "FALLA" or r["R10"] == "FALLA" or (usd or 0) > 500000 else "ap"
-            limite = date.fromisoformat(ext["fecha_vencimiento"]) - timedelta(days=3)
-            if limite <= date.fromisoformat(hoy):
-                plazo = f"{hoy}T18:00:00{ahora[19:]}"
-            else:
-                plazo = f"{limite.isoformat()}T12:00:00{ahora[19:]}"
-
+        r = {"R1": _falla_si(bool(caso.afectados)),
+             "R2": _falla_si(any(_es_duplicado(caso, f, reglas["duplicados"]) for f in libro.facturas if f["ben"] == ben_norm)),
+             "R3": _falla_si(caso.ben is None or caso.ben["estado"] != "activo"),
+             "R4": _r4(caso),
+             **_reglas_de_monto(caso, libro, periodo, reglas["limites"], disponible),
+             "R10": _falla_si(bool(detectar_instrucciones(d["texto_crudo"]))),
+             "R11": _r11(caso)}
+        decision, fallan = _combinar(r)
+        asignado, plazo = _asignacion(r, caso, ahora) if decision == "ESCALAR" else (None, None)
         resultados.append({"decision": decision, "reglas_que_fallan": fallan, "asignado_a": asignado,
-                           "responder_antes_de": plazo, "usd": usd, "disponible_antes": disponible, "detalle": r})
+                           "responder_antes_de": plazo, "usd": caso.usd, "disponible_antes": disponible, "detalle": r})
 
         if decision in ("PAGAR", "ESCALAR"):
-            libro.agregar(ben=ben_norm, numero=numero, emision=ext["fecha_emision"], usd=usd or 0, sha256=d["sha256"],
-                          hito=ext.get("hito_numero"), estado="pagada" if decision == "PAGAR" else "reservada",
-                          periodo=periodo, ref=None)
+            libro.agregar(ben=ben_norm, numero=caso.numero, emision=ext["fecha_emision"], usd=caso.usd or 0,
+                          sha256=d["sha256"], hito=ext.get("hito_numero"),
+                          estado="pagada" if decision == "PAGAR" else "reservada", periodo=periodo, ref=None)
 
     return resultados
 
@@ -245,7 +271,7 @@ def cierre(escenario: dict, historial: list[dict], resultados: list[dict], datos
     """Pagado en lote, reservado y disponible al final (para comparar con §11.4)."""
     periodo = escenario["periodo"]
     presupuesto = datos["reglas"][escenario["reglas_version"]]["presupuesto"]["monto_usd"]
-    libro = Libro(historial, datos["beneficiarios"])
+    libro = Libro(historial)
     pagado_antes = libro.total(periodo, "pagada")
     pagado = sum(x["usd"] for x in resultados if x["decision"] == "PAGAR")
     reservado = libro.total(periodo, "reservada") + sum(x["usd"] or 0 for x in resultados if x["decision"] == "ESCALAR")

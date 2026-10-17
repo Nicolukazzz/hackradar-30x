@@ -132,3 +132,15 @@ def test_formato_monto_sin_decimales_para_cop():
 ])
 def test_normalizar_nombre(a, b):
     assert oraculo.normalizar_nombre(a) == b
+
+
+def test_detecta_dominio_y_banco_reales(tmp_path):
+    (tmp_path / "x.json").write_text('{"de": "pagos@empresa.com", "banco": "Banco Inventado Real"}', encoding="utf-8")
+    errores = verificar.datos_ficticios(tmp_path)
+    assert any("empresa.com" in e for e in errores)
+    assert any("Banco Inventado Real" in e for e in errores)
+
+
+def test_acepta_dominios_example_y_bancos_de_la_lista(tmp_path):
+    (tmp_path / "x.json").write_text('{"de": "billing@cloudnorte.example.", "banco": "Banco Nopal"}', encoding="utf-8")
+    assert verificar.datos_ficticios(tmp_path) == []

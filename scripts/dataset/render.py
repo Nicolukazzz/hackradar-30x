@@ -1,15 +1,16 @@
 """Renderizadores deterministas: PDF (reportlab), foto PNG (Pillow), correo .eml y chat .txt.
 
 Determinismo: reportlab en modo `invariant` (sin fecha ni id aleatorio), ruido
-de imagen con semilla fija, correos con Message-ID y boundary fijos. Mismo
+de imagen derivado de una semilla con SHAKE-256 (no hay azar: es solo textura
+visual), correos con Message-ID y boundary fijos. Mismo
 código + mismas versiones de requirements.txt = mismos bytes.
 """
 
 from __future__ import annotations
 
+import hashlib
 import io
 import os
-import random
 from datetime import datetime
 from email.message import EmailMessage
 from email.policy import SMTP
@@ -330,12 +331,14 @@ def png_factura(fac: dict, idioma: str, semilla: int, legible: bool = True) -> b
         hoja.paste(zona, caja_total[:2])
 
     # Efecto foto: mesa de fondo, leve rotación, ruido y desenfoque.
-    rng = random.Random(semilla)
-    angulo = rng.uniform(1.0, 2.5) * rng.choice((-1, 1))
+    flujo = hashlib.shake_256(f"blinka-foto-{semilla}".encode())
+    cabecera = flujo.digest(5)
+    angulo = (1.0 + 1.5 * int.from_bytes(cabecera[:4], "big") / 2**32) * (1 if cabecera[4] % 2 else -1)
     rotada = hoja.rotate(angulo, resample=Image.Resampling.BICUBIC, expand=True, fillcolor=(196, 188, 174))
     lienzo = Image.new("RGB", (rotada.width + 80, rotada.height + 80), (196, 188, 174))
     lienzo.paste(rotada, (40, 40))
-    ruido = Image.frombytes("L", lienzo.size, rng.randbytes(lienzo.width * lienzo.height)).convert("RGB")
+    ruido_bytes = flujo.digest(5 + lienzo.width * lienzo.height)[5:]
+    ruido = Image.frombytes("L", lienzo.size, ruido_bytes).convert("RGB")
     foto = Image.blend(lienzo, ruido, 0.035).filter(ImageFilter.GaussianBlur(0.8 if legible else 1.4))
     foto = foto.resize((foto.width * 2 // 3, foto.height * 2 // 3), Image.Resampling.LANCZOS)
 

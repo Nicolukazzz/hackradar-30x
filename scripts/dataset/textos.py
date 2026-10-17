@@ -84,8 +84,8 @@ def lineas_factura(fac: dict, idioma: str, variante: str | None = None) -> list[
         f"{et['concepto']}: {fac['concepto']}",
     ]
     if fac["subtotal"] is not None:
-        lineas.append(f"{et['subtotal']}: {importe(fac, fac['subtotal'], idioma)}")
-        lineas.append(f"{fac['etiqueta_impuesto']}: {importe(fac, fac['impuestos'], idioma)}")
+        lineas.extend([f"{et['subtotal']}: {importe(fac, fac['subtotal'], idioma)}",
+                       f"{fac['etiqueta_impuesto']}: {importe(fac, fac['impuestos'], idioma)}"])
     # Si total_legible es False, render_imagen difumina esta línea en la foto.
     lineas.append(f"{et['total']}: {importe(fac, fac['total_impreso'], idioma)}")
     if fac["referencia"]:
@@ -102,16 +102,18 @@ def mensaje_chat(d: dict) -> str:
     """Cuerpo del mensaje de Telegram con los datos de la cuenta de cobro."""
     fac = d["factura"]
     em = emisor(fac)
-    partes = [d["mensaje"] or ""]
     titulo = "Cuenta de cobro N.º" if es_cuenta_de_cobro(fac) else "Factura"
-    partes.append(f"{titulo} {fac['numero']}")
-    partes.append(f"Fecha: {dinero.fecha(fac['fecha_emision'], 'es')} · Vence: {dinero.fecha(fac['fecha_vencimiento'], 'es')}")
     ref = ""
     if fac["referencia"]:
         ref = f" ({fac['referencia']}" + (f", hito {fac['hito']} de {_hitos_total(fac)}" if fac["hito"] else "") + ")"
-    partes.append(f"Concepto: {fac['concepto']}{ref}")
-    partes.append(f"Valor: {importe(fac, fac['total'], 'es')}")
-    partes.append(f"Pagar a: {em['nombre']} · {em['cuenta']['banco']} · {cuenta_texto(fac, 'es')}")
+    partes = [
+        d["mensaje"] or "",
+        f"{titulo} {fac['numero']}",
+        f"Fecha: {dinero.fecha(fac['fecha_emision'], 'es')} · Vence: {dinero.fecha(fac['fecha_vencimiento'], 'es')}",
+        f"Concepto: {fac['concepto']}{ref}",
+        f"Valor: {importe(fac, fac['total'], 'es')}",
+        f"Pagar a: {em['nombre']} · {em['cuenta']['banco']} · {cuenta_texto(fac, 'es')}",
+    ]
     return "\n".join(p for p in partes if p)
 
 

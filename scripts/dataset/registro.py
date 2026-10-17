@@ -18,7 +18,7 @@ def periodo_de(momento: str) -> str:
 def extraccion_plana(fac: dict | None, idioma: str) -> dict:
     """Valores que un extractor perfecto devolvería (esperado.json → extraccion_esperada)."""
     if fac is None:
-        vacio = {campo: None for campo in CAMPOS_OBLIGATORIOS}
+        vacio = dict.fromkeys(CAMPOS_OBLIGATORIOS)
         return {"es_factura": False, **vacio, "idioma": idioma}
     plana = {
         "es_factura": True,

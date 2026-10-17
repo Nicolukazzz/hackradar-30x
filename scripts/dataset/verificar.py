@@ -19,7 +19,8 @@ TRAMPAS_OBLIGATORIAS = {
     "duplicado", "beneficiario-nuevo", "no-cuadra", "sobre-limite", "sin-presupuesto", "moneda-distinta",
     "fecha-invalida", "datos-bancarios-cambiados", "ilegible", "inyeccion",
 }
-_DOMINIO = re.compile(r"[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})")
+# Lineal: toma lo que sigue a "@" y luego se recortan signos finales.
+_DOMINIO = re.compile(r"@([\w.-]+)")
 _BANCO = re.compile(r"\bBanco [A-ZÁÉÍÓÚ][\wÁÉÍÓÚáéíóúâêôãõç]*(?: [A-ZÁÉÍÓÚ][\wÁÉÍÓÚáéíóúâêôãõç]*)*")
 
 
@@ -49,32 +50,37 @@ def aritmetica_lote_demo(corrida: dict) -> list[str]:
     return errores
 
 
-def archivos_completos(corrida: dict) -> list[str]:
+def _revisar_documento(carpeta: Path, p: Path, en_esperado: set[str]) -> list[str]:
+    rel = f"documentos/{p.name}"
+    errores = [] if rel in en_esperado else [f"{rel} no tiene entrada en esperado.json"]
+    meta = p.with_name(p.name.rsplit(".", 1)[0] + ".meta.json")
+    if not meta.is_file():
+        return [*errores, f"{rel} no tiene .meta.json"]
+    datos = json.loads(meta.read_text(encoding="utf-8"))
+    errores += [f"{meta.name}: adjunto {a['ruta']} no existe" for a in datos["adjuntos"] if not (carpeta / a["ruta"]).is_file()]
+    return errores
+
+
+def _revisar_esperado(carpeta: Path, e: dict) -> list[str]:
     errores = []
+    if not (carpeta / e["documento"]).is_file():
+        errores.append(f"esperado.json apunta a {e['documento']}, que no existe")
+    desconocidas = set(e["trampa"]) - TRAMPAS_VALIDAS
+    if desconocidas:
+        errores.append(f"{e['documento']}: trampas desconocidas {desconocidas}")
+    return errores
+
+
+def archivos_completos(corrida: dict) -> list[str]:
     carpeta: Path = corrida["carpeta"]
-    for nombre in ("escenario.json", "historial.json", "esperado.json"):
-        if not (carpeta / nombre).is_file():
-            errores.append(f"falta {carpeta / nombre}")
+    errores = [f"falta {carpeta / n}" for n in ("escenario.json", "historial.json", "esperado.json")
+               if not (carpeta / n).is_file()]
     documentos = sorted(p for p in (carpeta / "documentos").iterdir() if p.is_file() and not p.name.endswith(".meta.json"))
     en_esperado = {e["documento"] for e in corrida["esperado"]}
     for p in documentos:
-        rel = f"documentos/{p.name}"
-        if rel not in en_esperado:
-            errores.append(f"{rel} no tiene entrada en esperado.json")
-        meta = p.with_name(p.name.rsplit(".", 1)[0] + ".meta.json")
-        if not meta.is_file():
-            errores.append(f"{rel} no tiene .meta.json")
-            continue
-        datos = json.loads(meta.read_text(encoding="utf-8"))
-        for adj in datos["adjuntos"]:
-            if not (carpeta / adj["ruta"]).is_file():
-                errores.append(f"{meta.name}: adjunto {adj['ruta']} no existe")
+        errores += _revisar_documento(carpeta, p, en_esperado)
     for e in corrida["esperado"]:
-        if not (carpeta / e["documento"]).is_file():
-            errores.append(f"esperado.json apunta a {e['documento']}, que no existe")
-        desconocidas = set(e["trampa"]) - TRAMPAS_VALIDAS
-        if desconocidas:
-            errores.append(f"{e['documento']}: trampas desconocidas {desconocidas}")
+        errores += _revisar_esperado(carpeta, e)
     return errores
 
 
@@ -92,8 +98,8 @@ def datos_ficticios(salida: Path) -> list[str]:
         if not p.is_file() or p.suffix in (".pdf", ".png"):
             continue
         texto = p.read_text(encoding="utf-8", errors="ignore")
-        for dominio in set(_DOMINIO.findall(texto)):
-            if not dominio.endswith(".example"):
+        for dominio in {d.rstrip(".-") for d in _DOMINIO.findall(texto)}:
+            if "." in dominio and not dominio.endswith(".example"):
                 errores.append(f"{p.relative_to(salida)}: dominio no ficticio {dominio}")
         for banco in set(_BANCO.findall(texto)):
             if banco not in permitidos:
