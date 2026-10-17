@@ -172,3 +172,5 @@ export function observaciones(monto_usd_centavos: number | null, reglas: Reglas)
 }
 
 export const EXPLICACION_ERROR = "Error interno al evaluar: se escala por seguridad.";
+export const EXPLICACION_SIN_REGLAS =
+  "Escalada: la empresa aún no configuró sus reglas de pago, así que ninguna factura se paga ni se frena sola. Una persona debe decidir.";

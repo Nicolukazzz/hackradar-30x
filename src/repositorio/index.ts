@@ -1,6 +1,8 @@
 // Repositorio único del proceso, elegido por REPOSITORIO=memoria|supabase (por defecto memoria)
-// y ESCENARIO (por defecto lote-demo-oct). Se guarda en globalThis para sobrevivir a la recarga
+// y ESCENARIO. Memoria: por defecto lote-demo-oct. Supabase: sin ESCENARIO es producción sin datos de ejemplo (#106). Se guarda en globalThis para sobrevivir a la recarga
 // en caliente de `next dev`.
+
+import type { Aprobador } from "@/dominio/tipos";
 
 import { crearRepositorioMemoria } from "./memoria";
 import type { Repositorio } from "./repositorio";
@@ -12,14 +14,24 @@ type Global = typeof globalThis & { [CLAVE]?: Promise<Repositorio> };
 
 function crear(): Promise<Repositorio> {
   const tipo = process.env.REPOSITORIO ?? "memoria";
-  const escenario = process.env.ESCENARIO ?? "lote-demo-oct";
   if (tipo === "supabase") {
+    const escenario = process.env.ESCENARIO?.trim() || null;
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const claveSecreta = process.env.SUPABASE_SECRET_KEY;
     if (!url || !claveSecreta) return Promise.reject(new Error("REPOSITORIO=supabase necesita NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SECRET_KEY"));
-    return import("./supabase").then((m) => m.crearRepositorioSupabase({ url, claveSecreta, escenario }));
+    return import("./supabase").then((m) => m.crearRepositorioSupabase({ url, claveSecreta, escenario, aprobadores: aprobadoresDelEquipoActual }));
   }
-  return crearRepositorioMemoria(escenario);
+  return crearRepositorioMemoria(process.env.ESCENARIO ?? "lote-demo-oct");
+}
+
+/** Cuentas del equipo que firman (#106). Import dinámico: el equipo no se carga en tests del repositorio. */
+async function aprobadoresDelEquipoActual(): Promise<Aprobador[]> {
+  const [{ obtenerAlmacenEquipo }, { aprobadoresDelEquipo }, { EMPRESA_ID }] = await Promise.all([
+    import("@/equipo"),
+    import("@/equipo/aprobadores"),
+    import("@/equipo/tipos"),
+  ]);
+  return aprobadoresDelEquipo(await (await obtenerAlmacenEquipo()).miembros(EMPRESA_ID));
 }
 
 export function obtenerRepositorio(): Promise<Repositorio> {

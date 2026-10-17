@@ -441,7 +441,7 @@ Reglas: nunca se edita ni borra una entrada (la interfaz `Repositorio` no tiene 
 
 ### 11.1 Carpetas
 
-Todo `data/` lo genera `scripts/dataset/generar.py` desde `scripts/dataset/mundo.py` (mundo ficticio) y `scripts/dataset/escenarios.py` (documentos y respuesta esperada). No editar `data/` a mano: cambiar esos módulos y regenerar. Detalle de uso: `scripts/dataset/README.md`.
+Producción (#106) no carga nada de `data/` salvo tasas: `data/` es el set de prueba de CI, evaluación y simulación. Todo `data/` lo genera `scripts/dataset/generar.py` desde `scripts/dataset/mundo.py` (mundo ficticio) y `scripts/dataset/escenarios.py` (documentos y respuesta esperada). No editar `data/` a mano: cambiar esos módulos y regenerar. Detalle de uso: `scripts/dataset/README.md`.
 
 ```
 data/

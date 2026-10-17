@@ -176,7 +176,9 @@ export function EditorReglas({
   const [guardando, setGuardando] = useState(false);
 
   const { reglas, errores } = useMemo(() => aReglas(f, vigente), [f, vigente]);
-  const cambiado = reglas !== null ? !iguales(reglas, vigente) : true;
+  // Versión 0 (#106): la empresa aún no guardó reglas. Los valores son sugeridos y siempre se ofrece guardar la v1.
+  const sinConfigurar = vigente.version === 0;
+  const cambiado = sinConfigurar || (reglas !== null ? !iguales(reglas, vigente) : true);
   const siguiente = vigente.version + 1;
   const huella = reglas ? huellaDe(reglas) : null;
   const simulada = sim.estado === "lista" ? sim.huella : null;
@@ -252,15 +254,25 @@ export function EditorReglas({
   }
 
   const v = historial.find((h) => h.version === vigente.version);
+  let mensajeBarra = "Cambios sin guardar. La simulación no aprueba pagos fuera de reglas.";
+  if (confirmando) mensajeBarra = `¿Guardar como v${siguiente}? Aplica desde el próximo lote y queda en el registro.`;
+  else if (sinConfigurar) mensajeBarra = "Valores sugeridos. Revísalos y guarda la versión 1 para que el agente empiece a decidir.";
 
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div className="flex max-w-[700px] flex-col gap-1.5">
-          <span className="text-[13px] text-muted-foreground">
-            Versión {vigente.version}
-            {v ? ` · editada el ${fechaCorta(v.editada_en)} por ${v.editada_por.replace(/\s*\([^)]*\)\s*$/, "")}` : ""}
-          </span>
+          {sinConfigurar ? (
+            <span className="flex items-center gap-1.5 text-[13px] font-medium text-escalada-foreground">
+              <AlertTriangleIcon className="size-3.5" aria-hidden />
+              Sin configurar · hasta guardar la versión 1, toda factura espera a una persona
+            </span>
+          ) : (
+            <span className="text-[13px] text-muted-foreground">
+              Versión {vigente.version}
+              {v ? ` · editada el ${fechaCorta(v.editada_en)} por ${v.editada_por.replace(/\s*\([^)]*\)\s*$/, "")}` : ""}
+            </span>
+          )}
           <h1 className="text-[32px] leading-tight font-semibold tracking-tight text-balance">Reglas de pago</h1>
           <p className="text-[15px] leading-relaxed text-pretty text-muted-foreground">
             El agente solo paga lo que cumple todas estas reglas. Lo que falla una regla de frenar no se paga; lo que falla una regla de escalar espera
@@ -437,7 +449,7 @@ export function EditorReglas({
           <span className="flex min-w-0 items-center gap-2 text-sm">
             {motivoBloqueo ? <AlertTriangleIcon className={cn("size-4 flex-none", inseguro ? "text-frenada" : "text-aviso")} aria-hidden /> : <CheckCircle2Icon className="size-4 flex-none text-brand" aria-hidden />}
             <span aria-live="polite">
-              {motivoBloqueo ?? (confirmando ? `¿Guardar como v${siguiente}? Aplica desde el próximo lote y queda en el registro.` : "Cambios sin guardar. La simulación no aprueba pagos fuera de reglas.")}
+              {motivoBloqueo ?? mensajeBarra}
             </span>
           </span>
           <span className="flex flex-wrap gap-2">
