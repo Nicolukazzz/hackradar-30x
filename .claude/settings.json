@@ -9,7 +9,11 @@
     "claude-md-management@claude-plugins-official": true
   },
   "enableAllProjectMcpServers": false,
-  "enabledMcpjsonServers": ["playwright"],
+  "enabledMcpjsonServers": [
+    "playwright",
+    "shadcn",
+    "next-devtools"
+  ],
   "permissions": {
     "allow": [
       "Bash(git status*)",
@@ -41,7 +45,20 @@
       "Bash(grep *)",
       "WebSearch",
       "WebFetch",
-      "mcp__playwright__*"
+      "mcp__playwright__*",
+      "mcp__railway__fetch-docs",
+      "mcp__railway__search-docs",
+      "mcp__railway__get-deployment-diagnosis",
+      "mcp__railway__environment-status",
+      "mcp__railway__get-status",
+      "mcp__railway__get-logs",
+      "mcp__railway__list-domains",
+      "mcp__railway__list-deployments",
+      "mcp__railway__list-services",
+      "mcp__railway__list-projects",
+      "mcp__railway__whoami",
+      "mcp__next-devtools__*",
+      "mcp__shadcn__*"
     ],
     "deny": [
       "Read(./.env)",

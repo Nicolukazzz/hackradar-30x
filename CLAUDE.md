@@ -82,3 +82,7 @@ Equipo GitHub: `Nicolukazzz`, `juandatiner`, `Siftings`. Los agentes de distinta
 - `/registrar-decision <decisión>` — agregar entrada a `docs/decisiones.md`.
 - `/generar-facturas` — crear facturas simuladas + reglas de empresa ficticia en `data/`.
 - `/evaluar-agente` — correr agente sobre dataset y medir autonomía / seguridad / explicabilidad.
+
+Externas (instaladas con `npx skills`, lock en `skills-lock.json`): `shadcn`, `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines`, `use-railway`, `test-driven-development` (usar en motor de reglas), `systematic-debugging`, `verification-before-completion` (correr `npm test` + `typecheck` antes de decir "listo").
+
+MCPs: `playwright` (probar UI), `shadcn` (componentes; preferir antes que escribir UI a mano), `next-devtools` (errores del `next dev`). Railway MCP va por persona, no en repo. Detalle: `docs/research/herramientas-claude-code.md`.
