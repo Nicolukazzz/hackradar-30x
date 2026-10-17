@@ -20,6 +20,10 @@ Qué MCPs y skills dejar configurados en el repo para que los 3 agentes construy
 
 Versiones fijadas (`@playwright/mcp@0.0.83`, `shadcn@4.22.0`, `next-devtools-mcp@0.4.0`) para que una actualización no rompa la demo. Subirlas a propósito.
 
+**Playwright**: por defecto usa Google Chrome del sistema (`/opt/google/chrome/chrome`). Sin Chrome falla con "Chromium distribution 'chrome' is not found". Cada quien lo apunta a su navegador en scope local (en `~/.claude.json`, no en el repo; pisa al del proyecto). N usa Brave:
+`claude mcp add playwright -s local -- npx -y @playwright/mcp@0.0.83 --executable-path /opt/brave.com/brave/brave`.
+Abre un perfil aislado, no toca el perfil personal del navegador. Alternativa: plugin Claude in Chrome (usa el navegador real con sesión iniciada; útil para revisar sitios logueados, no para pruebas reproducibles).
+
 **21st**: la llave va en la shell, no en `.env` ni en el repo (`.mcp.json` lee `${API_KEY_21ST:-}`; sin llave el server queda desconectado y nada más se rompe). fish: `set -Ux API_KEY_21ST <llave>`; bash/zsh: `export API_KEY_21ST=<llave>` en el perfil. Reiniciar `claude`.
 
 **Supabase con una cuenta que no es la personal**: el OAuth usa la sesión de Supabase abierta en el navegador. Para entrar con la cuenta del equipo:

@@ -25,7 +25,24 @@ Al abrir Claude Code en la carpeta por primera vez:
 4. `cp .env.example .env` y llenar llaves (nunca commitear `.env`).
 5. (Opcional, para desplegar) Railway: pedir invitación al proyecto y correr `railway setup agent` (o `--oauth`). Ver [herramientas](docs/research/herramientas-claude-code.md).
 
-Verificar: `/mcp` muestra los 3 MCP conectados; `/` lista las skills del proyecto.
+   - `playwright`: usa Google Chrome del sistema. Si no lo tienes, apúntalo a tu navegador solo para ti (scope local, no va al repo), por ejemplo Brave:
+     `claude mcp add playwright -s local -- npx -y @playwright/mcp@0.0.83 --executable-path /opt/brave.com/brave/brave`
+6. Python para el dataset (#3): `python3 -m venv .venv && .venv/bin/pip install -r scripts/dataset/requirements.txt`.
+
+Verificar: `/mcp` muestra los MCP conectados; `/` lista las skills; `npm run typecheck && npm run lint && npm test` en verde; `npm run dev` abre `localhost:3000`.
+
+## Comandos
+
+| Comando | Hace |
+|---|---|
+| `npm run dev` | App en `localhost:3000` |
+| `npm test` · `npm run test:watch` | Vitest |
+| `npm run typecheck` · `npm run lint` | Tipos y ESLint |
+| `npm run build` · `npm start` | Producción (Railway) |
+| `npm run evaluar` | Evaluación §14 (#7) |
+| `npm run dataset` | Regenera `data/` (#3) |
+
+CI (`.github/workflows/ci.yml`) corre typecheck, lint y tests en cada PR; SonarCloud analiza calidad y seguridad.
 
 ## Qué hay
 
@@ -34,12 +51,16 @@ Verificar: `/mcp` muestra los 3 MCP conectados; `/` lista las skills del proyect
 | `CLAUDE.md` | Contexto que Claude carga siempre: reto, invariantes, forma de trabajo |
 | `docs/producto.md` | Qué construimos y por qué (producto, canales, LLM, roles) |
 | `docs/especificacion.md` | Contrato técnico: tipos, reglas R1–R11, dataset, API, pantallas, evaluación |
+| `src/` | App Next.js: `app/` (páginas y API), `components/` (shadcn en `ui/`), `dominio/`, `reglas/`, `extraccion/`, `ingesta/`, `registro/`, `aprobaciones/`, `repositorio/`, `evaluacion/` |
+| `tests/` | Vitest (espejo de `src/`) |
+| `scripts/` | CLI de evaluación y generador del dataset (Python) |
 | `docs/diseno/` | Prototipo navegable de las 5 pantallas |
 | `docs/retos/` | Brief de los 4 retos copiados de la plataforma |
 | `docs/decisiones.md` | Registro de decisiones del equipo |
 | `docs/research/` | Hallazgos de investigación, un archivo por tema |
 | `data/` | Dataset simulado: empresa, reglas, proveedores y escenarios (documentos + respuestas esperadas) |
 | `.claude/settings.json` | Plugins, permisos y hooks compartidos |
+| `AGENTS.md` | Reglas de Next.js 16 para agentes (lo regenera `next dev`) |
 | `.claude/skills/` | Skills del proyecto |
 | `.mcp.json` | Servidores MCP compartidos |
 

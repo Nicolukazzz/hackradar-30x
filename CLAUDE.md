@@ -6,7 +6,7 @@ Plataforma: https://hackradar.30x.com/recursos
 ## Estado actual
 
 - **Reto confirmado: Blinka — Agentes que pagan por la empresa** (pago automático de facturas). Todo el trabajo va a este reto. Brief completo: @docs/retos/blinka.md
-- Fase: **especificación v1 → construcción**. Qué y por qué: @docs/producto.md. **Contrato técnico (tipos, reglas R1–R11, dataset, API, pantallas, evaluación): @docs/especificacion.md** — fuente de verdad para escribir código. Prototipo visual navegable: `docs/diseno/prototipo-ui.html` (5 pantallas). Stack aceptado en #1 (ver "Stack y comandos").
+- Fase: **especificación v1 → construcción**. Qué y por qué: @docs/producto.md. **Contrato técnico (tipos, reglas R1–R11, dataset, API, pantallas, evaluación): @docs/especificacion.md** — fuente de verdad para escribir código. Prototipo visual navegable: `docs/diseno/prototipo-ui.html` (5 pantallas). Stack aceptado y esqueleto listo en #1 (ver "Stack y comandos"). Dataset generado en #3 (`data/`).
 - Cada issue (#1–#14) cita secciones de la especificación (`§4.3`) y trae un prompt listo para Claude Code. Antes de implementar: `gh issue view <n>` + leer las secciones citadas.
 
 ## Producto en una frase
@@ -18,8 +18,6 @@ Reparto: **bots/canales = código que transporta · LLM = lee y explica · códi
 - Otros retos quedan solo como referencia (`docs/retos/jev.md`, `radar-de-contenido.md`, `dapta.md`). No proponer trabajo para ellos salvo que el equipo lo pida. Excepción útil: JEV podría servir como clasificador rápido dentro del agente de facturas.
 - Decisiones del equipo: @docs/decisiones.md — leer antes de proponer algo que ya se decidió o descartó.
 - Hallazgos de investigación: `docs/research/` (un archivo por tema).
-
-Cuando se elija stack, actualizar sección "Stack y comandos" y registrar decisión con skill `/registrar-decision`.
 
 ## Reto Blinka — resumen operativo
 
@@ -109,4 +107,4 @@ Equipo GitHub: `Nicolukazzz`, `juandatiner`, `Siftings`. Los agentes de distinta
 
 Externas (instaladas con `npx skills`, lock en `skills-lock.json`): `shadcn`, `supabase`, `supabase-postgres-best-practices`, `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines`, `use-railway`, `test-driven-development` (usar en motor de reglas), `systematic-debugging`, `verification-before-completion` (correr `npm test` + `typecheck` antes de decir "listo").
 
-MCPs: `playwright` (probar UI), `shadcn` (componentes + registros gratis), `21st` (buscar ideas; free = 2 descargas/día, necesita `API_KEY_21ST` en la shell), `next-devtools` (errores del `next dev`), `supabase` (OAuth con la cuenta del equipo, nunca personal). Railway MCP va por persona, no en repo. Versiones de MCP fijadas: subirlas a propósito, no con `@latest`. Detalle: `docs/research/herramientas-claude-code.md`.
+MCPs: `playwright` (probar UI; usa Chrome del sistema, cada quien puede apuntarlo a su navegador en scope local, ver README), `shadcn` (componentes + registros gratis), `21st` (buscar ideas; free = 2 descargas/día, necesita `API_KEY_21ST` en la shell), `next-devtools` (errores del `next dev`), `supabase` (OAuth con la cuenta del equipo, nunca personal). Railway MCP va por persona, no en repo. Versiones de MCP fijadas: subirlas a propósito, no con `@latest`. Detalle: `docs/research/herramientas-claude-code.md`.

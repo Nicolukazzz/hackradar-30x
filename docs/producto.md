@@ -142,11 +142,11 @@ Demo: una empresa ficticia precargada y usuarios demo por rol (entrada en 1 clic
 - Alternativa: SaaS independiente por tramo de facturas/mes.
 - Alternativa: API de decisión para agentes de terceros, cobrada por llamada.
 
-## 9. Stack sugerido (decidir en #1)
+## 9. Stack (aceptado en #1)
 
 Propuesta concreta, carpetas y comandos: especificación §2.
 
-Next.js + TypeScript (portal, panel y API en uno) · Supabase free (Postgres + auth magic link + storage de archivos) · LLM detrás de interfaz: Gemini Flash free → Groq free → Claude Haiku 5.5 si hay presupuesto · bot de Telegram vía webhook · deploy en Vercel o Railway (necesita URL pública para los webhooks de Telegram y correo).
+Next.js + TypeScript (portal, panel y API en uno) · Supabase free (Postgres + auth magic link + storage de archivos) · LLM detrás de interfaz: Gemini Flash free → Groq free → Claude Haiku 5.5 si hay presupuesto · bot de Telegram vía webhook · deploy en **Railway** (plan Hobby; URL pública para los webhooks de Telegram y correo). Supabase en cuenta del equipo. Ver `docs/decisiones.md`.
 
 ## 10. Contexto real: qué falta preguntarle a la compañera
 
@@ -170,6 +170,6 @@ Archivos reales: solo en `contexto-privado/` (ignorado por git). Hallazgos anoni
 - [ ] LLM: Gemini free principal + Groq respaldo; ¿ponemos $5 para Claude Haiku 5.5? ¿El hackathon da créditos? (sección 4).
 - [ ] Confirmar los 3 canales y el orden de construcción (sección 5).
 - [ ] Roles para la demo: ¿los 5 o solo proveedor + aprobador + tesorería?
-- [ ] Stack (#1) — propuesta en especificación §2.
+- [x] Stack (#1): Next.js 16 + TS + Vitest + shadcn/ui, Railway + Supabase.
 - [ ] Aceptar especificación v1: R11 en vez de CUARENTENA, dataset por escenarios, dinero en centavos (ver `docs/decisiones.md`).
 - [ ] Modelo de negocio para el pitch (sección 8).
