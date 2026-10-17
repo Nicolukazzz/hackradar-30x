@@ -166,10 +166,12 @@ export function SubirFacturas({ token }: { token: string }) {
                   Quitar todas
                 </Boton>
               ) : null}
-              <Boton variante="primaria" onClick={() => void enviar()} disabled={enviando || porEnviar.length === 0}>
-                {enviando ? <Loader2Icon className="animate-spin" aria-hidden /> : <SendIcon aria-hidden />}
-                {enviando ? "Enviando…" : porEnviar.length > 1 ? `Enviar ${porEnviar.length} facturas` : "Enviar factura"}
-              </Boton>
+              {porEnviar.length > 0 || enviando ? (
+                <Boton variante="primaria" onClick={() => void enviar()} disabled={enviando}>
+                  {enviando ? <Loader2Icon className="animate-spin" aria-hidden /> : <SendIcon aria-hidden />}
+                  {enviando ? "Enviando…" : porEnviar.length > 1 ? `Enviar ${porEnviar.length} facturas` : "Enviar factura"}
+                </Boton>
+              ) : null}
             </div>
           </div>
         </div>
