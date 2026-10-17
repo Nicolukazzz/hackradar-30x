@@ -78,4 +78,13 @@ export interface Repositorio {
   documentosEscenario(): Promise<DocGolden[]>;
   /** Los del escenario que todavía no se procesaron. */
   pendientes(): Promise<DocGolden[]>;
+
+  /**
+   * Demo (#76): empieza una corrida nueva, como recién sembrada desde el escenario (historial, reglas, sin
+   * documentos ni beneficiarios agregados, refs desde 000001). Nada se borra: en Supabase las corridas
+   * anteriores quedan en las tablas. Los vínculos de Telegram se conservan.
+   */
+  reiniciar(iniciada_por: string): Promise<void>;
+  /** ¿Ya se usó el enlace de Telegram con esta huella? (#13). Mira todas las corridas: un enlace usado nunca vuelve a valer. */
+  tokenVinculoUsado(huella: string): Promise<boolean>;
 }

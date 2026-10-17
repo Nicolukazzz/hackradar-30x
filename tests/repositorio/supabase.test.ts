@@ -37,6 +37,18 @@ describe.skipIf(!url || !claveSecreta)("contrato del repositorio: Supabase", () 
     expect(await repo.siguienteIdRegistro(2027)).toBe("REG-2027-001101");
   });
 
+  it("corridas (#76): reiniciar no borra; la corrida anterior sigue en la tabla y sigue siendo inmutable", async () => {
+    const db = createClient(url!, claveSecreta!, { auth: { persistSession: false } });
+    const { data: corridas } = await db.from("demo_corridas").select("id").order("id");
+    expect((corridas ?? []).length).toBeGreaterThanOrEqual(2);
+    const { count } = await db.from("registro").select("id", { count: "exact", head: true }).eq("corrida_id", 1).eq("id", "REG-2026-000011");
+    expect(count).toBe(1);
+    const { error: editar } = await db.from("registro").update({ decision: "PAGAR" }).eq("corrida_id", 1).eq("id", "REG-2026-000011");
+    expect(editar?.message).toMatch(/permission denied|append-only/);
+    const { error: borrarCorrida } = await db.from("demo_corridas").delete().eq("id", 1);
+    expect(borrarCorrida?.message).toMatch(/permission denied/);
+  });
+
   it("sin llave secreta no se lee nada (anon)", async () => {
     const anon = createClient(url!, process.env.SUPABASE_PRUEBA_PUBLICA ?? "", { auth: { persistSession: false } });
     const { data } = await anon.from("registro").select("id").limit(1);

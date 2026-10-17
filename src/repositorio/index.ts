@@ -31,10 +31,11 @@ export function obtenerRepositorio(): Promise<Repositorio> {
   return g[CLAVE];
 }
 
-/** Vuelve al estado inicial del escenario (demo). */
-export function reiniciarRepositorio(): Promise<Repositorio> {
-  (globalThis as Global)[CLAVE] = undefined;
-  return obtenerRepositorio();
+/** "Reiniciar demo" (#76): corrida nueva, como recién sembrada. En Supabase las anteriores quedan guardadas. */
+export async function reiniciarRepositorio(iniciada_por: string): Promise<Repositorio> {
+  const repo = await obtenerRepositorio();
+  await repo.reiniciar(iniciada_por);
+  return repo;
 }
 
 /** Solo tests: usa un repositorio concreto. */

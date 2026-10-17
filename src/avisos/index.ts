@@ -26,7 +26,7 @@ async function desdeEntorno(env: NodeJS.ProcessEnv = process.env): Promise<Avisa
   ]);
   const transporte = buzon ? crearTransporte(buzon) : null;
   return crearAvisador({
-    // Siempre el repositorio vigente: "Reiniciar demo" lo reemplaza.
+    // Siempre los datos de la corrida vigente ("Reiniciar demo" abre otra, #76).
     aprobadores: async () => (await (await obtenerRepositorio()).datosComunes()).aprobadores,
     miembros: async () => (await obtenerAlmacenEquipo()).miembros(EMPRESA_ID),
     enlace: (ref) => urlPublica(`/facturas/${encodeURIComponent(ref)}`, env),

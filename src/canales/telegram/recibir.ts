@@ -97,7 +97,7 @@ async function vincular(token: string, chat: string, deps: DependenciasTelegram,
   if (!id) return t.enlace_invalido;
   const huella = huellaToken(token);
   return deps.repo.enExclusiva(async () => {
-    const usado = (await deps.repo.registro({ tipo: ["CAMBIO_BENEFICIARIOS"] })).some((e) => e.sha256 === huella);
+    const usado = await deps.repo.tokenVinculoUsado(huella);
     const b = (await deps.repo.datosComunes()).beneficiarios.find((x) => x.id === id);
     if (usado || !b || b.estado !== "activo") return t.enlace_invalido;
     await deps.repo.vincularTelegram(b.id, chat);
