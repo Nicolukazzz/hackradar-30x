@@ -1,4 +1,4 @@
-// Quién está decidiendo. Única puerta: NINGUNA ruta lee aprobador_id del body.
+// Quién está decidiendo. Única puerta (rutas y pantallas): NINGUNA ruta lee aprobador_id del body.
 //
 // Hoy (sin login) es la elección demo "Actuar como" de la pantalla Aprobaciones, guardada en la cookie
 // `actuar_como`. #25 reemplaza esta función por `exigirRol('aprobador')` con la sesión verificada de
@@ -7,6 +7,7 @@
 import { cookies } from "next/headers";
 
 import type { Aprobador } from "@/dominio/tipos";
+import { obtenerRepositorio } from "@/repositorio";
 import type { Repositorio } from "@/repositorio/repositorio";
 
 export const COOKIE_ACTUAR_COMO = "actuar_como";
@@ -25,4 +26,16 @@ export async function aprobadorDeLaPeticion(repo: Repositorio): Promise<Aprobado
   if (!id) return null;
   const { aprobadores } = await repo.datosComunes();
   return aprobadores.find((a) => a.id === id) ?? null;
+}
+
+/** Para las pantallas: con quién se está actuando y entre quiénes se puede elegir. */
+export async function sesionDemo(): Promise<{
+  actual: Pick<Aprobador, "id" | "nombre" | "rol" | "iniciales" | "limite_usd" | "principal"> | null;
+  aprobadores: Pick<Aprobador, "id" | "nombre" | "rol" | "iniciales" | "limite_usd" | "principal">[];
+  demo: boolean;
+}> {
+  const repo = await obtenerRepositorio();
+  const [{ aprobadores }, actual] = await Promise.all([repo.datosComunes(), aprobadorDeLaPeticion(repo)]);
+  const corto = ({ id, nombre, rol, iniciales, limite_usd, principal }: Aprobador) => ({ id, nombre, rol, iniciales, limite_usd, principal });
+  return { actual: actual ? corto(actual) : null, aprobadores: aprobadores.map(corto), demo: demoActiva() };
 }

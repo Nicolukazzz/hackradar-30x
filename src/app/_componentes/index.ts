@@ -8,3 +8,5 @@ export { Monto } from "./monto";
 export { PildoraDecision, PildoraResultado } from "./pildora-decision";
 export { Tarjeta, TarjetaEncabezado, TarjetaPie } from "./tarjeta";
 export * from "./formato";
+export { ActuarComo, type AprobadorCorto } from "./actuar-como";
+export { PanelDecision, type PropsPanelDecision } from "./panel-decision";

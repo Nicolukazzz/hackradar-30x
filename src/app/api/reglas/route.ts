@@ -4,7 +4,7 @@ import { ahoraHumano } from "@/servicios/comun";
 import { guardarReglas, obtenerReglas, sinVersion } from "@/servicios/reglas";
 
 import { error, json, manejar, ok, validar } from "../_http";
-import { aprobadorDeLaPeticion } from "../_identidad";
+import { aprobadorDeLaPeticion } from "@/app/_datos/identidad";
 
 /** GET /api/reglas (§12): versión vigente, historial, beneficiarios, aprobadores y tasas. */
 export async function GET() {

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { obtenerRepositorio } from "@/repositorio";
 
 import { cuerpo, error, manejar, ok } from "../../_http";
-import { COOKIE_ACTUAR_COMO, demoActiva } from "../../_identidad";
+import { COOKIE_ACTUAR_COMO, demoActiva } from "@/app/_datos/identidad";
 
 /**
  * POST /api/demo/actuar-como { aprobador_id }: selector "Actuar como" de la demo sin login.

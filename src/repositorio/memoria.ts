@@ -101,17 +101,18 @@ export async function crearRepositorioMemoria(idEscenario: string, dir: string =
       const a = s.archivos.get(ref);
       if (!a) return null;
       if ("bytes" in a) return a;
-      return { nombre: a.nombre, mime: a.mime, bytes: await readFile(a.ruta) };
+      // turbopackIgnore: lectura en tiempo de ejecución dentro de data/; sin esto Turbopack traza el proyecto entero.
+      return { nombre: a.nombre, mime: a.mime, bytes: await readFile(/*turbopackIgnore: true*/ a.ruta) };
     },
     async leerAdjunto(ref, indice) {
       const adj = s.documentos.get(ref)?.adjuntos[indice];
       if (!adj) return null;
       if (adj.bytes_base64 !== undefined) return { nombre: adj.nombre, mime: adj.mime, bytes: Buffer.from(adj.bytes_base64, "base64") };
       if (adj.ruta === undefined) return null;
-      const base = path.resolve(s.carpeta);
-      const ruta = path.resolve(base, adj.ruta);
+      const base = path.resolve(/*turbopackIgnore: true*/ s.carpeta);
+      const ruta = path.resolve(/*turbopackIgnore: true*/ base, adj.ruta);
       if (!ruta.startsWith(base + path.sep)) return null; // nunca fuera de la carpeta del escenario
-      return { nombre: adj.nombre, mime: adj.mime, bytes: await readFile(ruta) };
+      return { nombre: adj.nombre, mime: adj.mime, bytes: await readFile(/*turbopackIgnore: true*/ ruta) };
     },
     async siguienteRef(anio) {
       // Las refs del escenario ya están reservadas para sus documentos (aunque aún no se procesen).

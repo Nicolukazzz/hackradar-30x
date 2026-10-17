@@ -5,7 +5,7 @@ import { obtenerRepositorio } from "@/repositorio";
 import { ahoraHumano } from "@/servicios/comun";
 
 import { cuerpo, error, manejar, ok } from "../../_http";
-import { aprobadorDeLaPeticion } from "../../_identidad";
+import { aprobadorDeLaPeticion } from "@/app/_datos/identidad";
 
 // Estricto: un body con `aprobador_id` se rechaza (la identidad sale de la sesión, #25).
 const Cuerpo = z.strictObject({

@@ -1,7 +1,7 @@
 import { reiniciarRepositorio } from "@/repositorio";
 
 import { error, manejar, ok } from "../../_http";
-import { demoActiva } from "../../_identidad";
+import { demoActiva } from "@/app/_datos/identidad";
 
 /** POST /api/demo/reiniciar: vuelve al estado inicial del escenario (solo con REPOSITORIO=memoria). */
 export async function POST() {
