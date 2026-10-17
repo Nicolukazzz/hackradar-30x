@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { contarPendientes, obtenerAprobaciones } from "@/app/_datos/aprobaciones";
 import { obtenerBandeja } from "@/app/_datos/bandeja";
+import { obtenerRegistro } from "@/app/_datos/registro";
 import { fijarRepositorio } from "@/repositorio";
 import { crearRepositorioMemoria } from "@/repositorio/memoria";
 import { procesarPendientes } from "@/servicios/lote";
@@ -32,6 +33,7 @@ describe("_datos exige ser miembro (#51)", () => {
     comoCuenta("Nadie", null);
     await expect(obtenerBandeja()).rejects.toMatchObject({ digest: expect.stringContaining("/sin-permiso") });
     await expect(obtenerAprobaciones()).rejects.toMatchObject({ digest: expect.stringContaining("/sin-permiso") });
+    await expect(obtenerRegistro()).rejects.toMatchObject({ digest: expect.stringContaining("/sin-permiso") });
     comoSesion(null);
     await expect(obtenerBandeja()).rejects.toMatchObject({ digest: expect.stringContaining("/entrar") });
     comoCuenta("Tere", "tesoreria");
