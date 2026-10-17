@@ -369,8 +369,9 @@ Regla: la frase sale de las evaluaciones, **nunca del LLM**. Una plantilla por d
 | ESCALAR R5 indeterminado | `Escalada: no se pudo asociar la factura a lo acordado con {beneficiario} ({motivo}).` |
 | ESCALAR R8 | `Escalada: con este pago {beneficiario} llegaría a {total} en el mes, sobre su límite de {limite}.` |
 | ESCALAR R9 | `Escalada: la factura de {beneficiario} ({monto}) supera el límite de pago automático de {limite}.` |
-| ESCALAR R10 | `El {canal} de {beneficiario} traía instrucciones para el agente («{fragmento}»); se ignoraron y la factura quedó marcada.` |
+| ESCALAR R10 | `El {canal} de {beneficiario} traía instrucciones para el agente («{frase detectada}»); se ignoraron.` (se cita la frase que disparó el detector, no la línea entera) |
 | ESCALAR R11 | `El remitente ({remitente}) no está vinculado a {beneficiario}.` |
+| ESCALAR R11 tras R3 | `el remitente ({remitente}) tampoco está vinculado.` (R3 ya nombró al beneficiario; reenvío interno con R3 fallida no repite la causa) |
 
 Varias fallas: se unen con "Además," (ej. OMI-3381 §11.4). El beneficiario se nombra una sola vez: si una frase anterior ya lo nombró, R1/R6/R9/R10 usan la forma corta (`{monto} supera…`). ESCALAR cierra con `Se reservan {monto} del presupuesto mientras una persona decide.` (o `Monto por decidir: {monto}.` si no se reserva). RECHAZADA_NO_FACTURA: `Rechazada: el documento no es una factura (confianza {n}%); no entra a las reglas de pago.` Error: `Error interno al evaluar: se escala por seguridad.` Observaciones (no deciden): `El monto está a {dif} del límite automático.` cuando `limite − monto ≤ 1 %` del límite.
 
@@ -659,7 +660,7 @@ Métricas:
 - **escalados innecesarios**: esperado PAGAR/FRENAR, obtenido ESCALAR.
 - **reglas correctas**: `reglas_que_fallan` obtenidas = esperadas.
 - Matriz de confusión 4×4 (incluye RECHAZADA_NO_FACTURA) y exactitud por trampa.
-- Explicabilidad (heurística automática): cada explicación menciona el id de regla o su nombre, contiene al menos un número cuando hay comparación numérica y no contiene jerga (`null`, `undefined`, `R\d+:` sin texto, `true/false`).
+- Explicabilidad (heurística automática): cada explicación menciona el id de regla o su nombre, contiene al menos un número cuando hay comparación numérica, no contiene jerga (`null`, `undefined`, `R\d+:` sin texto, `true/false`) y su largo no pasa de 280 caracteres con hasta dos causas, más 60 por cada causa extra.
 
 CLI escribe `docs/research/eval-AAAA-MM-DD-HHMM.md` (formato de la skill `/evaluar-agente`).
 

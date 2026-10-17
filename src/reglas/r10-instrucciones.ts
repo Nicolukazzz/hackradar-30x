@@ -7,6 +7,9 @@ import { detectarInstrucciones, type Hallazgo } from "./inyeccion";
 
 const DONDE_MENSAJE = { correo: "en el cuerpo del correo", telegram: "en el mensaje", portal: "en el mensaje", carga_manual: "en el mensaje" } as const;
 
+/** Texto de a lo sumo `max` caracteres, con "…" si se cortó. */
+const recortar = (t: string, max: number) => (t.length > max ? `${t.slice(0, max - 1)}…` : t);
+
 export function r10Instrucciones(ctx: ContextoRegla) {
   const { doc, ext } = ctx;
   const mensaje = [doc.asunto, doc.texto_mensaje].filter(Boolean).join("\n");
@@ -29,7 +32,9 @@ export function r10Instrucciones(ctx: ContextoRegla) {
   if (llm.length > 0) partes.push(`el extractor reportó ${cuantas}`);
   const linea = hallazgos[0]?.linea ?? llm[0] ?? "";
   return evaluacion("R10", "FALLA", partes.join(" · "), {
-    fragmento: linea.length > 160 ? `${linea.slice(0, 159)}…` : linea,
+    fragmento: recortar(linea, 160),
+    // Lo que se cita en la explicación: la frase detectada tal como la escribió el proveedor, no la línea entera.
+    frase: recortar(hallazgos[0]?.fragmento ?? llm[0] ?? "", 60),
     donde,
     patrones: hallazgos.length,
     en_mensaje: enMensaje.length,

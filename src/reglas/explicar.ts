@@ -82,11 +82,11 @@ const FRASES: Record<IdRegla, (f: Frase) => string> = {
     return `con este pago ${nombre} llegaría a ${usd(numero(d.total_usd))} en ${periodo}, sobre su límite de ${usd(numero(d.limite_usd))}.`;
   },
   R9: ({ d, sujeto }) => `${sujeto} supera el límite de pago automático de ${usd(numero(d.limite_usd))}.`,
-  R10: ({ d, x, de }) =>
-    `el ${CANAL[x.doc.canal]}${de} traía instrucciones para el agente («${texto(d.fragmento)}»); se ignoraron y la factura quedó marcada.`,
+  R10: ({ d, x, de }) => `el ${CANAL[x.doc.canal]}${de} traía instrucciones para el agente («${texto(d.frase ?? d.fragmento)}»); se ignoraron.`,
   R11: ({ x, nombre }) => {
-    const a = x.beneficiario ? nombre : "ningún beneficiario de la lista";
-    return `el remitente (${x.doc.remitente.valor}) no está vinculado a ${a}.`;
+    // Beneficiario fuera de la lista (R3 ya lo dijo): basta con decir que el remitente tampoco es conocido.
+    if (!x.beneficiario) return `el remitente (${x.doc.remitente.valor}) tampoco está vinculado.`;
+    return `el remitente (${x.doc.remitente.valor}) no está vinculado a ${nombre}.`;
   },
 };
 
@@ -132,7 +132,11 @@ export function explicar(x: EntradaExplicacion): string {
   const frenan = fallas.filter((e) => e.si_falla === "FRENAR" && e.resultado === "FALLA");
   const resto = fallas.filter((e) => !frenan.includes(e));
   const frases: string[] = [];
-  for (const e of [...frenan, ...resto]) frases.push(fraseRegla(e, x, nombre, frases.some((f) => f.includes(nombre))));
+  // Reenvío interno (carga manual, empleado de Nébula): R11 falla solo porque falló R3; sería repetir la misma causa.
+  const r3Falla = fallas.some((e) => e.id === "R3" && e.resultado === "FALLA");
+  const interno = x.doc.remitente.tipo === "interno";
+  const unidas = [...frenan, ...resto].filter((e) => !(e.id === "R11" && e.resultado === "FALLA" && interno && r3Falla));
+  for (const e of unidas) frases.push(fraseRegla(e, x, nombre, frases.some((f) => f.includes(nombre))));
   const prefijo = x.decision === "FRENAR" ? "Frenada" : "Escalada";
   if (frases.length === 0) return `${prefijo}: no se cumplieron las condiciones mínimas para pagar automáticamente.`;
   let cierre = "";
