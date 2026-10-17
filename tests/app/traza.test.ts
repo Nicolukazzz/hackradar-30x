@@ -71,6 +71,6 @@ describe("firmas de una doble aprobación", () => {
     const sofia = { id: "u-sofia", nombre: "Sofía", rol: "Aprobadora", limite_usd: null, principal: false, iniciales: "SO" };
     await decidir({ ref, accion: "aprobar", comentario: "Primera firma de Sofía", aprobador_id: "u-sofia", cuentas: [sofia] }, { repo, ahora: AHORA });
     expect((await obtenerFactura(repo, ref))?.firmas[0]?.cubre).toBe(false); // sin la lista de cuentas no se la conoce
-    expect((await obtenerFactura(repo, ref, [sofia]))?.firmas[0]?.cubre).toBe(true);
+    expect((await obtenerFactura(repo, ref, async () => [sofia]))?.firmas[0]?.cubre).toBe(true);
   });
 });

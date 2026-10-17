@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { MINIMO_COMENTARIO } from "@/aprobaciones/decidir";
 import { formatearUsd } from "@/dominio/dinero";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +14,8 @@ import { Boton } from "./boton";
 // Decisión humana sobre una factura escalada (§10, §13.2 y §13.3). Dos pasos: elegir y confirmar.
 // "Deshacer" vuelve atrás ANTES de confirmar; una vez registrada, la decisión no se borra (registro append-only).
 
-const MINIMO = 5;
+// El mismo mínimo que exige decidir() en el servidor.
+const MINIMO = MINIMO_COMENTARIO;
 
 /** "Servicios Ómicron S.A." + "." no debe quedar "S.A..". */
 const sinPuntoFinal = (t: string) => t.replace(/\.$/, "");

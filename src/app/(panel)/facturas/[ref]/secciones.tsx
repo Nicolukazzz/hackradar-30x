@@ -64,6 +64,19 @@ function lista(ids: IdRegla[]): string {
 }
 
 /** "Resultado: Escalar · fallaron R3, R10 y R11, ninguna regla de frenar falló" */
+/**
+ * ESCALAR: qué falló y por qué no se frenó. Una regla de frenar INDETERMINADA (sin dato confiable) no frena:
+ * escala, porque ante la duda siempre decide una persona (§4.2). Sin reglas listadas fue un error del motor (§5 paso 4).
+ */
+function detalleEscalar(evaluaciones: RespuestaFactura["evaluaciones"], fallan: IdRegla[]): string {
+  if (fallan.length === 0) return "el agente no pudo evaluar las reglas y escaló por seguridad";
+  const dudas = evaluaciones.filter((e) => e.si_falla === "FRENAR" && e.resultado === "INDETERMINADO").map((e) => e.id);
+  const fallo = `${fallan.length > 1 ? "fallaron" : "falló"} ${lista(fallan)}`;
+  if (dudas.length === 0) return `${fallo}; ninguna regla de frenar falló`;
+  const verbo = dudas.length > 1 ? "quedaron sin poder evaluarse" : "quedó sin poder evaluarse";
+  return `${fallo}; ${lista(dudas)} ${verbo} y una duda siempre escala, nunca frena ni paga`;
+}
+
 function resultado(f: RespuestaFactura): { decision: string; detalle: string } {
   const { entrada, evaluaciones } = f;
   const frenan = evaluaciones.filter((e) => e.si_falla === "FRENAR" && e.resultado === "FALLA").map((e) => e.id);
@@ -77,7 +90,7 @@ function resultado(f: RespuestaFactura): { decision: string; detalle: string } {
       return { decision: "Frenar", detalle: `falló ${lista(frenan)} (regla de frenar)${tambien}` };
     }
     case "ESCALAR":
-      return { decision: "Escalar", detalle: `${fallan.length > 1 ? "fallaron" : "falló"} ${lista(fallan)}, ninguna regla de frenar falló` };
+      return { decision: "Escalar", detalle: detalleEscalar(evaluaciones, fallan) };
     default:
       return { decision: "No es factura", detalle: "no entra a las reglas de pago" };
   }
@@ -127,7 +140,7 @@ export function TrazaReglas({ f }: { f: RespuestaFactura }) {
 }
 
 const PUNTO: Record<HitoLineaTiempo["tono"], string> = {
-  neutro: "bg-[#a7b1ac]",
+  neutro: "bg-punto-neutro",
   pagada: "bg-pagada-punto",
   frenada: "bg-frenada-punto",
   escalada: "bg-escalada-punto",

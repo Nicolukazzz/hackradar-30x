@@ -158,6 +158,8 @@ export default async function TrazaPage({ params }: PageProps<"/facturas/[ref]">
   const e = f.entrada;
   const doc = f.documento;
   const vence = f.extraccion?.fecha_vencimiento.valor;
+  // La hora real de llegada; entrada.momento puede ser la del lote si llegó en otro periodo (§16.7e).
+  const recibida = doc?.recibido_en ?? e.momento;
   const pendiente = f.estado === "ESCALAR";
 
   return (
@@ -179,7 +181,7 @@ export default async function TrazaPage({ params }: PageProps<"/facturas/[ref]">
             {e.beneficiario ?? "Beneficiario sin leer"} · <Monto dinero={e.monto_original} />
           </h1>
           <p className="text-[13px] text-pretty text-muted-foreground">
-            Recibida por {etiquetaCanal(e.canal)} el {fechaCorta(e.momento)} a las {hora(e.momento)}
+            Recibida por {etiquetaCanal(e.canal)} el {fechaCorta(recibida)} a las {hora(recibida)}
             {doc ? (
               <>
                 {" "}

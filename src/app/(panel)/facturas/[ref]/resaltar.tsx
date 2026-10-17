@@ -9,7 +9,7 @@ type Tramo = { inicio: number; fin: number; tipo: Marca["tipo"] };
 
 const CLASES = {
   sospechoso: "rounded-[3px] bg-escalada px-0.5 text-escalada-foreground ring-1 ring-escalada-punto/40",
-  dato: "rounded-[3px] bg-[#e6eeff] px-0.5 text-inherit",
+  dato: "rounded-[3px] bg-dato px-0.5 text-inherit",
 } as const;
 
 /** Todas las apariciones literales de `aguja` en `texto`. */

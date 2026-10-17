@@ -2,7 +2,6 @@ import { ExternalLinkIcon, ShieldAlertIcon } from "lucide-react";
 import Image from "next/image";
 
 import { Tarjeta, TarjetaEncabezado } from "@/app/_componentes";
-import { normalizarTexto } from "@/dominio/normalizar";
 import type { RespuestaFactura } from "@/app/_datos/facturas";
 
 import { Resaltado, type Marca } from "./resaltar";
@@ -23,10 +22,12 @@ function descripcion(f: RespuestaFactura): string {
 
 function Archivo({ f }: { f: RespuestaFactura }) {
   const ref = f.entrada.ref_interna;
-  const adj = f.documento?.adjuntos[0];
+  const adjuntos = f.documento?.adjuntos ?? [];
+  // El primer adjunto que se puede mostrar (PDF o imagen), aunque antes venga otro (p. ej. el XML de la factura electrónica).
+  const indice = adjuntos.findIndex((a) => a.mime === "application/pdf" || a.mime.startsWith("image/"));
+  const adj = adjuntos[indice];
   if (!adj) return null;
-  // En un correo, el archivo original es el .eml: el PDF o la foto se piden como adjunto 0.
-  const url = `/api/documentos/${encodeURIComponent(ref)}/archivo${f.entrada.canal === "correo" ? "?adjunto=0" : ""}`;
+  const url = `/api/documentos/${encodeURIComponent(ref)}/archivo?adjunto=${indice}`;
   if (adj.mime.startsWith("image/")) {
     return (
       <a href={url} target="_blank" rel="noopener" className="block overflow-hidden rounded-xl ring-1 ring-border">
@@ -34,33 +35,21 @@ function Archivo({ f }: { f: RespuestaFactura }) {
       </a>
     );
   }
-  if (adj.mime === "application/pdf") {
-    return (
-      <div className="flex flex-col gap-2">
-        {/* En móvil un PDF embebido se ve mal: solo el enlace. */}
-        <iframe src={`${url}#navpanes=0&view=FitH`} title={`PDF de la factura ${f.entrada.factura_numero ?? ref}`} className="hidden h-[560px] w-full rounded-xl bg-muted ring-1 ring-border md:block" />
-        <a href={url} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-medium text-link hover:underline">
-          <ExternalLinkIcon className="size-4" aria-hidden />
-          Abrir {adj.nombre}
-        </a>
-      </div>
-    );
-  }
-  return null;
-}
-
-/** Las oraciones completas del documento que contienen algún fragmento detectado (para citarlas enteras). */
-function oracionesSospechosas(f: RespuestaFactura): string[] {
-  const textos = [f.documento?.asunto, f.documento?.texto_mensaje, f.extraccion?.texto_crudo].filter((t): t is string => Boolean(t));
-  const fragmentos = f.instrucciones_detectadas.map((x) => normalizarTexto(x));
-  const oraciones = new Set<string>();
-  for (const t of textos) {
-    for (const o of t.split(/(?<=[.!?])\s+|\n+/)) {
-      const limpia = o.trim();
-      if (limpia && fragmentos.some((fr) => normalizarTexto(limpia).includes(fr))) oraciones.add(limpia);
-    }
-  }
-  return oraciones.size > 0 ? [...oraciones] : f.instrucciones_detectadas;
+  return (
+    <div className="flex flex-col gap-2">
+      {/* En móvil un PDF embebido se ve mal: solo el enlace. lazy: oculto no se descarga. */}
+      <iframe
+        src={`${url}#navpanes=0&view=FitH`}
+        loading="lazy"
+        title={`PDF de la factura ${f.entrada.factura_numero ?? ref}`}
+        className="hidden h-[560px] w-full rounded-xl bg-muted ring-1 ring-border md:block"
+      />
+      <a href={url} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-medium text-link hover:underline">
+        <ExternalLinkIcon className="size-4" aria-hidden />
+        Abrir {adj.nombre}
+      </a>
+    </div>
+  );
 }
 
 export function VisorDocumento({ f }: { f: RespuestaFactura }) {
@@ -111,7 +100,7 @@ export function VisorDocumento({ f }: { f: RespuestaFactura }) {
             <ShieldAlertIcon className="mt-0.5 size-5 shrink-0" aria-hidden />
             <div className="flex flex-col gap-1">
               <span className="text-[13px] font-semibold">Instrucción embebida · ignorada (R10)</span>
-              {oracionesSospechosas(f).map((o) => (
+              {(f.instrucciones_lineas.length > 0 ? f.instrucciones_lineas : f.instrucciones_detectadas).map((o) => (
                 <span key={o} className="text-sm">
                   «{o}»
                 </span>
@@ -123,7 +112,7 @@ export function VisorDocumento({ f }: { f: RespuestaFactura }) {
 
         <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <span aria-hidden className="size-3 rounded-[3px] bg-[#e6eeff]" />
+            <span aria-hidden className="size-3 rounded-[3px] bg-dato" />
             Dato extraído
           </span>
           <span className="flex items-center gap-1.5">
