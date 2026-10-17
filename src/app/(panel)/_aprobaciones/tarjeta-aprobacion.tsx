@@ -31,10 +31,13 @@ function chips(t: Datos): string[] {
 export function TarjetaAprobacion({
   t,
   permiso,
+  puedeAgregarALista,
   cuenta,
 }: {
   t: Datos;
   permiso: { ok: true } | { ok: false; motivo: string };
+  /** agregar a la lista permitida cambia las reglas: solo administradores (#51, `editar_reglas`) */
+  puedeAgregarALista: boolean;
   /** id de la cuenta que mira la tarjeta: quien dio la primera firma no puede dar la segunda (§10) */
   cuenta: string;
 }) {
@@ -69,7 +72,7 @@ export function TarjetaAprobacion({
   const urgente = t.asignacion?.urgente ?? false;
   const yaFirme = t.firmas.some((f) => f.aprobador_id === cuenta);
   // El beneficiario se agrega a la lista con la última firma (decidir.ts): en la primera de dos no se ofrece.
-  const ofrecerAgregar = t.puede_agregar_a_lista && !(t.requiere_doble_aprobacion && t.firmas.length === 0);
+  const ofrecerAgregar = puedeAgregarALista && t.puede_agregar_a_lista && !(t.requiere_doble_aprobacion && t.firmas.length === 0);
   const motivoNoAprobar =
     t.monto_usd_centavos === null
       ? "Sin un monto confiable (R1) no se puede aprobar: recházala o pide la factura de nuevo."

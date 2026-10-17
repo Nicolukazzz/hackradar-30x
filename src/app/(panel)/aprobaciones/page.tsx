@@ -5,14 +5,15 @@ import { Kpi, Monto, hora } from "@/app/_componentes";
 import { obtenerAprobaciones } from "@/app/_datos/aprobaciones";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { formatearUsd } from "@/dominio/dinero";
+import { permisoPara } from "@/lib/auth/permisos";
 import { obtenerSesion } from "@/lib/auth/sesion";
 
 import { OrdenAprobaciones } from "../_aprobaciones/orden";
 import { TarjetaAprobacion } from "../_aprobaciones/tarjeta-aprobacion";
 
 // Aprobaciones pendientes (especificación §13.3, prototipo pantalla 3).
-// #49: sin roles, toda cuenta puede decidir (permiso siempre ok). Cuando vuelvan los roles (#51) el
-// permiso sale de `puede(sesion, 'aprobar')` y el motivo se muestra al lado de los botones.
+// Roles (#51): el permiso sale de `puede(sesion, 'aprobar')` y, si falta, el motivo se muestra al lado de
+// los botones. El servidor lo exige igual en POST /api/aprobaciones/:ref.
 
 export default async function AprobacionesPage({ searchParams }: PageProps<"/aprobaciones">) {
   const sp = await searchParams;
@@ -20,8 +21,9 @@ export default async function AprobacionesPage({ searchParams }: PageProps<"/apr
   const a = await obtenerAprobaciones(orden);
   const vencenHoy = a.pendientes.filter((t) => t.asignacion?.urgente);
   const primeraHoy = vencenHoy[0];
-  const permiso = { ok: true } as const;
   const sesion = await obtenerSesion();
+  const permiso = permisoPara(sesion, "aprobar");
+  const puedeAgregarALista = permisoPara(sesion, "editar_reglas").ok;
 
   return (
     <>
@@ -85,7 +87,7 @@ export default async function AprobacionesPage({ searchParams }: PageProps<"/apr
       ) : (
         <section aria-label="Facturas escaladas" className="flex flex-col gap-4">
           {a.pendientes.map((t) => (
-            <TarjetaAprobacion key={t.ref_interna} t={t} permiso={permiso} cuenta={sesion?.usuario_id ?? ""} />
+            <TarjetaAprobacion key={t.ref_interna} t={t} permiso={permiso} puedeAgregarALista={puedeAgregarALista} cuenta={sesion?.usuario_id ?? ""} />
           ))}
         </section>
       )}
