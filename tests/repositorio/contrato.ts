@@ -111,4 +111,55 @@ export function contratoRepositorio(crear: () => Promise<Repositorio>, opciones:
       expect((await otro.leerArchivo("INT-2026-000099"))?.mime).toBe("application/pdf");
     });
   }
+
+  it("huella de un enlace de Telegram (#13): usada solo si quedó en un CAMBIO_BENEFICIARIOS", async () => {
+    const [base] = await repo.registro({ tipo: ["DECISION_AGENTE"] });
+    expect(await repo.tokenVinculoUsado(HUELLA)).toBe(false);
+    await repo.agregarEntrada({
+      ...(base as EntradaRegistro),
+      id: await repo.siguienteIdRegistro(2026),
+      tipo: "CAMBIO_BENEFICIARIOS",
+      ref_interna: "CANAL-TELEGRAM-ben-diego-herrera",
+      decision: null,
+      sha256: HUELLA,
+    });
+    expect(await repo.tokenVinculoUsado(HUELLA)).toBe(true);
+  });
+
+  it("reiniciar la demo (#76): corrida nueva como recién sembrada; Telegram y huellas usadas se conservan", async () => {
+    await repo.vincularTelegram("ben-juan-pablo-ortiz", "700100004"); // su chat vuelve a Juan Pablo; Diego, al del dataset
+    await repo.reiniciar("admin@nebula.example");
+    expect(await repo.registro()).toHaveLength(historial);
+    expect(await repo.pendientes()).toHaveLength(12);
+    expect(await repo.documentos()).toHaveLength(0);
+    expect((await repo.reglasVigentes()).version).toBe(7);
+    expect((await repo.historialReglas()).map((h) => h.version)).toEqual([7, 6]);
+    expect(await repo.leerArchivo("INT-2026-000099")).toBeNull();
+    const bs = (await repo.datosComunes()).beneficiarios;
+    expect(bs.map((b) => b.id)).not.toContain("ben-prueba-contrato");
+    expect(bs.find((b) => b.id === "ben-juan-pablo-ortiz")?.canales.telegram_chat_id).toBe("700100004");
+    expect(bs.find((b) => b.id === "ben-diego-herrera")?.canales.telegram_chat_id).toBe("700100003");
+    expect(await repo.tokenVinculoUsado(HUELLA)).toBe(true); // un enlace ya usado no vuelve a valer
+  });
+
+  it("después de reiniciar, el lote da los mismos números que el prototipo", async () => {
+    const r = await procesarPendientes(repo);
+    expect(r).toEqual({ procesadas: 12, resumen: { PAGAR: 5, FRENAR: 3, ESCALAR: 4, RECHAZADA_NO_FACTURA: 0 } });
+    const omi = await repo.registro({ tipo: ["DECISION_AGENTE"], ref_interna: "INT-2026-000011" });
+    expect(omi).toHaveLength(1);
+    expect(omi[0]?.id).toBe("REG-2026-000011");
+    expect(await repo.siguienteRef(2026)).toBe("INT-2026-000013");
+    expect((await repo.leerArchivo("INT-2026-000001"))?.mime).toBe("application/pdf");
+  });
+
+  if (opciones.persistente) {
+    it("otra instancia ve la corrida nueva, no la anterior", async () => {
+      const otro = await crear();
+      expect(await otro.registro()).toHaveLength(historial + 12);
+      expect((await otro.reglasVigentes()).version).toBe(7);
+      expect(await otro.siguienteRef(2026)).toBe("INT-2026-000014");
+    });
+  }
 }
+
+const HUELLA = "a".repeat(64);

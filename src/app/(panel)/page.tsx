@@ -1,10 +1,11 @@
 import { DownloadIcon, InboxIcon, ShieldIcon } from "lucide-react";
 
 import { Boton, Kpi, Monto, diaMes, hora, mesAnio, porcentajeUi } from "@/app/_componentes";
-import { obtenerBandeja, type FiltroDecision } from "@/app/_datos/bandeja";
+import { obtenerBandeja, puedeReiniciarDemo, type FiltroDecision } from "@/app/_datos/bandeja";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
 import { BotonProcesar } from "./_bandeja/boton-procesar";
+import { BotonReiniciar } from "./_bandeja/boton-reiniciar";
 import { Presupuesto } from "./_bandeja/presupuesto";
 import { RecibirFactura } from "./_bandeja/recibir-factura";
 import { TablaDecisiones } from "./_bandeja/tabla-decisiones";
@@ -18,7 +19,7 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
   const decisionPedida = typeof sp.decision === "string" ? sp.decision : "todas";
   const decision = (FILTROS as readonly string[]).includes(decisionPedida) ? (decisionPedida as FiltroDecision) : "todas";
   const q = typeof sp.q === "string" ? sp.q.slice(0, 100) : "";
-  const b = await obtenerBandeja({ decision, q });
+  const [b, reiniciable] = await Promise.all([obtenerBandeja({ decision, q }), puedeReiniciarDemo()]);
   const { kpis } = b;
 
   const acciones = (
@@ -32,6 +33,7 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
         <DownloadIcon aria-hidden />
         Exportar registro
       </Boton>
+      {reiniciable ? <BotonReiniciar /> : null}
       <RecibirFactura />
       <BotonProcesar pendientes={b.por_procesar} />
     </div>

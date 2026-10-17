@@ -1489,7 +1489,7 @@ Cuerpo `{ "extraccion": Extraccion, "beneficiario_id"?: string }` → `Resultado
 
 ## POST /api/demo/reiniciar · POST /api/demo/actuar-como
 
-Solo demo (REPOSITORIO=memoria): vuelve al estado inicial / elige con qué aprobador se actúa.
+`POST /api/demo/reiniciar` (#76): solo admin y con modo demo (`DEMO=1` en producción). Empieza una **corrida nueva** como recién sembrada (historial y reglas del escenario, sin documentos ni beneficiarios agregados, refs desde `INT-2026-000001`). Con Supabase nada se borra: las corridas anteriores quedan en `demo_corridas` y en las tablas. Los vínculos de Telegram se conservan. → `{ "reiniciado": true }`. `actuar-como` se retiró en #26.
 
 ## POST /api/documentos
 

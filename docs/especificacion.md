@@ -422,7 +422,7 @@ export type EntradaRegistro = {
 };
 ```
 
-Reglas: nunca se edita ni borra una entrada (la interfaz `Repositorio` no tiene `update`/`delete` de registro). Exportar JSON (array completo) y CSV (columnas: `id, momento, actor, ref_interna, factura_numero, beneficiario, monto_original, moneda, monto_usd, tasa_usada, decision, reglas_que_fallaron, explicacion, comentario, reglas_version`).
+Reglas: nunca se edita ni borra una entrada (la interfaz `Repositorio` no tiene `update`/`delete` de registro). **Corridas de demo (#76):** "Reiniciar demo" no borra; abre una corrida nueva (`demo_corridas`) y el repositorio solo lee la vigente (registro, documentos, secuencias, reglas guardadas y beneficiarios agregados llevan `corrida_id`; ids `REG-`/`INT-` únicos por corrida). Las corridas anteriores siguen en la base, igual de inmutables. Exportar JSON (array completo) y CSV (columnas: `id, momento, actor, ref_interna, factura_numero, beneficiario, monto_original, moneda, monto_usd, tasa_usada, decision, reglas_que_fallaron, explicacion, comentario, reglas_version`).
 
 ## 10. Decisión humana y aprobadores
 
@@ -622,7 +622,7 @@ El modo `golden` (§14) incluye el texto de los adjuntos en `texto_crudo`: un ex
 | `DELETE /api/equipo/invitaciones/:id` | — | `{ revocada: true }` | Equipo (admin) |
 | `PATCH /api/equipo/miembros/:id` · `DELETE` | `{ rol, limite_aprobacion_usd? }` | `Miembro` · `{ quitado: true }` (409 si la empresa se queda sin admin) | Equipo (admin) |
 
-Errores: `{ error: string }` con 400/401/403/404/409. El **401** lo emite `src/proxy.ts` para cualquier `/api/*` sin sesión válida, antes de llegar a la ruta (y `conSesion` lo repite en la ruta); 403 por CSRF (Origin ajeno) o por rol (#51: `conSesion(…, { permiso })`, con un mensaje que dice qué falta: sin empresa, no aprueba, solo admin); el resto los emite la ruta. Permisos por ruta: aprobar/rechazar → admin o aprobador; `POST /api/reglas`, `/api/equipo/**` y `/api/demo/reiniciar` → admin; el resto → cualquier miembro. Toda escritura pasa por el dominio, nunca SQL directo desde la ruta. El actor (quién aprueba) sale de la sesión de Supabase, no del cuerpo de la petición.
+Errores: `{ error: string }` con 400/401/403/404/409. El **401** lo emite `src/proxy.ts` para cualquier `/api/*` sin sesión válida, antes de llegar a la ruta (y `conSesion` lo repite en la ruta); 403 por CSRF (Origin ajeno) o por rol (#51: `conSesion(…, { permiso })`, con un mensaje que dice qué falta: sin empresa, no aprueba, solo admin); el resto los emite la ruta. Permisos por ruta: aprobar/rechazar → admin o aprobador; `POST /api/reglas`, `/api/equipo/**` y `/api/demo/reiniciar` → admin (reiniciar además exige modo demo y abre una corrida nueva, #76); el resto → cualquier miembro. Toda escritura pasa por el dominio, nunca SQL directo desde la ruta. El actor (quién aprueba) sale de la sesión de Supabase, no del cuerpo de la petición.
 
 ## 13. Pantallas
 

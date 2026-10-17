@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { POST as postReiniciar } from "@/app/api/demo/reiniciar/route";
 import { decidir, ErrorDecision } from "@/aprobaciones/decidir";
+import { obtenerRepositorio } from "@/repositorio";
 import { crearRepositorioMemoria } from "@/repositorio/memoria";
 import { procesarPendientes } from "@/servicios/lote";
 
@@ -60,6 +61,13 @@ describe("hallazgos de /code-review en #17", () => {
     expect((await reiniciar()).status).toBe(404);
     vi.stubEnv("DEMO", "1");
     expect((await reiniciar()).status).toBe(200);
+    // #76: reiniciar = corrida nueva del repositorio vigente (sea memoria o Supabase), con quién la pidió; ya no 409.
+    const repo = await obtenerRepositorio();
+    const espia = vi.spyOn(repo, "reiniciar");
+    vi.stubEnv("REPOSITORIO", "supabase");
+    expect((await reiniciar()).status).toBe(200);
+    expect(espia).toHaveBeenCalledOnce();
+    espia.mockRestore();
     comoCuenta("Andrea Paz", "aprobador");
     expect((await reiniciar()).status).toBe(403);
     comoSesion(null);

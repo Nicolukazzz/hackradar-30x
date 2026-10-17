@@ -1,6 +1,6 @@
 // Repositorio en memoria del proceso (#17): carga data/ y el escenario elegido, y guarda todo lo
 // nuevo en memoria. Sirve para la demo local, Railway con REPOSITORIO=memoria y los tests.
-// Reiniciar el proceso (o POST /api/demo/reiniciar) vuelve al estado inicial del escenario.
+// Reiniciar el proceso (o POST /api/demo/reiniciar, #76) vuelve al estado inicial del escenario.
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -40,30 +40,42 @@ export async function crearRepositorioMemoria(
   opciones: OpcionesMemoria = {},
 ): Promise<Repositorio> {
   // "vacio" no lee ni hashea los documentos: van a entrar por la ingesta.
-  const g = opciones.lote === "vacio" ? await cargarSinDocumentos(idEscenario, dir) : await cargarGolden(idEscenario, dir);
-  const datos = structuredClone(g.datos);
-  const s: Estado = {
-    datos,
-    versiones: [...datos.reglas.versiones],
-    registro: [...g.escenario.historial],
-    documentos: new Map(),
-    archivos: new Map(),
-    escenario: {
-      config: g.escenario.config,
-      esperado: g.escenario.esperado,
-      entradas_importadas: g.escenario.historial.length,
+  const cargar = () => (opciones.lote === "vacio" ? cargarSinDocumentos(idEscenario, dir) : cargarGolden(idEscenario, dir));
+  // Sobreviven a "Reiniciar demo" (#76), igual que en Supabase: el chat de Telegram de cada beneficiario y las
+  // huellas de los enlaces ya usados.
+  const vinculos = new Map<string, string>();
+  const huellasUsadas = new Set<string>();
+
+  async function estadoInicial(): Promise<Estado> {
+    const g = await cargar();
+    const datos = structuredClone(g.datos);
+    datos.beneficiarios = conVinculosTelegram(datos.beneficiarios, vinculos);
+    const e: Estado = {
+      datos,
+      versiones: [...datos.reglas.versiones],
+      registro: [...g.escenario.historial],
+      documentos: new Map(),
+      archivos: new Map(),
+      escenario: {
+        config: g.escenario.config,
+        esperado: g.escenario.esperado,
+        entradas_importadas: g.escenario.historial.length,
+        carpeta: g.escenario.carpeta,
+      },
+      golden: g.docs,
       carpeta: g.escenario.carpeta,
-    },
-    golden: g.docs,
-    carpeta: g.escenario.carpeta,
-  };
-  // Archivo original de cada documento del escenario (lo que muestra el visor de la traza).
-  for (const d of g.docs) {
-    const ruta = path.join(s.carpeta, d.esperado.documento);
-    s.archivos.set(d.doc.ref_interna, { ruta, nombre: path.basename(ruta), mime: mimeDeArchivo(ruta) });
+    };
+    // Archivo original de cada documento del escenario (lo que muestra el visor de la traza).
+    for (const d of g.docs) {
+      const ruta = path.join(e.carpeta, d.esperado.documento);
+      e.archivos.set(d.doc.ref_interna, { ruta, nombre: path.basename(ruta), mime: mimeDeArchivo(ruta) });
+    }
+    return e;
   }
+
+  let s = await estadoInicial();
   const enExclusiva = crearCola();
-  const reservadas = new Set<string>();
+  let reservadas = new Set<string>();
   const vigente = (): Reglas => versionVigente(s.versiones);
   const coincide = coincideFiltro;
 
@@ -92,6 +104,8 @@ export async function crearRepositorioMemoria(
     },
     async vincularTelegram(beneficiario_id, chat_id) {
       if (!s.datos.beneficiarios.some((b) => b.id === beneficiario_id)) throw new Error(`no existe el beneficiario ${beneficiario_id}`);
+      for (const [b, c] of vinculos) if (b === beneficiario_id || c === chat_id) vinculos.delete(b);
+      vinculos.set(beneficiario_id, chat_id);
       s.datos.beneficiarios = conVinculosTelegram(s.datos.beneficiarios, new Map([[beneficiario_id, chat_id]]));
     },
     async guardarArchivo(ref, archivo) {
@@ -129,6 +143,7 @@ export async function crearRepositorioMemoria(
     async agregarEntrada(e) {
       if (s.registro.some((x) => x.id === e.id)) throw new Error(`la entrada ${e.id} ya existe: el registro no se sobrescribe`);
       s.registro.push(structuredClone(e));
+      if (e.tipo === "CAMBIO_BENEFICIARIOS" && e.sha256) huellasUsadas.add(e.sha256);
     },
     async registro(filtro) {
       return s.registro.filter((e) => coincide(e, filtro)).map((e) => structuredClone(e));
@@ -142,6 +157,15 @@ export async function crearRepositorioMemoria(
     enExclusiva,
     async pendientes() {
       return s.golden.filter((d) => !s.documentos.has(d.doc.ref_interna));
+    },
+    reiniciar() {
+      return enExclusiva(async () => {
+        s = await estadoInicial();
+        reservadas = new Set();
+      });
+    },
+    async tokenVinculoUsado(huella) {
+      return huellasUsadas.has(huella) || s.registro.some((e) => e.tipo === "CAMBIO_BENEFICIARIOS" && e.sha256 === huella);
     },
   };
 }

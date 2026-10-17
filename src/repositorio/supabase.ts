@@ -1,6 +1,9 @@
 // Repositorio en Supabase (#44): lo mismo que el de memoria, pero lo que cambia (registro, documentos,
 // reglas guardadas, beneficiarios agregados, archivos) sobrevive a los deploys. Lo fijo (empresa, los 14
 // beneficiarios base, tasas, escenario y sus documentos) sigue saliendo de data/.
+// Corridas de demo (#76): cada tabla de la demo tiene corrida_id (por defecto, la vigente, resuelta en la base).
+// Se lee de las vistas `*_vigente(s)` y se escribe en las tablas; "Reiniciar demo" abre una corrida nueva y las
+// anteriores quedan intactas.
 // Solo servidor: usa la llave secreta (service_role). Las tablas no tienen acceso para anon ni authenticated.
 
 import { readFile } from "node:fs/promises";
@@ -21,22 +24,26 @@ export type ConfigSupabase = { url: string; claveSecreta: string; escenario: str
 
 const BUCKET = "documentos";
 
-/** Ruta en el bucket: `{ref}/{nombre saneado}`. El nombre ya viene generado (`{sha256}.{ext}`) desde la subida. */
-const rutaArchivo = (ref: string, nombre: string) => `${ref}/${nombre.replaceAll(/[^\w.-]/g, "_")}`;
+/**
+ * Ruta en el bucket: `c{corrida}/{ref}/{nombre saneado}` (las refs se repiten entre corridas). El nombre ya viene
+ * generado (`{sha256}.{ext}`) desde la subida.
+ */
+const rutaArchivo = (corrida: number, ref: string, nombre: string) => `c${corrida}/${ref}/${nombre.replaceAll(/[^\w.-]/g, "_")}`;
 
 function fallar(contexto: string, error: { message: string } | null): void {
   if (error) throw new Error(`Supabase (${contexto}): ${error.message}`);
 }
 
 /**
- * Siembra las versiones de reglas y el historial del escenario. Idempotente y sin carreras: ON CONFLICT DO NOTHING,
- * así dos instancias que arrancan a la vez no chocan, y si cambia ESCENARIO se agrega el historial que falte.
+ * Siembra las versiones de reglas y el historial del escenario en la corrida vigente. Idempotente y sin carreras:
+ * ON CONFLICT DO NOTHING, así dos instancias que arrancan a la vez no chocan, y si cambia ESCENARIO se agrega el
+ * historial que falte.
  */
 async function sembrar(db: SupabaseClient, versiones: readonly Reglas[], historial: readonly EntradaRegistro[]): Promise<void> {
-  const r = await db.from("reglas_versiones").upsert(versiones.map((v) => ({ version: v.version, reglas: v })), { onConflict: "version", ignoreDuplicates: true });
+  const r = await db.from("reglas_versiones").upsert(versiones.map((v) => ({ version: v.version, reglas: v })), { onConflict: "corrida_id,version", ignoreDuplicates: true });
   fallar("sembrar reglas", r.error);
   if (historial.length === 0) return;
-  const h = await db.from("registro").upsert(historial.map(fila), { onConflict: "id", ignoreDuplicates: true });
+  const h = await db.from("registro").upsert(historial.map(fila), { onConflict: "corrida_id,id", ignoreDuplicates: true });
   fallar("sembrar historial", h.error);
 }
 
@@ -70,13 +77,13 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
   const enExclusiva = crearCola();
 
   async function versiones(): Promise<Reglas[]> {
-    const { data, error } = await db.from("reglas_versiones").select("reglas").order("version");
+    const { data, error } = await db.from("reglas_vigentes").select("reglas").order("version");
     fallar("leer reglas", error);
     return (data ?? []).map((r) => r.reglas as Reglas);
   }
 
   async function agregados(): Promise<Beneficiario[]> {
-    const { data, error } = await db.from("beneficiarios_agregados").select("beneficiario").order("creado_en");
+    const { data, error } = await db.from("beneficiarios_agregados_vigentes").select("beneficiario").order("creado_en");
     fallar("leer beneficiarios", error);
     return (data ?? []).map((r) => r.beneficiario as Beneficiario);
   }
@@ -89,19 +96,19 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
   }
 
   async function registro(): Promise<EntradaRegistro[]> {
-    const filas = await todas<{ entrada: unknown }>((a, b) => db.from("registro").select("entrada").order("orden").range(a, b), "leer registro");
+    const filas = await todas<{ entrada: unknown }>((a, b) => db.from("registro_vigente").select("entrada").order("orden").range(a, b), "leer registro");
     return filas.map((r) => r.entrada as EntradaRegistro);
   }
 
   async function filaDocumento(ref: string) {
-    const { data, error } = await db.from("documentos").select("documento, archivo_ruta, archivo_nombre, archivo_mime").eq("ref_interna", ref).maybeSingle();
+    const { data, error } = await db.from("documentos_vigentes").select("documento, archivo_ruta, archivo_nombre, archivo_mime").eq("ref_interna", ref).maybeSingle();
     fallar("leer documento", error);
     return data;
   }
 
   async function documentos(): Promise<DocumentoRecibido[]> {
     const filas = await todas<{ documento: unknown }>(
-      (a, b) => db.from("documentos").select("documento").not("documento", "is", null).order("ref_interna").range(a, b),
+      (a, b) => db.from("documentos_vigentes").select("documento").not("documento", "is", null).order("ref_interna").range(a, b),
       "leer documentos",
     );
     return filas.map((r) => r.documento as DocumentoRecibido);
@@ -110,7 +117,7 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
   /** Solo las refs con documento (sin bajar los adjuntos en base64). */
   async function refsConDocumento(): Promise<Set<string>> {
     const filas = await todas<{ ref_interna: string }>(
-      (a, b) => db.from("documentos").select("ref_interna").not("documento", "is", null).order("ref_interna").range(a, b),
+      (a, b) => db.from("documentos_vigentes").select("ref_interna").not("documento", "is", null).order("ref_interna").range(a, b),
       "leer refs",
     );
     return new Set(filas.map((r) => r.ref_interna));
@@ -126,7 +133,7 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
       return versionVigente(await versiones());
     },
     async reglasVersion(version) {
-      const { data, error } = await db.from("reglas_versiones").select("reglas").eq("version", version).maybeSingle();
+      const { data, error } = await db.from("reglas_vigentes").select("reglas").eq("version", version).maybeSingle();
       fallar("leer versión", error);
       return (data?.reglas as Reglas | undefined) ?? null;
     },
@@ -154,12 +161,14 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
       fallar("vincular Telegram", error);
     },
     async guardarArchivo(ref, archivo) {
-      const ruta = rutaArchivo(ref, archivo.nombre);
+      const corrida = await db.rpc("corrida_vigente");
+      fallar("corrida vigente", corrida.error);
+      const ruta = rutaArchivo(Number(corrida.data), ref, archivo.nombre);
       const subida = await db.storage.from(BUCKET).upload(ruta, archivo.bytes, { contentType: archivo.mime, upsert: true });
       fallar("subir archivo", subida.error);
       const { error } = await db
         .from("documentos")
-        .upsert({ ref_interna: ref, archivo_ruta: ruta, archivo_nombre: archivo.nombre, archivo_mime: archivo.mime }, { onConflict: "ref_interna" });
+        .upsert({ ref_interna: ref, archivo_ruta: ruta, archivo_nombre: archivo.nombre, archivo_mime: archivo.mime }, { onConflict: "corrida_id,ref_interna" });
       fallar("registrar archivo", error);
     },
     async leerArchivo(ref) {
@@ -187,12 +196,12 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
     },
     async siguienteIdRegistro(anio) {
       // Solo el id más alto del año (los ids del año crecen con la inserción): sin bajar todo el registro.
-      const { data, error } = await db.from("registro").select("entrada").like("id", `REG-${anio}-%`).order("id", { ascending: false }).limit(1);
+      const { data, error } = await db.from("registro_vigente").select("entrada").like("id", `REG-${anio}-%`).order("id", { ascending: false }).limit(1);
       fallar("último id", error);
       return siguienteIdRegistro((data ?? []).map((r) => r.entrada as EntradaRegistro), String(anio));
     },
     async guardarDocumento(d) {
-      const { error } = await db.from("documentos").upsert({ ref_interna: d.ref_interna, documento: d }, { onConflict: "ref_interna" });
+      const { error } = await db.from("documentos").upsert({ ref_interna: d.ref_interna, documento: d }, { onConflict: "corrida_id,ref_interna" });
       fallar("guardar documento", error);
     },
     async documento(ref) {
@@ -220,6 +229,24 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
     async pendientes() {
       const guardados = await refsConDocumento();
       return g.docs.filter((d) => !guardados.has(d.doc.ref_interna));
+    },
+    reiniciar(iniciada_por) {
+      return enExclusiva(async () => {
+        // Corrida y siembra en una sola transacción (función SQL): nunca queda una corrida vigente sin reglas.
+        const { error } = await db.rpc("nueva_corrida_demo", {
+          p_por: iniciada_por,
+          p_escenario: config.escenario,
+          p_reglas: g.datos.reglas.versiones.map((v) => ({ version: v.version, reglas: v })),
+          p_historial: g.escenario.historial.map(fila),
+        });
+        fallar("nueva corrida", error);
+      });
+    },
+    async tokenVinculoUsado(huella) {
+      // En la tabla, no en la vista: un enlace usado en una corrida anterior tampoco vuelve a valer.
+      const { data, error } = await db.from("registro").select("id").eq("tipo", "CAMBIO_BENEFICIARIOS").eq("entrada->>sha256", huella).limit(1);
+      fallar("huella de enlace", error);
+      return (data ?? []).length > 0;
     },
   };
 }
