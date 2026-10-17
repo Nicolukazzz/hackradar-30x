@@ -1,5 +1,5 @@
 // Arranque del servidor (Next llama `register` una vez por proceso). Si hay buzón de correo configurado
-// (#14), empieza a revisarlo cada minuto. Solo en Node: IMAP y SMTP no existen en el runtime Edge.
+// (#14), empieza a revisarlo cada minuto. Solo en Node: IMAP no existe en el runtime Edge.
 
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;

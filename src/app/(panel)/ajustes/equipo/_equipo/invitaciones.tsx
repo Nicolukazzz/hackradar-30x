@@ -81,7 +81,7 @@ function Reenviar({ id, correo }: { id: string; correo: string }) {
         <DialogContent className="gap-5 p-6 sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Enlace nuevo</DialogTitle>
-            <DialogDescription>No hay buzón de correo configurado: copia el enlace y envíaselo a {correo}. Por seguridad no se vuelve a mostrar.</DialogDescription>
+            <DialogDescription>No se pudo enviar el correo: copia el enlace y envíaselo a {correo}. Por seguridad no se vuelve a mostrar.</DialogDescription>
           </DialogHeader>
           {enlace ? <EnlaceGenerado enlace={enlace} etiqueta="Enlace para crear la cuenta" resumen={`Solo ${correo} · vence en 72 horas`} /> : null}
           <DialogFooter className="-mx-6 -mb-6 px-6">{enlace ? <BotonCopiar enlace={enlace} descripcion="Envíaselo por un medio seguro." /> : null}</DialogFooter>

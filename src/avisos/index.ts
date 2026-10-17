@@ -1,6 +1,6 @@
-// Avisador del proceso (#68). Se arma una vez desde el entorno: correo si hay buzón (CORREO_IMAP_*, #14),
+// Avisador del proceso (#68). Se arma una vez desde el entorno: correo si hay Brevo (BREVO_API_KEY, #96),
 // Teams si hay TEAMS_WEBHOOK_URL; sin ninguno (dev, tests, CI, CLI) no se avisa nada.
-// `avisarEscaladas` no espera el envío: la respuesta al canal o al panel no queda colgada de SMTP.
+// `avisarEscaladas` no espera el envío: la respuesta al canal o al panel no queda colgada del correo.
 
 import type { EntradaRegistro } from "@/dominio/tipos";
 
@@ -11,38 +11,33 @@ type Global = typeof globalThis & { [CLAVE]?: Promise<Avisador | null> };
 
 async function desdeEntorno(env: NodeJS.ProcessEnv = process.env): Promise<Avisador | null> {
   if (env.AVISOS === "0") return null;
-  const { configBuzonDesdeEntorno } = await import("@/canales/correo/buzon");
-  const buzon = configBuzonDesdeEntorno(env);
+  const { configSalienteDesdeEntorno, enviarCorreo } = await import("@/canales/correo/saliente");
+  const saliente = configSalienteDesdeEntorno(env);
   const teamsUrl = env.TEAMS_WEBHOOK_URL?.trim();
-  if (!buzon && !teamsUrl) return null;
+  if (!saliente && !teamsUrl) return null;
 
-  const [{ crearAvisador }, { crearTransporte }, { obtenerRepositorio }, { obtenerAlmacenEquipo }, { EMPRESA_ID }, { urlPublica }] = await Promise.all([
+  const [{ crearAvisador }, { obtenerRepositorio }, { obtenerAlmacenEquipo }, { EMPRESA_ID }, { urlPublica }] = await Promise.all([
     import("./enviar"),
-    import("@/canales/correo/buzon"),
     import("@/repositorio"),
     import("@/equipo"),
     import("@/equipo/tipos"),
     import("@/lib/url-publica"),
   ]);
-  const transporte = buzon ? crearTransporte(buzon) : null;
   return crearAvisador({
     // Siempre los datos de la corrida vigente ("Reiniciar demo" abre otra, #76).
     aprobadores: async () => (await (await obtenerRepositorio()).datosComunes()).aprobadores,
     miembros: async () => (await obtenerAlmacenEquipo()).miembros(EMPRESA_ID),
     enlace: (ref) => urlPublica(`/facturas/${encodeURIComponent(ref)}`, env),
-    enviarCorreo:
-      buzon && transporte
-        ? async (m) => {
-            await transporte.sendMail({
-              from: buzon.usuario,
-              to: buzon.usuario,
-              bcc: m.bcc,
-              subject: m.asunto,
-              text: m.texto,
-              headers: { "Auto-Submitted": "auto-generated" }, // RFC 3834: sin respuestas automáticas
-            });
-          }
-        : null,
+    enviarCorreo: saliente
+      ? (m) =>
+          enviarCorreo(saliente, {
+            para: [saliente.remitente], // los aprobadores van en copia oculta: no ven a quién más se avisó
+            bcc: m.bcc,
+            asunto: m.asunto,
+            texto: m.texto,
+            cabeceras: { "Auto-Submitted": "auto-generated" }, // RFC 3834: sin respuestas automáticas
+          })
+      : null,
     teams: teamsUrl ? { url: teamsUrl } : null,
   });
 }

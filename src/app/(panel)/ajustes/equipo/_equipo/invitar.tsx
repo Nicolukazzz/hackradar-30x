@@ -18,7 +18,7 @@ import { ElegirRol } from "./elegir-rol";
 
 // "Crear empleado" (#80), en 3 pasos: rol → correo (y límite si aprueba) → confirmar. Al confirmar se envía a la persona
 // un correo formal con un enlace de un solo uso que vence en 72 horas; ahí elige su nombre y su contraseña.
-// Si el correo no sale (buzón sin configurar), se muestra el enlace para copiarlo: es la única vez que existe.
+// Si el correo no sale (sin BREVO_API_KEY o Brevo lo rechazó), se muestra el enlace para copiarlo: es la única vez que existe.
 
 type Paso = "rol" | "correo" | "confirmar" | "listo";
 type Creado = { enlace: string; correo_enviado: boolean; invitacion: { expira_en: string } };
@@ -79,7 +79,7 @@ export function CrearEmpleado() {
     confirmar: "El enlace sirve una sola vez y vence en 72 horas.",
     listo: creado?.correo_enviado
       ? `Cuando ${correoLimpio} abra el enlace y cree su contraseña, aparecerá en Miembros.`
-      : "No hay buzón de correo configurado: copia el enlace y envíaselo tú. Por seguridad no se vuelve a mostrar.",
+      : "No se pudo enviar el correo: copia el enlace y envíaselo tú. Por seguridad no se vuelve a mostrar.",
   }[paso];
 
   return (

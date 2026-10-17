@@ -1,10 +1,9 @@
-// Buzón real (#14): Gmail del equipo por IMAP (leer) y SMTP (responder), con la clave de aplicación de Google.
+// Buzón real (#14): Gmail del equipo por IMAP (leer) con la clave de aplicación de Google; responder va por Brevo (saliente.ts, #96).
 // Se usa dentro del proceso web (sondeo.ts) porque el repositorio en memoria vive ahí.
 
 import { ImapFlow } from "imapflow";
-import nodemailer, { type Transporter } from "nodemailer";
-
 import type { Respuesta } from "./recibir";
+import { type ConfigSaliente, enviarCorreo } from "./saliente";
 
 export type ConfigBuzon = { usuario: string; clave: string; imapHost: string };
 
@@ -66,19 +65,18 @@ export async function revisarBuzon(config: ConfigBuzon, procesar: (eml: Buffer) 
   return procesados;
 }
 
-/** Un solo transporte SMTP por sondeo (no una conexión nueva por respuesta). */
-export function crearTransporte(config: ConfigBuzon): Transporter {
-  // TLS directo (465), nunca texto plano.
-  return nodemailer.createTransport({ host: "smtp.gmail.com", port: 465, secure: true, pool: true, auth: { user: config.usuario, pass: config.clave } });
-}
-
-export async function enviarRespuesta(transporte: Transporter, config: ConfigBuzon, r: Respuesta): Promise<void> {
-  await transporte.sendMail({
-    from: config.usuario,
-    to: r.para,
-    subject: r.asunto,
-    text: r.texto,
-    headers: { "Auto-Submitted": "auto-replied" }, // RFC 3834: los otros bots no nos responden
-    ...(r.en_respuesta_a ? { inReplyTo: r.en_respuesta_a, references: [r.en_respuesta_a] } : {}),
-  });
+export async function enviarRespuesta(saliente: ConfigSaliente, r: Respuesta, f?: typeof fetch): Promise<void> {
+  await enviarCorreo(
+    saliente,
+    {
+      para: [r.para],
+      asunto: r.asunto,
+      texto: r.texto,
+      cabeceras: {
+        "Auto-Submitted": "auto-replied", // RFC 3834: los otros bots no nos responden
+        ...(r.en_respuesta_a ? { "In-Reply-To": r.en_respuesta_a, References: r.en_respuesta_a } : {}),
+      },
+    },
+    { fetch: f },
+  );
 }
