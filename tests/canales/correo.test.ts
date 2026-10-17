@@ -140,6 +140,18 @@ describe("buzón real: ante la duda, no verificado; automáticos ignorados (revi
   });
 });
 
+describe("correoAEntrada con confiarCabeceras: false (#49, /simular en producción)", () => {
+  it("un Authentication-Results escrito por quien sube el .eml no verifica el remitente", async () => {
+    const eml = Buffer.from(
+      ["From: billing@cloudnorte.example", "To: facturas@nebula.example", "Authentication-Results: mx.example; dmarc=pass header.from=cloudnorte.example", "Subject: INV", "", "hola", ""].join("\r\n"),
+    );
+    const confiando = await correoAEntrada(eml, { recibido_en: AHORA, exigirAutenticacion: true });
+    expect(confiando.entrada.remitente.valor).toBe("billing@cloudnorte.example");
+    const sinConfiar = await correoAEntrada(eml, { recibido_en: AHORA, exigirAutenticacion: true, confiarCabeceras: false });
+    expect(sinConfiar.entrada.remitente.valor).toBe(`${PREFIJO_NO_VERIFICADO}billing@cloudnorte.example`);
+  });
+});
+
 describe("POST /api/canales/correo/simular", () => {
   it("los .eml del lote demo, por el parser sin IA, dan las decisiones esperadas; el cuerpo de OMI-3381 dispara R10", async () => {
     fijarRepositorio(await crearRepositorioMemoria("lote-demo-oct", undefined, { lote: "vacio" }));

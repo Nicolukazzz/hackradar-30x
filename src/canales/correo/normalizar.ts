@@ -50,7 +50,17 @@ function motivoAutomatico(cabecera: (k: string) => string, de: string, propio: s
 
 export async function correoAEntrada(
   eml: Buffer,
-  opciones: { recibido_en: string; exigirAutenticacion: boolean; buzonPropio?: string | null },
+  opciones: {
+    recibido_en: string;
+    exigirAutenticacion: boolean;
+    buzonPropio?: string | null;
+    /**
+     * false: el .eml lo subió una persona (/simular en producción), así que sus cabeceras no prueban nada
+     * (cualquiera escribe "dmarc=pass"): el remitente nunca queda verificado y R11 escala. Por defecto true:
+     * en el buzón real Authentication-Results lo agrega el servidor que recibe.
+     */
+    confiarCabeceras?: boolean;
+  },
 ): Promise<CorreoEntrante> {
   const correo = await simpleParser(eml);
   const de = correo.from?.value[0]?.address?.trim().toLowerCase();
@@ -59,7 +69,8 @@ export async function correoAEntrada(
   const lineas = (clave: string) => correo.headerLines.filter((h) => h.key === clave).map((h) => h.line.slice(h.line.indexOf(":") + 1).trim());
   const autenticacion = autenticacionDe(lineas("authentication-results"));
   // Buzón real: sin dmarc=pass no se confía. /simular (lo sube el panel): solo un fail explícito.
-  const verificado = autenticacion === "pasa" || (!opciones.exigirAutenticacion && autenticacion === "sin_dato");
+  const verificado =
+    opciones.confiarCabeceras !== false && (autenticacion === "pasa" || (!opciones.exigirAutenticacion && autenticacion === "sin_dato"));
 
   const entrada: DocumentoEntrante = {
     canal: "correo",
