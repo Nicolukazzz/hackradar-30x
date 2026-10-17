@@ -2,6 +2,8 @@
 
 Fecha: 2026-10-16 · Estado: **reto confirmado (Blinka); diseño en discusión**. Decisiones abiertas al final.
 
+> Este documento explica **qué** construimos y **por qué**. El **cómo** exacto (tipos, reglas R1–R11, dataset, API, pantallas, evaluación) está en `docs/especificacion.md`. Prototipo visual: `docs/diseno/prototipo-ui.html`. Si chocan, manda la especificación y se corrige este documento.
+
 ## 1. Problema real (empresa de referencia, anonimizado)
 
 Una compañera trabaja en una empresa con este problema. Su proceso hoy:
@@ -50,7 +52,7 @@ Dónde **sí** aporta el LLM en la decisión: señales difusas, por ejemplo "¿e
 
 ```
 1. Recepción       (código)  canal + remitente + archivo + hash SHA-256
-2. Identificar     (código)  ¿remitente = proveedor registrado? no → CUARENTENA + respuesta automática
+2. Identificar     (código)  ¿remitente vinculado al beneficiario? no → sigue, y R11 lo ESCALA + respuesta "vincula tu cuenta"
 3. Duplicado exacto(código)  mismo hash ya visto → FRENAR (duplicado)
 4. Leer            (XML/PDF parser → LLM si hace falta)  ¿es factura? + campos + confianza  ── no es factura → RECHAZADA_NO_FACTURA
 5. Validar         (código)  obligatorios, subtotal+impuestos=total, fechas; confianza baja → ESCALAR
@@ -61,7 +63,7 @@ Dónde **sí** aporta el LLM en la decisión: señales difusas, por ejemplo "¿e
 10. Avisar         (código)  al proveedor por su mismo canal ("recibida, ref INT-…, estado …"); escaladas al aprobador
 ```
 
-Estados: `RECIBIDA → CUARENTENA | RECHAZADA_NO_FACTURA | REGISTRADA → PAGAR | FRENAR | ESCALAR → (humano) APROBADA | RECHAZADA`.
+Estados: `RECIBIDA → RECHAZADA_NO_FACTURA | PAGAR | FRENAR | ESCALAR → (humano) APROBADA_HUMANO | RECHAZADA_HUMANO`. La ref interna `INT-…` se asigna al recibir (especificación §8). Reglas y combinación: especificación §4–§5.
 
 ## 4. ¿Qué LLM usamos? (presupuesto: $0)
 
@@ -101,7 +103,7 @@ Explicaciones: generarlas con **plantillas** a partir de las reglas evaluadas (g
 - **Respuesta automática por el mismo canal** con el número de referencia. El proveedor sabe que llegó y no reenvía por otro lado (menos duplicados).
 
 ### Cómo se evita que manden por otros lados
-- **Técnico**: solo existen esas tres puertas. Un remitente no vinculado (correo desconocido, Telegram sin vincular) cae a **CUARENTENA** y recibe una respuesta: "Regístrate o vincula tu cuenta en el portal". Nunca se procesa para pago.
+- **Técnico**: solo existen esas tres puertas. Un remitente no vinculado (correo desconocido, Telegram sin vincular) se procesa pero la regla **R11 (remitente verificado)** lo **ESCALA** siempre, con explicación, y el remitente recibe: "Regístrate o vincula tu cuenta en el portal". Nunca se paga sola. (Antes era un estado CUARENTENA aparte; ver decisión "Remitente no vinculado: regla R11".)
 - **Proceso/política**: en el alta del proveedor se le informa que solo se reciben facturas por esos 3 canales. Lo que llegue por WhatsApp personal u otra vía no existe para tesorería.
 - **Anti-suplantación**: correo con verificación SPF/DKIM del remitente; Telegram vinculado con token de un solo uso generado en el portal; portal con login.
 - **Cambio de datos bancarios** respecto a lo registrado → siempre ESCALAR (fraude clásico de "cambié de cuenta").
@@ -121,7 +123,7 @@ Orden sugerido para construir: **Portal → Telegram → Correo.**
 | Rol | Quién | Ve / hace |
 |---|---|---|
 | Proveedor | Externo | Portal propio: sube facturas, vincula Telegram, ve estados |
-| Cuentas por pagar (ex digitador) | Interno | Revisa CUARENTENA y extracciones dudosas; corrige campos |
+| Cuentas por pagar (ex digitador) | Interno | Revisa lo escalado por R1 (extracción dudosa) y R11 (remitente no vinculado); corrige campos |
 | Aprobador | Interno | Aprueba o rechaza ESCALAR, con la explicación a la vista |
 | Tesorería | Interno | Ve registro interno: aprobadas para pago, frenadas y por qué; exporta |
 | Admin | Interno | Configura reglas, proveedores y límites |
@@ -141,6 +143,8 @@ Demo: una empresa ficticia precargada y usuarios demo por rol (entrada en 1 clic
 - Alternativa: API de decisión para agentes de terceros, cobrada por llamada.
 
 ## 9. Stack sugerido (decidir en #1)
+
+Propuesta concreta, carpetas y comandos: especificación §2.
 
 Next.js + TypeScript (portal, panel y API en uno) · Supabase free (Postgres + auth magic link + storage de archivos) · LLM detrás de interfaz: Gemini Flash free → Groq free → Claude Haiku 5.5 si hay presupuesto · bot de Telegram vía webhook · deploy en Vercel o Railway (necesita URL pública para los webhooks de Telegram y correo).
 
@@ -166,5 +170,6 @@ Archivos reales: solo en `contexto-privado/` (ignorado por git). Hallazgos anoni
 - [ ] LLM: Gemini free principal + Groq respaldo; ¿ponemos $5 para Claude Haiku 5.5? ¿El hackathon da créditos? (sección 4).
 - [ ] Confirmar los 3 canales y el orden de construcción (sección 5).
 - [ ] Roles para la demo: ¿los 5 o solo proveedor + aprobador + tesorería?
-- [ ] Stack (#1).
+- [ ] Stack (#1) — propuesta en especificación §2.
+- [ ] Aceptar especificación v1: R11 en vez de CUARENTENA, dataset por escenarios, dinero en centavos (ver `docs/decisiones.md`).
 - [ ] Modelo de negocio para el pitch (sección 8).
