@@ -1,0 +1,6 @@
+[
+  { "correo": "laura@tu-equipo.example", "rol": "aprobador", "aprobador_id": "lm", "nombre": "Laura Méndez" },
+  { "correo": "andres@tu-equipo.example", "rol": "aprobador", "aprobador_id": "ap", "nombre": "Andrés Pardo" },
+  { "correo": "tesoreria@tu-equipo.example", "rol": "tesoreria", "nombre": "Tesorería" },
+  { "correo": "proveedor@tu-equipo.example", "rol": "proveedor", "beneficiario_id": "ben-pixel-co", "nombre": "Pixel & Co." }
+]
