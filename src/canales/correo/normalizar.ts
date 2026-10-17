@@ -44,7 +44,7 @@ function motivoAutomatico(cabecera: (k: string) => string, de: string, propio: s
   if (/^(bulk|junk|list|auto_reply)$/i.test(cabecera("precedence"))) return "precedence";
   if (cabecera("return-path").replace(/\s/g, "") === "<>") return "rebote";
   if (REMITENTES_SISTEMA.test(de)) return "remitente de sistema";
-  if (propio && de === propio.toLowerCase()) return "enviado por el propio buzón";
+  if (de === propio?.toLowerCase()) return "enviado por el propio buzón";
   return null;
 }
 

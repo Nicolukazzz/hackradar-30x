@@ -43,7 +43,8 @@ export async function recibirCorreo(eml: Buffer, deps: DependenciasCorreo): Prom
 
   // Nunca se responde si el servidor de correo dijo que el remitente es falso (sería escribirle a la víctima).
   if (correo.autenticacion === "falla") return { ignorado: null, entrada, respuesta: null };
-  const asunto = correo.asunto ? (/^re:/i.test(correo.asunto) ? correo.asunto : `Re: ${correo.asunto}`) : "Recibimos tu documento";
+  let asunto = "Recibimos tu documento";
+  if (correo.asunto) asunto = /^re:/i.test(correo.asunto) ? correo.asunto : `Re: ${correo.asunto}`;
   return {
     ignorado: null,
     entrada,

@@ -47,7 +47,7 @@ export async function revisarBuzon(config: ConfigBuzon, procesar: (eml: Buffer) 
         try {
           await cliente.messageFlagsAdd(String(uid), [ETIQUETA_PROCESADO], { uid: true, useLabels: true });
           const mensaje = await cliente.fetchOne(String(uid), { source: true }, { uid: true });
-          if (mensaje && mensaje.source) {
+          if (mensaje && mensaje.source !== undefined) {
             await procesar(mensaje.source);
             procesados++;
           }
@@ -68,7 +68,8 @@ export async function revisarBuzon(config: ConfigBuzon, procesar: (eml: Buffer) 
 
 /** Un solo transporte SMTP por sondeo (no una conexión nueva por respuesta). */
 export function crearTransporte(config: ConfigBuzon): Transporter {
-  return nodemailer.createTransport({ service: "gmail", pool: true, auth: { user: config.usuario, pass: config.clave } });
+  // TLS directo (465), nunca texto plano.
+  return nodemailer.createTransport({ host: "smtp.gmail.com", port: 465, secure: true, pool: true, auth: { user: config.usuario, pass: config.clave } });
 }
 
 export async function enviarRespuesta(transporte: Transporter, config: ConfigBuzon, r: Respuesta): Promise<void> {
