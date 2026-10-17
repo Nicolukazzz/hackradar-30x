@@ -241,6 +241,20 @@ def _asignacion(r: dict[str, str], caso: Caso, ahora: str, aprobadores: list[dic
     return asignado, f"{limite.isoformat()}T12:00:00{zona}"
 
 
+_NO_ES_FACTURA = {"decision": "RECHAZADA_NO_FACTURA", "reglas_que_fallan": [], "asignado_a": None,
+                  "responder_antes_de": None, "usd": None, "disponible_antes": None}
+
+
+def _armar_caso(d: dict, por_nombre: dict[str, dict], tasas: dict[str, str], hoy: str) -> Caso:
+    ext = d["ext"]
+    afectados = _campos_afectados(ext, hoy, tasas)
+    total = ext.get("monto_total")
+    ben_norm = normalizar_nombre(ext["beneficiario_nombre"] or "")
+    usd = dinero.a_usd(total["centavos"], total["moneda"], tasas) if "monto_total" not in afectados else None
+    return Caso(doc=d, ext=ext, ben=por_nombre.get(ben_norm) if ben_norm else None, ben_norm=ben_norm,
+                numero=normalizar_numero(ext["numero"] or ""), usd=usd, afectados=afectados)
+
+
 def evaluar(escenario: dict, documentos: list[dict], historial: list[dict], datos: dict) -> list[dict]:
     """documentos: [{recibido_en, canal, remitente, sha256, texto_crudo, ext (plana)}] en orden de llegada."""
     reglas = datos["reglas"][escenario["reglas_version"]]
@@ -251,18 +265,11 @@ def evaluar(escenario: dict, documentos: list[dict], historial: list[dict], dato
     resultados = []
 
     for d in documentos:
-        ext = d["ext"]
-        if not ext["es_factura"]:
-            resultados.append({"decision": "RECHAZADA_NO_FACTURA", "reglas_que_fallan": [], "asignado_a": None,
-                               "responder_antes_de": None, "usd": None, "disponible_antes": None})
+        if not d["ext"]["es_factura"]:
+            resultados.append(dict(_NO_ES_FACTURA))
             continue
-        afectados = _campos_afectados(ext, ahora[:10], tasas)
-        total = ext.get("monto_total")
-        ben_norm = normalizar_nombre(ext["beneficiario_nombre"] or "")
-        caso = Caso(doc=d, ext=ext, ben=por_nombre.get(ben_norm) if ben_norm else None, ben_norm=ben_norm,
-                    numero=normalizar_numero(ext["numero"] or ""),
-                    usd=dinero.a_usd(total["centavos"], total["moneda"], tasas) if "monto_total" not in afectados else None,
-                    afectados=afectados)
+        caso = _armar_caso(d, por_nombre, tasas, ahora[:10])
+        ext, ben_norm = caso.ext, caso.ben_norm
         disponible = reglas["presupuesto"]["monto_usd"] - libro.total(periodo, "pagada") - libro.total(periodo, "reservada")
 
         r = {"R1": _falla_si(bool(caso.afectados)),

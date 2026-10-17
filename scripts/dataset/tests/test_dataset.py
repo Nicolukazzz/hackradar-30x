@@ -196,13 +196,15 @@ def test_control_factura_normal_paga():
                                    "cuenta_destino_ultimos4", "concepto", "monto_total"])
 def test_campo_faltante_escala_sin_romper(campo):
     r = _evaluar_uno(_ext(**{campo: None}), CLOUDNORTE)
-    assert r["decision"] == "ESCALAR" and "R1" in r["reglas_que_fallan"]
+    assert r["decision"] == "ESCALAR"
+    assert "R1" in r["reglas_que_fallan"]
 
 
 @pytest.mark.parametrize("monto", [{"centavos": 0, "moneda": "USD"}, {"centavos": 100000, "moneda": "BOB"}])
 def test_monto_cero_o_moneda_sin_tasa_falla_r1(monto):
     r = _evaluar_uno(_ext(monto_total=monto), CLOUDNORTE)
-    assert r["decision"] == "ESCALAR" and r["reglas_que_fallan"] == ["R1"]
+    assert r["decision"] == "ESCALAR"
+    assert r["reglas_que_fallan"] == ["R1"]
 
 
 def test_remitente_interno_vale_solo_si_beneficiario_permitido():
@@ -217,7 +219,8 @@ def test_beneficiario_inactivo_solo_falla_r3_y_no_aplica_r4_r5_r8():
     next(b for b in inactivos if b["id"] == "ben-cloudnorte")["estado"] = "inactivo"
     r = _evaluar_uno(_ext(cuenta_destino_ultimos4="0000", monto_total={"centavos": 200000, "moneda": "USD"}),
                      CLOUDNORTE, inactivos)
-    assert r["reglas_que_fallan"] == ["R3"] and r["decision"] == "ESCALAR"
+    assert r["reglas_que_fallan"] == ["R3"]
+    assert r["decision"] == "ESCALAR"
     assert {r["detalle"][k] for k in ("R4", "R5", "R8")} == {"NO_APLICA"}
 
 
