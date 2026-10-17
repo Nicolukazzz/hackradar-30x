@@ -1,10 +1,18 @@
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 // Tarjeta del prototipo: superficie blanca, borde #E3E6E1, radio 16 px, sin sombra pesada.
+// Misma base visual que Card de shadcn; `as` permite usar <section> con aria-labelledby.
 
-export function Tarjeta({ className, ...props }: React.ComponentProps<typeof Card>) {
-  return <Card className={cn("gap-0 rounded-2xl py-0 shadow-none ring-1 ring-border", className)} {...props} />;
+type Etiqueta = "div" | "section" | "article" | "aside";
+
+export function Tarjeta({ as: Comp = "div", className, ...props }: React.ComponentProps<"div"> & { as?: Etiqueta }) {
+  return (
+    <Comp
+      data-slot="card"
+      className={cn("flex flex-col overflow-hidden rounded-2xl bg-card text-sm text-card-foreground ring-1 ring-border", className)}
+      {...props}
+    />
+  );
 }
 
 /** Cabecera de tarjeta: título (h2) + descripción a la izquierda, acciones a la derecha. */
