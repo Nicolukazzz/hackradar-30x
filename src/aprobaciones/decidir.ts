@@ -138,7 +138,9 @@ function resolverAprobacion(v: Validado, usd: number, dobleDesde: number, aproba
     if (!cubre(aprobador, usd)) throw new ErrorDecision(403, `Supera tu límite de aprobación (${limite}). Pídele a un aprobador con límite suficiente que la apruebe.`);
     return { parcial: false, explicacion: `Aprobada por ${aprobador.nombre}: «${comentario}».` };
   }
-  const primera = firmas[0];
+  // Solo cuentan las firmas de quienes hoy pueden aprobar (#51): la de una cuenta a la que le quitaron el rol se
+  // ignora, y la factura vuelve a necesitar dos firmas vigentes.
+  const primera = firmas.find((f) => aprobadores.some((a) => a.id === f.aprobador_id));
   if (!primera) {
     // Primera firma: puede ser de control (sin límite suficiente) si la segunda sí lo tiene (§10).
     return { parcial: true, explicacion: `Primera aprobación (1 de 2) por ${aprobador.nombre}: «${comentario}». Falta una segunda firma.` };

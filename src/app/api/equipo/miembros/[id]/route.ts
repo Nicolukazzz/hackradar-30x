@@ -2,6 +2,7 @@ import { obtenerAlmacenEquipo } from "@/equipo";
 import { cambiarMiembro, quitarMiembro } from "@/equipo/servicio";
 import { auditar } from "@/lib/auth/auditoria";
 import { conSesion } from "@/lib/auth/ruta";
+import { relojSistema } from "@/lib/reloj-sistema";
 
 import { json, manejar, ok } from "../../../_http";
 
@@ -12,7 +13,7 @@ export const PATCH = conSesion(
   async (req: Request, ctx: Ctx, sesion) => {
     try {
       const { id } = await ctx.params;
-      const m = await cambiarMiembro(await obtenerAlmacenEquipo(), id, await json(req));
+      const m = await cambiarMiembro(await obtenerAlmacenEquipo(), id, await json(req), relojSistema().ahora());
       auditar({ tipo: "equipo", usuario_id: sesion.usuario_id, ruta: "/api/equipo/miembros", motivo: `rol de ${id} → ${m.rol}` });
       return ok(m);
     } catch (e) {

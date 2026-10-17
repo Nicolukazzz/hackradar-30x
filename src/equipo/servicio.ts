@@ -21,7 +21,7 @@ function validar<T>(esquema: z.ZodType<T, unknown>, datos: unknown): T {
 }
 
 export async function obtenerEquipo(almacen: AlmacenEquipo, ahora: string): Promise<Equipo> {
-  const [miembros, invitaciones] = await Promise.all([almacen.miembros(EMPRESA_ID), almacen.invitaciones(EMPRESA_ID)]);
+  const [miembros, invitaciones] = await Promise.all([almacen.miembros(EMPRESA_ID), almacen.invitaciones(EMPRESA_ID, ahora)]);
   return { miembros, invitaciones: invitaciones.map((i) => ({ ...i, estado: estadoInvitacion(i, ahora) })) };
 }
 
@@ -57,10 +57,10 @@ export async function revocar(almacen: AlmacenEquipo, id: string, ahora: string)
   }
 }
 
-export async function cambiarMiembro(almacen: AlmacenEquipo, usuario_id: string, entrada: unknown): Promise<Miembro> {
+export async function cambiarMiembro(almacen: AlmacenEquipo, usuario_id: string, entrada: unknown, ahora: string): Promise<Miembro> {
   const cambio = validar(EsquemaCambioMiembro, entrada);
   const m = validarCambio(await almacen.miembros(EMPRESA_ID), usuario_id, cambio);
-  await almacen.cambiarMiembro(EMPRESA_ID, usuario_id, cambio.rol, cambio.limite_aprobacion_usd);
+  await almacen.cambiarMiembro(EMPRESA_ID, usuario_id, cambio.rol, cambio.limite_aprobacion_usd, ahora);
   return { ...m, ...cambio };
 }
 

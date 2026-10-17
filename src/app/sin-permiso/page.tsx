@@ -10,11 +10,33 @@ import { obtenerSesion } from "@/lib/auth/sesion";
 
 export const metadata: Metadata = { title: "Sin permiso · Agente de cuentas por pagar" };
 
-// Dos casos (#51): la cuenta aún no pertenece a la empresa (le falta una invitación), o su rol no alcanza para
-// la sección que abrió.
+// Tres casos (#51): sin sesión válida (salió o su cuenta fue desactivada), cuenta que aún no pertenece a la
+// empresa (le falta una invitación), o rol que no alcanza para la sección que abrió.
 export default async function PaginaSinPermiso() {
   const sesion = await obtenerSesion();
-  const rol = sesion?.rol ?? null;
+
+  if (!sesion) {
+    return (
+      <main className="flex min-h-svh items-center justify-center bg-background px-4">
+        <Empty className="max-w-md flex-none rounded-2xl border bg-card py-16">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <ShieldAlertIcon />
+            </EmptyMedia>
+            <EmptyTitle>No hay una sesión activa</EmptyTitle>
+            <EmptyDescription>Entra con tu cuenta. Si tu cuenta fue desactivada, escribe al equipo para reactivarla.</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Link href="/entrar" className={buttonVariants({ className: "h-11 px-5" })}>
+              Entrar
+            </Link>
+          </EmptyContent>
+        </Empty>
+      </main>
+    );
+  }
+
+  const rol = sesion.rol;
   const sinEmpresa = rol === null;
 
   return (
@@ -41,7 +63,7 @@ export default async function PaginaSinPermiso() {
             </Button>
           </form>
         </EmptyContent>
-        {sesion ? <p className="mt-4 text-xs text-muted-foreground">Sesión: {sesion.correo}</p> : null}
+        <p className="mt-4 text-xs text-muted-foreground">Sesión: {sesion.correo}</p>
       </Empty>
     </main>
   );
