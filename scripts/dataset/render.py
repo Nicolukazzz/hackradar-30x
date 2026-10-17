@@ -25,9 +25,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
-import dinero
-from mundo import CORREO_CUENTAS, EMPRESA_FACTURAR_A
-from textos import ETIQUETAS, cuenta_texto, emisor, es_cuenta_de_cobro, importe, lineas_folleto, mensaje_chat
+from mundo import CORREO_CUENTAS
+from textos import bloques_factura, lineas_folleto, mensaje_chat
 
 rl_config.invariant = 1
 
@@ -42,41 +41,6 @@ GRIS = HexColor("#5B6661")
 LINEA = HexColor("#D5D9D3")
 FONDO = HexColor("#F3F4F0")
 ACENTO = {"es": HexColor("#2F5D50"), "en": HexColor("#1F4FD1"), "pt": HexColor("#7A4900")}
-
-
-# ---------------------------------------------------------------------------
-# Modelo de página común a PDF e imagen
-# ---------------------------------------------------------------------------
-
-def bloques_factura(fac: dict, idioma: str, variante: str | None) -> dict:
-    """Contenido de la factura organizado por zonas de la página."""
-    et = ETIQUETAS[idioma]
-    em = emisor(fac)
-    titulo = et["cuenta_cobro"] if es_cuenta_de_cobro(fac) else et["titulo"]
-    totales = []
-    if fac["subtotal"] is not None:
-        totales.append((et["subtotal"], importe(fac, fac["subtotal"], idioma)))
-        totales.append((fac["etiqueta_impuesto"], importe(fac, fac["impuestos"], idioma)))
-    totales.append((et["total"], importe(fac, fac["total_impreso"], idioma)))
-    referencia = None
-    if fac["referencia"]:
-        referencia = fac["referencia"] + (f" · hito {fac['hito']}" if fac["hito"] else "")
-    return {
-        "emisor": em["nombre"], "ciudad": em["ciudad"], "id_fiscal": em["id_fiscal"],
-        "titulo": titulo, "numero": fac["numero"],
-        "fechas": [(et["emision"], dinero.fecha(fac["fecha_emision"], idioma)),
-                   (et["vence"], dinero.fecha(fac["fecha_vencimiento"], idioma))],
-        "facturar": (et["facturar"], EMPRESA_FACTURAR_A),
-        "cabecera_tabla": (et["concepto"], et["importe"]),
-        "item": (fac["concepto"], importe(fac, fac["subtotal"] if fac["subtotal"] is not None else fac["total_impreso"], idioma)),
-        "totales": totales,
-        "referencia": (et["referencia"], referencia) if referencia else None,
-        "pagar": (et["pagar"], [em["nombre"], em["cuenta"]["banco"], cuenta_texto(fac, idioma)]),
-        "nota": (et["notas"], fac["nota"]) if fac["nota"] else None,
-        "sello": et["recordatorio"] if variante == "recordatorio" else None,
-        "pie": et["pie"],
-        "acento": idioma,
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -264,7 +228,8 @@ def _fuente(tam: int, negrita: bool = False) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(FUENTE_NEGRITA if negrita else FUENTE, tam)
 
 
-def png_factura(fac: dict, idioma: str, semilla: int, legible: bool = True) -> bytes:
+def hoja_factura(fac: dict, idioma: str, legible: bool = True) -> tuple[Image.Image, list[tuple[int, int, int, int]]]:
+    """Factura impresa (sin efecto foto) y las zonas donde aparece un monto."""
     b = bloques_factura(fac, idioma, None)
     w, h = 1275, 1650  # carta a 150 dpi
     hoja = Image.new("RGB", (w, h), (252, 251, 247))
@@ -298,18 +263,17 @@ def png_factura(fac: dict, idioma: str, semilla: int, legible: bool = True) -> b
     y += 80
     d.text((m + 20, y), b["item"][0], font=_fuente(25), fill=tinta)
     d.text((w - m - 20, y), b["item"][1], font=_fuente(25), fill=tinta, anchor="ra")
+    zonas_monto = [(w - m - 420, y - 15, w - m, y + 45)]  # importe de la fila
     y += 50
     d.line([m, y, w - m, y], fill=linea, width=2)
 
     y += 40
-    caja_total = None
     for i, (etiqueta, valor) in enumerate(b["totales"]):
         es_total = i == len(b["totales"]) - 1
         tam = 30 if es_total else 23
         d.text((w - m - 380, y), etiqueta, font=_fuente(tam, es_total), fill=tinta if es_total else gris, anchor="ra")
         d.text((w - m - 20, y), valor, font=_fuente(tam, es_total), fill=tinta, anchor="ra")
-        if es_total:
-            caja_total = (w - m - 520, y - 15, w - m, y + 60)
+        zonas_monto.append((w - m - 520, y - 15, w - m, y + 50))
         y += 48
 
     if b["referencia"]:
@@ -326,9 +290,16 @@ def png_factura(fac: dict, idioma: str, semilla: int, legible: bool = True) -> b
 
     d.text((m, h - 90), b["pie"], font=_fuente(17), fill=gris)
 
-    if not legible and caja_total:
-        zona = hoja.crop(caja_total).filter(ImageFilter.GaussianBlur(14))
-        hoja.paste(zona, caja_total[:2])
+    if not legible:  # ningún monto debe poder leerse: fila del concepto y todos los totales
+        margen = 30  # se difumina con contexto y se pega solo el centro: sin borde visible
+        for x0, y0, x1, y1 in zonas_monto:
+            borrosa = hoja.crop((x0 - margen, y0 - margen, x1 + margen, y1 + margen)).filter(ImageFilter.GaussianBlur(14))
+            hoja.paste(borrosa.crop((margen, margen, margen + x1 - x0, margen + y1 - y0)), (x0, y0))
+    return hoja, zonas_monto
+
+
+def png_factura(fac: dict, idioma: str, semilla: int, legible: bool = True) -> bytes:
+    hoja, _ = hoja_factura(fac, idioma, legible)
 
     # Efecto foto: mesa de fondo, leve rotación, ruido y desenfoque.
     flujo = hashlib.shake_256(f"blinka-foto-{semilla}".encode())

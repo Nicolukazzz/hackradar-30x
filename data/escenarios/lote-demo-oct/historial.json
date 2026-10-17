@@ -75,7 +75,7 @@
         "fuente": "parser"
       },
       "idioma": "en",
-      "texto_crudo": "CloudNorte S.A.S.\nBogotá, Colombia\nNIT 999.000.102-1 (ficticio)\nINVOICE # INV-2195\nIssue date: Sep 8, 2026\nDue date: Sep 22, 2026\nBill to: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nDescription: Hosting and CDN — September (PO OC-118)\nTotal: USD 1,240.00\nReference: OC-118\nPay to: CloudNorte S.A.S. · Banco Llanos Unidos · Account 999-000000-5530\nFictitious document generated for the Blinka challenge. Not a tax document.",
+      "texto_crudo": "CloudNorte S.A.S.\nBogotá, Colombia\nNIT 999.000.102-1 (ficticio)\nINVOICE # INV-2195\nIssue date: Sep 8, 2026\nDue date: Sep 22, 2026\nBill to: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nDescription: Hosting and CDN — September (PO OC-118) · Amount: USD 1,240.00\nTotal: USD 1,240.00\nReference: OC-118\nPay to: CloudNorte S.A.S. · Banco Llanos Unidos · Account 999-000000-5530\nFictitious document generated for the Blinka challenge. Not a tax document.",
       "senales_llm": {
         "instrucciones_sospechosas": []
       },
@@ -159,7 +159,7 @@
         "fuente": "parser"
       },
       "idioma": "es",
-      "texto_crudo": "Ana María Gómez\nMedellín, Colombia\nC.C. 999.000.101 (ficticio)\nCUENTA DE COBRO N.º FAC-1032\nFecha de emisión: 10/09/2026\nVence: 25/09/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Diseño de producto — septiembre\nTotal: COP 8.400.000\nReferencia: CT-AMG\nPagar a: Ana María Gómez · Banco Cafetal · Cuenta de ahorros 999-000000-3021\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "texto_crudo": "Ana María Gómez\nMedellín, Colombia\nC.C. 999.000.101 (ficticio)\nCUENTA DE COBRO N.º FAC-1032\nFecha de emisión: 10/09/2026\nVence: 25/09/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Diseño de producto — septiembre · Importe: COP 8.400.000\nTotal: COP 8.400.000\nReferencia: CT-AMG\nPagar a: Ana María Gómez · Banco Cafetal · Cuenta de ahorros 999-000000-3021\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
       "senales_llm": {
         "instrucciones_sospechosas": []
       },
@@ -248,7 +248,7 @@
         "fuente": "parser"
       },
       "idioma": "es",
-      "texto_crudo": "Juan Pablo Ortiz\nCali, Colombia\nC.C. 999.000.104 (ficticio)\nCUENTA DE COBRO N.º JPO-09\nFecha de emisión: 14/09/2026\nVence: 30/09/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Hito 1 de 3 — tablero de datos\nTotal: USD 900,00\nReferencia: CT-JPO · hito 1\nPagar a: Juan Pablo Ortiz · Banco Cafetal · Cuenta de ahorros 999-000000-8812\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "texto_crudo": "Juan Pablo Ortiz\nCali, Colombia\nC.C. 999.000.104 (ficticio)\nCUENTA DE COBRO N.º JPO-09\nFecha de emisión: 14/09/2026\nVence: 30/09/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Hito 1 de 3 — tablero de datos · Importe: USD 900,00\nTotal: USD 900,00\nReferencia: CT-JPO · hito 1\nPagar a: Juan Pablo Ortiz · Banco Cafetal · Cuenta de ahorros 999-000000-8812\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
       "senales_llm": {
         "instrucciones_sospechosas": []
       },
@@ -332,7 +332,7 @@
         "fuente": "parser"
       },
       "idioma": "pt",
-      "texto_crudo": "Rio Verde Traduções Ltda.\nCuritiba, Brasil\nCNPJ 99.900.011/0001-11 (fictício)\nFATURA Nº RV-1171\nData de emissão: 30/09/2026\nVencimento: 15/10/2026\nFaturar para: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nDescrição: Tradução e localização — outubro\nTotal: BRL 11.000,00\nReferência: HON-RV\nPagar a: Rio Verde Traduções Ltda. · Banco Ipê Dourado · Conta corrente 999-0000-5512\nDocumento fictício gerado para o desafio Blinka. Sem validade fiscal.",
+      "texto_crudo": "Rio Verde Traduções Ltda.\nCuritiba, Brasil\nCNPJ 99.900.011/0001-11 (fictício)\nFATURA Nº RV-1171\nData de emissão: 30/09/2026\nVencimento: 15/10/2026\nFaturar para: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nDescrição: Tradução e localização — outubro · Valor: BRL 11.000,00\nTotal: BRL 11.000,00\nReferência: HON-RV\nPagar a: Rio Verde Traduções Ltda. · Banco Ipê Dourado · Conta corrente 999-0000-5512\nDocumento fictício gerado para o desafio Blinka. Sem validade fiscal.",
       "senales_llm": {
         "instrucciones_sospechosas": []
       },
@@ -416,7 +416,7 @@
         "fuente": "parser"
       },
       "idioma": "es",
-      "texto_crudo": "Valeria Ruiz\nRosario, Argentina\nCUIT 99-90001120-2 (ficticio)\nFACTURA N.º VR-10\nFecha de emisión: 30/09/2026\nVence: 15/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: QA funcional — octubre\nTotal: USD 2.500,00\nReferencia: VR-QA\nPagar a: Valeria Ruiz · Banco Pampero Sur · CBU 9990000300000000007781\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "texto_crudo": "Valeria Ruiz\nRosario, Argentina\nCUIT 99-90001120-2 (ficticio)\nFACTURA N.º VR-10\nFecha de emisión: 30/09/2026\nVence: 15/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: QA funcional — octubre · Importe: USD 2.500,00\nTotal: USD 2.500,00\nReferencia: VR-QA\nPagar a: Valeria Ruiz · Banco Pampero Sur · CBU 9990000300000000007781\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
       "senales_llm": {
         "instrucciones_sospechosas": []
       },
@@ -500,7 +500,7 @@
         "fuente": "parser"
       },
       "idioma": "es",
-      "texto_crudo": "Bitácora Contable S.A.S.\nBucaramanga, Colombia\nNIT 999.000.113-4 (ficticio)\nFACTURA N.º BC-3290\nFecha de emisión: 01/10/2026\nVence: 16/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Contabilidad — octubre\nTotal: COP 12.600.000\nReferencia: HON-BC\nPagar a: Bitácora Contable S.A.S. · Banco Cafetal · Cuenta de ahorros 999-000000-4408\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "texto_crudo": "Bitácora Contable S.A.S.\nBucaramanga, Colombia\nNIT 999.000.113-4 (ficticio)\nFACTURA N.º BC-3290\nFecha de emisión: 01/10/2026\nVence: 16/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Contabilidad — octubre · Importe: COP 12.600.000\nTotal: COP 12.600.000\nReferencia: HON-BC\nPagar a: Bitácora Contable S.A.S. · Banco Cafetal · Cuenta de ahorros 999-000000-4408\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
       "senales_llm": {
         "instrucciones_sospechosas": []
       },
@@ -586,7 +586,7 @@
         "fuente": "parser"
       },
       "idioma": "es",
-      "texto_crudo": "Pampa Hardware S.A.\nMendoza, Argentina\nCUIT 99-90001140-4 (ficticio)\nFACTURA N.º PH-0441\nFecha de emisión: 02/10/2026\nVence: 17/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Estaciones de trabajo (OC-119)\nTotal: USD 12.000,00\nReferencia: OC-119\nPagar a: Pampa Hardware S.A. · Banco Pampero Sur · CBU 9990000300000000003365\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "texto_crudo": "Pampa Hardware S.A.\nMendoza, Argentina\nCUIT 99-90001140-4 (ficticio)\nFACTURA N.º PH-0441\nFecha de emisión: 02/10/2026\nVence: 17/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Estaciones de trabajo (OC-119) · Importe: USD 12.000,00\nTotal: USD 12.000,00\nReferencia: OC-119\nPagar a: Pampa Hardware S.A. · Banco Pampero Sur · CBU 9990000300000000003365\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
       "senales_llm": {
         "instrucciones_sospechosas": []
       },
@@ -738,7 +738,7 @@
         "fuente": "parser"
       },
       "idioma": "es",
-      "texto_crudo": "Grupo Alba Logística S.A. de C.V.\nMonterrey, México\nRFC FICT990010GA1 (ficticio)\nFACTURA N.º ALBA-7781\nFecha de emisión: 04/10/2026\nVence: 19/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Logística regional Q4 (OC-115)\nTotal: MXN 259,000.00\nReferencia: OC-115\nPagar a: Grupo Alba Logística S.A. de C.V. · Banco Nopal · CLABE 999180000000002290\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "texto_crudo": "Grupo Alba Logística S.A. de C.V.\nMonterrey, México\nRFC FICT990010GA1 (ficticio)\nFACTURA N.º ALBA-7781\nFecha de emisión: 04/10/2026\nVence: 19/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Logística regional Q4 (OC-115) · Importe: MXN 259,000.00\nTotal: MXN 259,000.00\nReferencia: OC-115\nPagar a: Grupo Alba Logística S.A. de C.V. · Banco Nopal · CLABE 999180000000002290\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
       "senales_llm": {
         "instrucciones_sospechosas": []
       },
@@ -890,7 +890,7 @@
         "fuente": "parser"
       },
       "idioma": "es",
-      "texto_crudo": "Pampa Hardware S.A.\nMendoza, Argentina\nCUIT 99-90001140-4 (ficticio)\nFACTURA N.º PH-0447\nFecha de emisión: 08/10/2026\nVence: 23/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Monitores y periféricos (OC-120)\nTotal: USD 4.100,00\nReferencia: OC-120\nPagar a: Pampa Hardware S.A. · Banco Pampero Sur · CBU 9990000300000000003365\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "texto_crudo": "Pampa Hardware S.A.\nMendoza, Argentina\nCUIT 99-90001140-4 (ficticio)\nFACTURA N.º PH-0447\nFecha de emisión: 08/10/2026\nVence: 23/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Monitores y periféricos (OC-120) · Importe: USD 4.100,00\nTotal: USD 4.100,00\nReferencia: OC-120\nPagar a: Pampa Hardware S.A. · Banco Pampero Sur · CBU 9990000300000000003365\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
       "senales_llm": {
         "instrucciones_sospechosas": []
       },
@@ -1005,7 +1005,7 @@
         "fuente": "parser"
       },
       "idioma": "es",
-      "texto_crudo": "Nova Prints\nPuebla, México\nRFC FICT990099NP0 (ficticio)\nFACTURA N.º BR-12\nFecha de emisión: 12/10/2026\nVence: 27/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Impresión de material POP\nTotal: USD 780.00\nPagar a: Nova Prints · Banco Nopal · CLABE 999180000000000451\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "texto_crudo": "Nova Prints\nPuebla, México\nRFC FICT990099NP0 (ficticio)\nFACTURA N.º BR-12\nFecha de emisión: 12/10/2026\nVence: 27/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Impresión de material POP · Importe: USD 780.00\nTotal: USD 780.00\nPagar a: Nova Prints · Banco Nopal · CLABE 999180000000000451\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
       "senales_llm": {
         "instrucciones_sospechosas": []
       },
@@ -1091,7 +1091,7 @@
         "fuente": "parser"
       },
       "idioma": "es",
-      "texto_crudo": "Kora Digital S.A.S.\nBarranquilla, Colombia\nNIT 999.000.109-9 (ficticio)\nFACTURA N.º KX-090\nFecha de emisión: 13/10/2026\nVence: 28/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Licencia anual plataforma de marketing\nTotal: USD 3.400,00\nReferencia: KX\nPagar a: Kora Digital S.A.S. · Banco Llanos Unidos · Cuenta de ahorros 999-000000-6120\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
+      "texto_crudo": "Kora Digital S.A.S.\nBarranquilla, Colombia\nNIT 999.000.109-9 (ficticio)\nFACTURA N.º KX-090\nFecha de emisión: 13/10/2026\nVence: 28/10/2026\nFacturar a: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nConcepto: Licencia anual plataforma de marketing · Importe: USD 3.400,00\nTotal: USD 3.400,00\nReferencia: KX\nPagar a: Kora Digital S.A.S. · Banco Llanos Unidos · Cuenta de ahorros 999-000000-6120\nDocumento ficticio generado para el reto Blinka. Sin validez fiscal.",
       "senales_llm": {
         "instrucciones_sospechosas": []
       },
