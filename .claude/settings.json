@@ -67,9 +67,7 @@
       "mcp__supabase__list_extensions",
       "mcp__supabase__list_migrations",
       "mcp__supabase__get_logs",
-      "mcp__supabase__get_advisors",
-      "mcp__supabase__list_projects",
-      "mcp__supabase__get_project"
+      "mcp__supabase__get_advisors"
     ],
     "deny": [
       "Read(./.env)",
@@ -79,7 +77,8 @@
       "Bash(git push --force*)",
       "Bash(git push -f*)",
       "Bash(git reset --hard*)",
-      "Bash(rm -rf *)"
+      "Bash(rm -rf *)",
+      "mcp__claude_ai_Supabase"
     ]
   },
   "hooks": {

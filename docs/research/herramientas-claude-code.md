@@ -15,7 +15,7 @@ Qué MCPs y skills dejar configurados en el repo para que los 3 agentes construy
 | `playwright` | Abrir la app, hacer clic, sacar capturas, revisar pantallas | Gratis |
 | `shadcn` | Buscar, ver y agregar componentes de shadcn/ui y de registros comunitarios gratuitos | Gratis, sin llave |
 | `next-devtools` | Leer errores de build y runtime, rutas y logs del `next dev` en vivo (Next 16+ expone `/_next/mcp`) | Gratis |
-| `21st` | Buscar componentes en 21st.dev (HTTP `https://21st.dev/api/mcp`, header `x-api-key`) | Llave gratis en [21st.dev/mcp](https://21st.dev/mcp); la generación con IA puede requerir acceso aparte, `search` y `get_component` funcionan igual |
+| `21st` | Buscar componentes en 21st.dev (HTTP `https://21st.dev/api/mcp`, header `x-api-key`) | Free: búsquedas sin límite, **2 `get_component` por día**, sin generación IA. Usar para buscar ideas; instalar preferentemente vía `shadcn` |
 | `supabase` | Tablas, migraciones, logs y docs de Supabase (HTTP `https://mcp.supabase.com/mcp`, OAuth) | Gratis (free tier de Supabase) |
 
 Versiones fijadas (`@playwright/mcp@0.0.83`, `shadcn@4.22.0`, `next-devtools-mcp@0.4.0`) para que una actualización no rompa la demo. Subirlas a propósito.
@@ -26,7 +26,7 @@ Versiones fijadas (`@playwright/mcp@0.0.83`, `shadcn@4.22.0`, `next-devtools-mcp
 1. Crear la cuenta del equipo en supabase.com con el correo elegido, en una ventana privada (o cerrar sesión de la personal).
 2. En `claude`: `/mcp` → `supabase` → *Authenticate*. Si el navegador abre la cuenta personal, copiar la URL que muestra Claude Code y pegarla en la ventana privada.
 3. Conceder acceso solo a la organización del equipo.
-4. Cuando exista el proyecto, fijar `?project_ref=<ref>` en la URL de `.mcp.json`: limita el MCP a ese proyecto y quita las herramientas de cuenta.
+4. Proyecto fijado: org `Hackaton30x`, `project_ref=ugmwsrtrfgemqvnbcszw` en `.mcp.json` (limita el MCP a ese proyecto). El conector `claude.ai Supabase` (cuenta personal) está bloqueado en `deny` de `.claude/settings.json`.
 El server de proyecto se llama `supabase`; el plugin `supabase` del usuario es otro server con su propio token, así no se mezclan.
 
 `shadcn` necesita `components.json` en la raíz (lo crea `npx shadcn init` en el paso de esqueleto). Sin él, el MCP arranca pero no sabe dónde instalar.
