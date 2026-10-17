@@ -12,7 +12,7 @@ import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
 
 import { coincideFiltro, conVinculosTelegram, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
-import type { ArchivoGuardado, EscenarioCargado, Repositorio, ResumenVersion } from "./repositorio";
+import type { ArchivoGuardado, CambiosEmpresa, EscenarioCargado, Repositorio, ResumenVersion } from "./repositorio";
 
 
 type Estado = {
@@ -74,6 +74,8 @@ export async function crearRepositorioMemoria(
   }
 
   let s = await estadoInicial();
+  // La empresa no es parte de una corrida de demo (#84): reiniciar no deshace lo editado.
+  let empresa = structuredClone(s.datos.empresa);
   const enExclusiva = crearCola();
   let reservadas = new Set<string>();
   const vigente = (): Reglas => versionVigente(s.versiones);
@@ -81,7 +83,14 @@ export async function crearRepositorioMemoria(
 
   return {
     async datosComunes() {
-      return { ...s.datos, reglas: { vigente: vigente(), versiones: [...s.versiones] } };
+      return { ...s.datos, empresa: structuredClone(empresa), reglas: { vigente: vigente(), versiones: [...s.versiones] } };
+    },
+    async empresa() {
+      return structuredClone(empresa);
+    },
+    async guardarEmpresa(cambios: CambiosEmpresa) {
+      empresa = { ...empresa, ...structuredClone(cambios) };
+      return structuredClone(empresa);
     },
     async reglasVigentes() {
       return vigente();

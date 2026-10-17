@@ -128,6 +128,7 @@ Convenciones: montos en **centavos enteros** (`number` entero, nunca float para 
 export type Moneda = 'USD'|'EUR'|'COP'|'BRL'|'MXN'|'ARS'|'CLP'|'PEN'|'BOB'|'CRC'|'ZAR'|'USDC';
 export type Dinero = { centavos: number; moneda: Moneda };           // COP 8.400.000 → { centavos: 840000000, moneda: 'COP' }
 
+// #84: en deploy se lee de la tabla `empresas` (Repositorio.empresa()); data/empresa.json es el valor inicial.
 export type Empresa = {
   id: string;                       // 'nebula'
   nombre: string;                   // 'Nébula Studio Inc.'
@@ -401,7 +402,7 @@ export type EntradaRegistro = {
   id: string;                    // 'REG-2026-000011' consecutivo
   momento: string;               // '2026-10-16T09:22:07-05:00'
   actor: { tipo: 'agente' } | { tipo: 'humano'; aprobador_id: string; nombre: string };
-  tipo: 'DECISION_AGENTE'|'DECISION_HUMANA'|'CAMBIO_REGLAS'|'CAMBIO_BENEFICIARIOS';
+  tipo: 'DECISION_AGENTE'|'DECISION_HUMANA'|'CAMBIO_REGLAS'|'CAMBIO_BENEFICIARIOS'|'CAMBIO_EMPRESA'; // CAMBIO_EMPRESA: #84
   ref_interna: string;           // 'INT-2026-000011'
   factura_numero: string | null; // 'OMI-3381'
   beneficiario: string | null;
@@ -621,6 +622,7 @@ El modo `golden` (§14) incluye el texto de los adjuntos en `texto_crudo`: un ex
 | `GET /api/equipo` | — | `{ miembros: Miembro[], invitaciones: (Invitacion & { estado })[] }` | Equipo (admin) |
 | `POST /api/equipo/invitaciones` | `{ rol, limite_aprobacion_usd?, correo_esperado, dias_vigencia? }` | `{ invitacion, enlace }` (el token solo viaja aquí; no se envía correo, el admin copia el enlace) | Equipo (admin) |
 | `DELETE /api/equipo/invitaciones/:id` | — | `{ revocada: true }` | Equipo (admin) |
+| `GET /api/empresa` · `PATCH /api/empresa` | `{ nombre?, jurisdiccion?, paises_operacion? }` | `Empresa` · `{ empresa, entrada: EntradaRegistro \| null }` (entrada `CAMBIO_EMPRESA` si algo cambió) | Ajustes → Datos de la empresa (#84; PATCH solo admin) |
 | `PATCH /api/equipo/miembros/:id` · `DELETE` | `{ rol, limite_aprobacion_usd? }` | `Miembro` · `{ quitado: true }` (409 si la empresa se queda sin admin) | Equipo (admin) |
 
 Errores: `{ error: string }` con 400/401/403/404/409. El **401** lo emite `src/proxy.ts` para cualquier `/api/*` sin sesión válida, antes de llegar a la ruta (y `conSesion` lo repite en la ruta); 403 por CSRF (Origin ajeno) o por rol (#51: `conSesion(…, { permiso })`, con un mensaje que dice qué falta: sin empresa, no aprueba, solo admin); el resto los emite la ruta. Permisos por ruta: aprobar/rechazar → admin o aprobador; `POST /api/reglas`, `/api/equipo/**` y `/api/demo/reiniciar` → admin (reiniciar además exige modo demo y abre una corrida nueva, #76); el resto → cualquier miembro. Toda escritura pasa por el dominio, nunca SQL directo desde la ruta. El actor (quién aprueba) sale de la sesión de Supabase, no del cuerpo de la petición.
@@ -628,7 +630,7 @@ Errores: `{ error: string }` con 400/401/403/404/409. El **401** lo emite `src/p
 ## 13. Pantallas
 
 Comunes a las 5 (layout del prototipo, ancho de diseño 1440 px, usable a 390 px):
-- Barra lateral izquierda oscura (`#101614`): rol "Tesorero", "Agente de cuentas por pagar", bloque Empresa (Nébula Studio Inc. · Delaware, EE. UU. · opera en 5 países), navegación **Bandeja · Aprobaciones (badge con pendientes) · Reglas · Registro**, estado "● Agente activo", pie "Reglas v7 · solo decide, nunca mueve dinero. Prototipo para el Reto Blinka."
+- Barra lateral izquierda oscura (`#101614`): rol "Tesorero", "Agente de cuentas por pagar", bloque Empresa (nombre · jurisdicción · opera en N países, de la base desde #84), navegación **Bandeja · Aprobaciones (badge con pendientes) · Reglas · Registro**, estado "● Agente activo", pie "Reglas v7 · solo decide, nunca mueve dinero. Prototipo para el Reto Blinka."
 - Píldoras de decisión: Pagada / Frenada / Escalada / Aprobada por persona / Rechazada por persona (colores §15).
 - Montos e ids en Geist Mono. Botones ≥ 44 px de alto.
 

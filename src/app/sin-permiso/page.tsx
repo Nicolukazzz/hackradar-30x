@@ -7,6 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { NOMBRE_ROL } from "@/lib/auth/permisos";
 import { obtenerSesion } from "@/lib/auth/sesion";
+import { obtenerEmpresa } from "@/app/_datos/empresa";
 
 export const metadata: Metadata = { title: "Sin permiso · Agente de cuentas por pagar" };
 
@@ -38,6 +39,7 @@ export default async function PaginaSinPermiso() {
 
   const rol = sesion.rol;
   const sinEmpresa = rol === null;
+  const empresa = sinEmpresa ? await obtenerEmpresa() : null;
 
   return (
     <main className="flex min-h-svh items-center justify-center bg-background px-4">
@@ -47,7 +49,7 @@ export default async function PaginaSinPermiso() {
           <EmptyTitle>{sinEmpresa ? "Tu cuenta aún no pertenece a la empresa" : "Tu rol no tiene acceso a esta sección"}</EmptyTitle>
           <EmptyDescription>
             {sinEmpresa
-              ? "Pide a un administrador de Nébula Studio un enlace de invitación y ábrelo con esta cuenta. Hasta entonces no ves facturas ni decisiones."
+              ? `Pide a un administrador${empresa ? ` de ${empresa.nombre}` : ""} que te agregue desde Ajustes → Equipo. Hasta entonces no ves facturas ni decisiones.`
               : `Entraste como ${NOMBRE_ROL[rol]}. Si necesitas más acceso, pídeselo a un administrador.`}
           </EmptyDescription>
         </EmptyHeader>

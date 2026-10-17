@@ -192,7 +192,7 @@ export type ResultadoMotor = {
 
 export type ActorRegistro = { tipo: "agente" } | { tipo: "humano"; aprobador_id: string; nombre: string };
 
-export type TipoEntrada = "DECISION_AGENTE" | "DECISION_HUMANA" | "CAMBIO_REGLAS" | "CAMBIO_BENEFICIARIOS";
+export type TipoEntrada = "DECISION_AGENTE" | "DECISION_HUMANA" | "CAMBIO_REGLAS" | "CAMBIO_BENEFICIARIOS" | "CAMBIO_EMPRESA";
 
 /** Registro append-only (§9). Nunca se edita ni se borra. */
 export type EntradaRegistro = {

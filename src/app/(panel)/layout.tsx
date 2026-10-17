@@ -5,6 +5,8 @@ import { contarPendientes } from "@/app/_datos/aprobaciones";
 import { AppSidebar, MarcaTesorero } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { obtenerSesion } from "@/lib/auth/sesion";
+import { obtenerEmpresa } from "@/app/_datos/empresa";
+import { resumenOperacion } from "@/empresa/datos";
 
 export default async function PanelLayout({ children }: LayoutProps<"/">) {
   // Sin sesión (o cuenta desactivada) → /entrar. Cuenta que no es miembro de la empresa (#51) → /sin-permiso.
@@ -16,6 +18,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/">) {
   const abierta = (await cookies()).get("sidebar_state")?.value !== "false";
   // Sin await: el badge de pendientes llega por streaming (Suspense en la barra lateral) y no frena la página.
   const pendientes = contarPendientes();
+  const empresa = await obtenerEmpresa();
 
   return (
     <SidebarProvider defaultOpen={abierta}>
@@ -25,7 +28,11 @@ export default async function PanelLayout({ children }: LayoutProps<"/">) {
       >
         Saltar al contenido
       </a>
-      <AppSidebar usuario={{ nombre: sesion.nombre, correo: sesion.correo, rol: sesion.rol }} pendientes={pendientes} />
+      <AppSidebar
+        usuario={{ nombre: sesion.nombre, correo: sesion.correo, rol: sesion.rol }}
+        empresa={empresa ? { nombre: empresa.nombre, resumen: resumenOperacion(empresa) } : null}
+        pendientes={pendientes}
+      />
       {/* Equivale a SidebarInset, pero como div: así la cabecera móvil es un banner propio y <main> solo tiene el contenido. */}
       <div data-slot="sidebar-inset" className="relative flex w-full min-w-0 flex-1 flex-col bg-background">
         {/* En móvil la barra lateral se vuelve menú superior: marca + botón que abre el panel. */}

@@ -32,6 +32,7 @@ export function FilaAjuste({
   titulo,
   valor,
   href,
+  alPulsar,
   proximamente = false,
 }: {
   icono: LucideIcon;
@@ -40,6 +41,8 @@ export function FilaAjuste({
   /** valor actual a la derecha ("USD", "Conectado"); una fila «Próximamente» no lo muestra */
   valor?: React.ReactNode;
   href?: string;
+  /** editar en el lugar (abre un diálogo) en vez de navegar */
+  alPulsar?: () => void;
   proximamente?: boolean;
 }) {
   const contenido = (
@@ -53,16 +56,21 @@ export function FilaAjuste({
       ) : valor ? (
         <span className="max-w-[45%] truncate text-right text-[14px] text-muted-foreground">{valor}</span>
       ) : null}
-      {href && !proximamente ? <ChevronRightIcon aria-hidden className="size-4 flex-none text-muted-foreground/70" /> : null}
+      {(href || alPulsar) && !proximamente ? <ChevronRightIcon aria-hidden className="size-4 flex-none text-muted-foreground/70" /> : null}
     </>
   );
   const clase = "flex min-h-14 items-center gap-3 px-4 py-2.5";
+  const interactiva = cn(clase, "w-full text-left transition-colors outline-none hover:bg-superficie-2 focus-visible:bg-superficie-2 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset");
   return (
     <li className="border-subtle not-first:border-t">
       {href && !proximamente ? (
-        <Link href={href} className={cn(clase, "transition-colors outline-none hover:bg-superficie-2 focus-visible:bg-superficie-2 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset")}>
+        <Link href={href} className={interactiva}>
           {contenido}
         </Link>
+      ) : alPulsar && !proximamente ? (
+        <button type="button" onClick={alPulsar} className={interactiva}>
+          {contenido}
+        </button>
       ) : (
         <div className={clase}>
           {contenido}

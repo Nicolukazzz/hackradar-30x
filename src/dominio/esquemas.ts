@@ -227,7 +227,7 @@ export const EntradaRegistroSchema = z.strictObject({
     z.strictObject({ tipo: z.literal("agente") }),
     z.strictObject({ tipo: z.literal("humano"), aprobador_id: texto, nombre: texto }),
   ]),
-  tipo: z.enum(["DECISION_AGENTE", "DECISION_HUMANA", "CAMBIO_REGLAS", "CAMBIO_BENEFICIARIOS"]),
+  tipo: z.enum(["DECISION_AGENTE", "DECISION_HUMANA", "CAMBIO_REGLAS", "CAMBIO_BENEFICIARIOS", "CAMBIO_EMPRESA"]),
   ref_interna: texto,
   factura_numero: z.string().nullable(),
   beneficiario: z.string().nullable(),
