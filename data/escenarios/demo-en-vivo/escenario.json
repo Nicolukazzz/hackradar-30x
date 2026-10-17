@@ -1,0 +1,8 @@
+{
+  "id": "demo-en-vivo",
+  "periodo": "2026-10",
+  "ahora": "2026-10-17T11:00:00-05:00",
+  "reglas_version": 7,
+  "presupuesto_inicial_pagado_usd": 5294405,
+  "descripcion": "Facturas nuevas para mandar en vivo por cada canal, después del lote demo ya resuelto."
+}

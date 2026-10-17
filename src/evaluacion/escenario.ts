@@ -49,6 +49,8 @@ export async function cargarSinDocumentos(id: string, dir?: string): Promise<Esc
 
 export async function cargarGolden(id: string, dir?: string): Promise<EscenarioGolden> {
   const [datos, escenario] = await Promise.all([cargarDatosComunes(dir), cargarEscenario(id, dir)]);
+  // Import dinámico: los parsers de PDF y correo solo se cargan para leer el texto de los adjuntos.
+  const { normalizarDocumento } = await import("@/extraccion/normalizar");
   const docs = await Promise.all(
     escenario.documentos.map(async (meta): Promise<DocGolden> => {
       const { archivo_original, ...entrante } = meta;
@@ -56,7 +58,9 @@ export async function cargarGolden(id: string, dir?: string): Promise<EscenarioG
       if (!esperado) throw new Error(`sin esperado para ${archivo_original}`);
       // Mismo DocumentoRecibido que produce la ingesta (#11), con la ref que espera el escenario.
       const { doc } = await recibir(entrante, esperado.ref_esperada, datos.beneficiarios, escenario.carpeta);
-      const texto = [meta.asunto, meta.texto_mensaje].filter(Boolean).join("\n");
+      // Un extractor perfecto también ve el texto de los adjuntos, aunque no se vea impreso (texto blanco, #8): R10 lo escanea.
+      const adjuntos = (await normalizarDocumento(doc, { dirBase: escenario.carpeta })).lineas_adjuntos;
+      const texto = [meta.asunto, meta.texto_mensaje, ...adjuntos].filter(Boolean).join("\n");
       return { doc, ext: extraccionDesdePlana(esperado.extraccion_esperada, texto), esperado };
     }),
   );

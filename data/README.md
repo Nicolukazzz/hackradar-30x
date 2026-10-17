@@ -21,6 +21,9 @@ data/
         adjuntos/               # adjuntos de cada .eml, ya extraídos
       esperado.json             # verdad de referencia, una entrada por documento
     trampas-extra/              # noviembre, 14 documentos: 3 PAGAR · 3 FRENAR · 7 ESCALAR · 1 no es factura
+    demo-en-vivo/               # 17 oct, después del lote resuelto: 4 facturas nuevas (PDF o foto) para mandar en vivo
+                                #   por cada canal (docs/demo.md): 1 PAGAR · 1 FRENAR (duplicado con otro número) ·
+                                #   2 ESCALAR (texto oculto en el PDF, proveedor nuevo por enlace)
 ```
 
 ## Cómo lo usa cada parte

@@ -94,6 +94,7 @@ def bloques_factura(fac: dict, idioma: str, variante: str | None) -> dict:
         "referencia": (et["referencia"], referencia) if referencia else None,
         "pagar": (et["pagar"], [em["nombre"], em["cuenta"]["banco"], cuenta_texto(fac, idioma)]),
         "nota": (et["notas"], fac["nota"]) if fac["nota"] else None,
+        "nota_oculta": fac.get("nota_oculta"),
         "sello": et["recordatorio"] if variante == "recordatorio" else None,
         "pie": et["pie"],
         "acento": idioma,
@@ -115,6 +116,8 @@ def lineas_factura(fac: dict, idioma: str, variante: str | None = None) -> list[
     lineas.append(f"{b['pagar'][0]}: {' · '.join(b['pagar'][1])}")
     if b["nota"]:
         lineas.append(f"{b['nota'][0]}: {b['nota'][1]}")
+    if b["nota_oculta"]:
+        lineas.append(b["nota_oculta"])
     lineas.append(b["pie"])
     return lineas
 
