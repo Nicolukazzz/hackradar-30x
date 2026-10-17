@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 
 ---
 
+## 2026-10-16 — Portal de proveedores (#12) sobre el login de #25
+- Estado: propuesta
+- Decisión: `/portal` usa el login OTP de Supabase (rol `proveedor`, `beneficiario_id` en `perfiles`), no la cookie demo `PORTAL_SECRET` que pedía el issue (el modo demo se quitó en #25). Una sola página: "Envía una factura" (`SubirDocumento` → `POST /api/documentos`, #26) y "Tus facturas" (`facturasDelProveedor` en `src/servicios/portal.ts`, también `GET /api/portal/facturas`). El proveedor ve solo documentos cuyo remitente está vinculado a su beneficiario (`beneficiario_remitente_id` de la sesión, nunca de la petición), con 4 estados (aprobada · en revisión · no se pagará · no es factura) y textos de `respuesta.ts`; la decisión humana reemplaza la del agente con un texto fijo (el comentario del aprobador es interno). Vincular Telegram queda para #13, pendiente de decidir el canal de chat.
+- Por qué: una sola identidad (Supabase) para panel y portal; el filtro por sesión impide ver facturas ajenas aunque se manipule la URL.
+- Quién: J
+
 ## 2026-10-16 — Subida segura (#26) y todas las rutas de API con `conRol`
 - Estado: propuesta
 - Decisión: `POST /api/documentos` (multipart, campo `archivo`, un archivo) para portal (proveedor) y panel (tesorería/aprobador, canal `carga_manual`, remitente `interno` = correo de la sesión). El tipo se decide por magic bytes (`src/ingesta/validar-archivo.ts`: PDF, PNG, JPG, XML; PDF cifrado o sin páginas → 422; > 10 MB → 413, cortando el cuerpo al pasar el límite; otro tipo → 415). El remitente del proveedor sale de la sesión (`portal_usuario` de su beneficiario), nunca del cuerpo. Se guarda como `{sha256}.{ext}`; el nombre original queda saneado como metadato del adjunto. 20 subidas/min por usuario (en memoria del proceso). Entra por `ingerir` + `procesarDocumento` (#11). Componente `SubirDocumento` en `src/components/subir-documento.tsx` (lo montan #12 y #6).
