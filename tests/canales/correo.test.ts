@@ -51,6 +51,62 @@ describe("correo .eml → DocumentoEntrante (#14)", () => {
   });
 });
 
+describe("imágenes incrustadas en el cuerpo (#88)", () => {
+  // 1×1 px: del tamaño de un logo de firma.
+  const LOGO = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  const parte = (mime: string, nombre: string, disposicion: "inline" | "attachment", bytes: Buffer) =>
+    [
+      `Content-Type: ${mime}; name="${nombre}"`,
+      `Content-Disposition: ${disposicion}; filename="${nombre}"`,
+      "Content-Transfer-Encoding: base64",
+      `Content-ID: <${nombre}>`,
+      "",
+      bytes.toString("base64").replaceAll(/.{76}/g, "$&\r\n"),
+    ].join("\r\n");
+  /** Como lo arma Gmail al arrastrar una imagen al cuerpo: multipart/related con la imagen inline. */
+  const eml = (...partes: string[]) =>
+    Buffer.from(
+      [
+        "From: Persona <persona@correo.example>",
+        "To: facturas.nebula.demo@gmail.com",
+        "Subject: Factura",
+        'Content-Type: multipart/related; boundary="b1"',
+        "",
+        "--b1",
+        "Content-Type: text/plain; charset=UTF-8",
+        "",
+        "Adjunto la factura.",
+        ...partes.flatMap((p) => ["--b1", p]),
+        "--b1--",
+        "",
+      ].join("\r\n"),
+    );
+  const opciones = { recibido_en: AHORA, exigirAutenticacion: false };
+
+  it("una foto de factura pegada en el cuerpo (Gmail: inline) cuenta como la factura", async () => {
+    const png = await readFile("data/escenarios/demo-en-vivo/documentos/001-f-0106.png");
+    const { entrada } = await correoAEntrada(eml(parte("image/png", "001-f-0106.png", "inline", png)), opciones);
+    expect(entrada.adjuntos).toHaveLength(1);
+    expect(entrada.adjuntos[0]).toMatchObject({ nombre: "001-f-0106.png", mime: "image/png" });
+    expect(sha(Buffer.from(entrada.adjuntos[0]!.bytes_base64!, "base64"))).toBe(sha(png));
+  });
+
+  it("con un adjunto normal, la imagen incrustada (logo de la firma) se ignora", async () => {
+    const pdf = await readFile("data/escenarios/lote-demo-oct/documentos/001-fac-1041.pdf");
+    const png = await readFile("data/escenarios/demo-en-vivo/documentos/001-f-0106.png");
+    const { entrada } = await correoAEntrada(
+      eml(parte("image/png", "logo.png", "inline", png), parte("application/pdf", "factura.pdf", "attachment", pdf)),
+      opciones,
+    );
+    expect(entrada.adjuntos.map((a) => a.nombre)).toEqual(["factura.pdf"]);
+  });
+
+  it("un logo diminuto incrustado, sin otro adjunto, no se toma por factura", async () => {
+    const { entrada } = await correoAEntrada(eml(parte("image/png", "logo.png", "inline", LOGO)), opciones);
+    expect(entrada.adjuntos).toHaveLength(0);
+  });
+});
+
 describe("recibirCorreo de punta a punta", () => {
   it("SPF fail: remitente no verificado aunque el From sea de CloudNorte → R11 escala y no se responde", async () => {
     const esc = await cargarEscenario("lote-demo-oct");
