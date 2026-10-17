@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { Boton } from "./boton";
 
-// Piezas comunes de los enlaces de invitación: equipo (#51, /equipo) y proveedores nuevos (#28, /proveedores).
+// Piezas comunes de los enlaces de invitación: equipo (#51, /ajustes/equipo) y proveedores nuevos (#28, /proveedores).
 
 export type Opcion = { value: string; label: string };
 

@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 
 // Ajustes estilo iPhone (#83): grupos de filas con ícono de color, título, valor actual y chevron. Cada fila abre una
 // pantalla con pasos; una fila sin `href` muestra su valor (solo lectura) o queda marcada «Próximamente».
+// Hecho a mano: `item` de shadcn no trae el grupo con separadores internos ni el ícono de color tipo iOS, y
+// adaptarlo pedía más código que estas filas.
 
 export function GrupoAjustes({ titulo, pie, children }: { titulo: string; pie?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -35,7 +37,7 @@ export function FilaAjuste({
   icono: LucideIcon;
   color?: keyof typeof COLORES;
   titulo: string;
-  /** valor actual a la derecha ("USD", "Conectado") */
+  /** valor actual a la derecha ("USD", "Conectado"); una fila «Próximamente» no lo muestra */
   valor?: React.ReactNode;
   href?: string;
   proximamente?: boolean;
@@ -51,7 +53,7 @@ export function FilaAjuste({
       ) : valor ? (
         <span className="max-w-[45%] truncate text-right text-[14px] text-muted-foreground">{valor}</span>
       ) : null}
-      {href ? <ChevronRightIcon aria-hidden className="size-4 flex-none text-muted-foreground/70" /> : null}
+      {href && !proximamente ? <ChevronRightIcon aria-hidden className="size-4 flex-none text-muted-foreground/70" /> : null}
     </>
   );
   const clase = "flex min-h-14 items-center gap-3 px-4 py-2.5";
@@ -62,7 +64,7 @@ export function FilaAjuste({
           {contenido}
         </Link>
       ) : (
-        <div className={clase} aria-disabled={proximamente || undefined}>
+        <div className={clase}>
           {contenido}
         </div>
       )}

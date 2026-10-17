@@ -1,9 +1,9 @@
 import { VolverAjustes } from "@/app/_componentes/ajustes";
+import { exigirMiembro } from "@/app/_datos/sesion";
 import { obtenerReglasConSimulacion } from "@/app/_datos/reglas";
 import { formatear, formatearUsd } from "@/dominio/dinero";
 import type { Beneficiario } from "@/dominio/tipos";
 import { permisoPara } from "@/lib/auth/permisos";
-import { obtenerSesion } from "@/lib/auth/sesion";
 import { descripcionBeneficiario } from "@/servicios/comun";
 
 import { EditorReglas, type FilaBeneficiario } from "../../_reglas/editor";
@@ -27,7 +27,9 @@ function fila(b: Beneficiario, limiteDefault: number): FilaBeneficiario {
 }
 
 export default async function ReglasPage() {
-  const [r, sesion] = await Promise.all([obtenerReglasConSimulacion(), obtenerSesion()]);
+  // Puerta propia: obtenerReglasConSimulacion no la tiene y una petición RSC directa se salta el layout.
+  const sesion = await exigirMiembro();
+  const r = await obtenerReglasConSimulacion();
   return (
     <>
       <VolverAjustes />

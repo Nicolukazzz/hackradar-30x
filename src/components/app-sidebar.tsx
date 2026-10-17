@@ -71,7 +71,6 @@ export function AppSidebar({
   pendientes: Promise<number | null>;
 }) {
   const ruta = usePathname();
-  const enlaces = navegacion;
   const { setOpenMobile } = useSidebar();
 
   return (
@@ -93,7 +92,7 @@ export function AppSidebar({
           <SidebarGroupContent>
             <nav aria-label="Principal">
               <SidebarMenu className="gap-1">
-                {enlaces.map(({ titulo, href, icono: Icono }) => {
+                {navegacion.map(({ titulo, href, icono: Icono }) => {
                   const activa = href === "/" ? ruta === "/" : ruta.startsWith(href);
                   return (
                     <SidebarMenuItem key={href}>

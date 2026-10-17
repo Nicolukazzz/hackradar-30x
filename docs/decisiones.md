@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 ```
 
 ---
+## 2026-10-17 — Ajustes estilo iPhone; Reglas y Equipo dentro de Ajustes (#83)
+- Estado: propuesta
+- Decisión: nueva pantalla `/ajustes` con grupos de filas (Cuenta · Empresa · Canales): ícono, título, valor actual y chevron; cada fila abre su pantalla. Reglas pasa a `/ajustes/reglas` y Equipo a `/ajustes/equipo` (redirecciones permanentes desde `/reglas` y `/equipo` en `next.config.ts`). Barra lateral: Bandeja · Aprobaciones · Registro · Proveedores · Ajustes. Lo que aún no existe (datos de empresa #84, moneda #86) se ve como «Próximamente». Un canal se muestra conectado solo si están su nombre y su secreto.
+- Por qué: la configuración estaba repartida en la barra lateral; un solo lugar, por pasos, es más fácil de entender y prepara empresa y moneda editables.
+- Quién: J
+
 ## 2026-10-17 — Login solo para entrar; código solo para seguridad (#81)
 - Estado: propuesta
 - Decisión: `/entrar` deja de crear cuentas (sin pestaña «Crear cuenta», sin pasos de confirmar ni reenviar código): las crea un admin con «Crear empleado» (#80). Queda iniciar sesión y «¿Olvidaste tu contraseña?» con código de 6 dígitos. El código está centrado y es un componente reutilizable (`src/components/campo-codigo.tsx`) para cambiar la contraseña en Ajustes (#82). Registro público apagado en Supabase (`enable_signup = false` en `supabase/config.toml` y en el dashboard del equipo); la admin API sigue creando cuentas. Una cuenta vieja sin confirmar ve «pide a tu administrador que te cree la cuenta de nuevo».
