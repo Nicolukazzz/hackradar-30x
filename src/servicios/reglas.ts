@@ -1,7 +1,7 @@
 // GET/POST /api/reglas y POST /api/reglas/simular (§12, pantalla §13.4).
 
 import type { Aprobador, Beneficiario, EntradaRegistro, Moneda, Reglas, TablaTasas } from "@/dominio/tipos";
-import { evaluarLote, type ReporteEvaluacion } from "@/evaluacion/evaluar";
+import { evaluarEscenario, type ReporteEvaluacion } from "@/evaluacion/evaluar";
 import type { Repositorio, ResumenVersion } from "@/repositorio/repositorio";
 
 export type UsoTasa = { moneda: Moneda; tasa: string; facturas: number };
@@ -59,12 +59,9 @@ export async function obtenerReglas(repo: Repositorio): Promise<RespuestaReglas>
  * y compara con el esperado (§14, modo golden).
  */
 export async function simularReglas(repo: Repositorio, reglas: Reglas): Promise<ReporteEvaluacion> {
-  const [esc, datos, registro] = await Promise.all([repo.escenario(), repo.datosComunes(), repo.registro()]);
+  const esc = await repo.escenario();
   if (!esc) throw new ErrorReglas(409, "No hay un escenario cargado para simular.");
-  // El lote completo del escenario: los procesados y los que aún esperan.
-  const golden = await repo.documentosEscenario();
-  const historial = registro.slice(0, esc.entradas_importadas);
-  return evaluarLote(golden, { datos, reglas, historial, ahora: esc.config.ahora });
+  return evaluarEscenario(esc.config.id, { extraccion: "golden", reglas, repo });
 }
 
 /**
