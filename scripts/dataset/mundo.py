@@ -232,6 +232,11 @@ EXTERNOS = {
         "id_fiscal": "RUC 999-0001-7712 (ficticio)", "correo": "facturacion@omicron-pagos.example",
         "cuenta": _cuenta("cuenta", BANCOS["PA"], "7712"),
     },
+    "lumen-diseno": {
+        "nombre": "Lumen Diseño S.A.S.", "pais": "CO", "ciudad": "Medellín, Colombia",
+        "id_fiscal": "NIT 999.888.777-1 (ficticio)", "correo": "hola@lumendiseno.example",
+        "cuenta": _cuenta("cuenta", BANCOS["CO"], "6619"),
+    },
     "nova-prints": {
         "nombre": "Nova Prints", "pais": "MX", "ciudad": "Puebla, México",
         "id_fiscal": "RFC FICT990099NP0 (ficticio)", "correo": "ventas@novaprints.example",

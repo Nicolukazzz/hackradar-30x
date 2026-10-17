@@ -46,7 +46,7 @@ def test_data_versionada_esta_al_dia(corrida):
 
 
 def test_lote_demo_reproduce_el_prototipo(corrida):
-    _, (lote, _) = corrida
+    _, (lote, _, _) = corrida
     assert verificar.aritmetica_lote_demo(lote) == []
     decisiones = [e["decision"] for e in lote["esperado"]]
     assert decisiones == ["PAGAR"] * 5 + ["FRENAR", "FRENAR", "ESCALAR", "ESCALAR", "ESCALAR", "ESCALAR", "FRENAR"]
@@ -54,7 +54,7 @@ def test_lote_demo_reproduce_el_prototipo(corrida):
 
 
 def test_oraculo_detecta_un_esperado_mal_escrito(corrida):
-    _, (lote, _) = corrida
+    _, (lote, _, _) = corrida
     roto = copy.deepcopy(lote)
     roto["esperado"][6]["decision"] = "PAGAR"  # PX-77 no cuadra con la OC: jamás PAGAR
     errores = verificar.oraculo_vs_esperado(roto)
@@ -70,7 +70,7 @@ def test_ningun_pagar_esperado_tiene_reglas_fallidas(corrida):
 
 
 def test_duplicado_exacto_comparte_hash(corrida):
-    _, (_, trampas) = corrida
+    _, (_, trampas, _) = corrida
     original, reenvio = trampas["generados"][0], trampas["generados"][1]
     assert original["sha256"] == reenvio["sha256"]
     assert original["archivo"] != reenvio["archivo"]
@@ -78,7 +78,7 @@ def test_duplicado_exacto_comparte_hash(corrida):
 
 def test_recordatorio_del_lote_demo_tiene_otro_hash(corrida):
     """INV-2210 duplicada debe detectarse por número, no por hash (PDF re-exportado)."""
-    _, (lote, _) = corrida
+    _, (lote, _, _) = corrida
     assert lote["generados"][1]["sha256"] != lote["generados"][5]["sha256"]
 
 
@@ -232,3 +232,14 @@ def test_limite_mensual_cero_no_cae_al_default():
 
 def test_tasa_texto_redondea_half_up_como_typescript():
     assert dinero.tasa_texto("MXN", {"MXN": "18.505"}) == "MXN 18,51"
+
+
+def test_demo_en_vivo_texto_oculto_y_duplicado_con_otro_numero(corrida):
+    """#8: la instrucción de ML-560 está en el texto del PDF (blanco, 4 pt), no en el correo; F-0106 repite F-0093."""
+    _, (_, _, demo) = corrida
+    ml = next(g for g in demo["generados"] if g["doc"]["slug"] == "ml-560")
+    assert "pre-aprobada" in ml["texto_crudo"]
+    assert "pre-aprobada" not in (ml["doc"]["mensaje"] or "")
+    decisiones = {e["documento"]: (e["decision"], e["reglas_que_fallan"]) for e in demo["esperado"]}
+    assert decisiones["documentos/001-f-0106.png"] == ("FRENAR", ["R2"])
+    assert decisiones["documentos/003-ml-560.eml"] == ("ESCALAR", ["R10"])

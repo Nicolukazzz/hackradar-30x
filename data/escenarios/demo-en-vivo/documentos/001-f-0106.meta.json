@@ -1,0 +1,17 @@
+{
+  "archivo_original": "documentos/001-f-0106.png",
+  "canal": "telegram",
+  "remitente": {
+    "tipo": "telegram",
+    "valor": "700100003"
+  },
+  "recibido_en": "2026-10-17T10:30:00-05:00",
+  "adjuntos": [
+    {
+      "nombre": "F-0106.png",
+      "mime": "image/png",
+      "ruta": "documentos/001-f-0106.png"
+    }
+  ],
+  "texto_mensaje": "Hola, te mando la factura de desarrollo de octubre."
+}
