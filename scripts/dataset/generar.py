@@ -46,7 +46,8 @@ def sin_privados(obj):
 
 
 def datos_comunes() -> dict:
-    return {"reglas": mundo.REGLAS, "tasas": mundo.TASAS, "beneficiarios": mundo.BENEFICIARIOS}
+    return {"reglas": mundo.REGLAS, "tasas": mundo.TASAS, "beneficiarios": mundo.BENEFICIARIOS,
+            "aprobadores": mundo.APROBADORES}
 
 
 def escribir_comunes(salida: Path) -> None:
@@ -67,7 +68,7 @@ def historial_desde_previas(previas: list[dict]) -> list[dict]:
     entradas = []
     for i, p in enumerate(previas, start=1):
         fac = p["factura"]
-        idioma = {"ben-cloudnorte": "en", "ben-rio-verde": "pt", "ben-estudio-sonoro": "pt"}.get(fac["emisor"], "es")
+        idioma = p["idioma"]
         plana = registro.extraccion_plana(fac, idioma)
         agente = registro.entrada_agente(
             id_=f"REG-HIST-{i:04d}", ref=f"INT-HIST-{i:04d}", momento=p["momento"], fac=fac, canal=p["canal"],
@@ -80,7 +81,7 @@ def historial_desde_previas(previas: list[dict]) -> list[dict]:
     return sorted(entradas, key=lambda e: e["momento"])
 
 
-def historial_desde_lote(docs: list[dict], generados: list[dict], resolucion: dict) -> list[dict]:
+def historial_desde_lote(docs: list[dict], generados: list[dict], resolucion: dict, version: int) -> list[dict]:
     """Decisiones del lote demo (como las tomaría el motor) + su resolución humana."""
     agentes, humanas = [], []
     for d, g in zip(docs, generados):
@@ -88,7 +89,7 @@ def historial_desde_lote(docs: list[dict], generados: list[dict], resolucion: di
         esp = d["esperado"]
         agente = registro.entrada_agente(
             id_=f"REG-2026-{d['n']:06d}", ref=g["ref"], momento=d["recibido_en"], fac=fac, canal=d["canal"],
-            formato=d["formato"], decision=esp["decision"], reglas=esp["reglas_que_fallan"], version=7,
+            formato=d["formato"], decision=esp["decision"], reglas=esp["reglas_que_fallan"], version=version,
             explicacion=esp["motivo"], ext=registro.extraccion_completa(g["plana"], g["texto_crudo"]),
             sha256=g["sha256"])
         agentes.append(agente)
@@ -207,7 +208,8 @@ def generar(salida: Path) -> list[dict]:
     historial_oct = historial_desde_previas(E.HISTORIAL_OCT)
     lote = generar_escenario(E.ESCENARIOS["lote-demo-oct"], salida, historial_oct, primera_ref=1)
 
-    historial_nov = historial_oct + historial_desde_lote(E.LOTE_DEMO, lote["generados"], E.RESOLUCION_LOTE_DEMO)
+    historial_nov = historial_oct + historial_desde_lote(E.LOTE_DEMO, lote["generados"], E.RESOLUCION_LOTE_DEMO,
+                                                         E.ESCENARIOS["lote-demo-oct"]["reglas_version"])
     historial_nov.sort(key=lambda e: e["momento"])
     trampas = generar_escenario(E.ESCENARIOS["trampas-extra"], salida, historial_nov,
                                 primera_ref=len(E.LOTE_DEMO) + 1)
