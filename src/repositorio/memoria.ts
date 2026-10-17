@@ -11,7 +11,7 @@ import { cargarGolden, cargarSinDocumentos, type DocGolden } from "@/evaluacion/
 import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
 
-import { coincideFiltro, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
+import { coincideFiltro, conVinculosTelegram, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
 import type { ArchivoGuardado, EscenarioCargado, Repositorio, ResumenVersion } from "./repositorio";
 
 
@@ -90,6 +90,10 @@ export async function crearRepositorioMemoria(
       if (i >= 0) throw new Error(`el beneficiario ${b.id} ya existe`);
       s.datos.beneficiarios.push(structuredClone(b));
     },
+    async vincularTelegram(beneficiario_id, chat_id) {
+      if (!s.datos.beneficiarios.some((b) => b.id === beneficiario_id)) throw new Error(`no existe el beneficiario ${beneficiario_id}`);
+      s.datos.beneficiarios = conVinculosTelegram(s.datos.beneficiarios, new Map([[beneficiario_id, chat_id]]));
+    },
     async guardarArchivo(ref, archivo) {
       s.archivos.set(ref, { ...archivo, bytes: Buffer.from(archivo.bytes) });
     },
@@ -97,7 +101,7 @@ export async function crearRepositorioMemoria(
       const a = s.archivos.get(ref);
       if (!a) return null;
       if ("bytes" in a) return a;
-      return { nombre: a.nombre, mime: a.mime, bytes: await readFile(a.ruta) };
+      return { nombre: a.nombre, mime: a.mime, bytes: await readFile(/*turbopackIgnore: true*/ a.ruta) };
     },
     async leerAdjunto(ref, indice) {
       return leerAdjuntoDe(s.documentos.get(ref), indice, s.carpeta);

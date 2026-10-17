@@ -1,0 +1,18 @@
+{
+  "archivo_original": "documentos/004-lum-0007.eml",
+  "canal": "correo",
+  "remitente": {
+    "tipo": "correo",
+    "valor": "hola@lumendiseno.example"
+  },
+  "recibido_en": "2026-10-17T10:45:00-05:00",
+  "asunto": "Factura LUM-0007",
+  "texto_mensaje": "Hola, les comparto la factura de la ilustración. ¡Gracias!",
+  "adjuntos": [
+    {
+      "nombre": "LUM-0007.pdf",
+      "mime": "application/pdf",
+      "ruta": "documentos/adjuntos/004-lum-0007.pdf"
+    }
+  ]
+}

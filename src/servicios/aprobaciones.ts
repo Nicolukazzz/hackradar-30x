@@ -4,7 +4,7 @@ import { formatearUsd } from "@/dominio/dinero";
 import { normalizarNombre } from "@/dominio/normalizar";
 import { instante } from "@/dominio/reloj";
 import type { Aprobador, Canal, Dinero, Formato, IdRegla } from "@/dominio/tipos";
-import { estadoHumano } from "@/aprobaciones/decidir";
+import { decisionAgente, estadoHumano } from "@/aprobaciones/decidir";
 import type { Repositorio } from "@/repositorio/repositorio";
 
 import { descripcionBeneficiario } from "./comun";
@@ -65,7 +65,8 @@ export async function obtenerAprobaciones(repo: Repositorio, orden: OrdenAprobac
   const porNombre = new Map(datos.beneficiarios.map((b) => [normalizarNombre(b.nombre), b]));
 
   const pendientes: TarjetaAprobacion[] = registro
-    .filter((e) => e.tipo === "DECISION_AGENTE" && e.decision === "ESCALAR")
+    // Si una ref se reprocesó, manda su última decisión del agente (la que firma decidir.ts): una tarjeta por ref.
+    .filter((e) => e.tipo === "DECISION_AGENTE" && e.decision === "ESCALAR" && decisionAgente(registro, e.ref_interna) === e)
     .map((e) => ({ e, h: estadoHumano(registro, e) }))
     .filter(({ h }) => h.final === null)
     .map(({ e, h }) => {

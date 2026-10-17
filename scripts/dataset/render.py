@@ -184,6 +184,12 @@ def pdf_factura(fac: dict, idioma: str, variante: str | None = None) -> bytes:
         c.setFont("Vera", 10)
         y = _texto_ajustado(c, b["nota"][1], m, y - 15, ancho - 2 * m, "Vera", 10, 14)
 
+    if b["nota_oculta"]:
+        # Blanco sobre blanco y de 4 pt: invisible al imprimir, pero queda en el texto del PDF (trampa de R10, #8).
+        c.setFillColor(HexColor("#FFFFFF"))
+        c.setFont("Vera", 4)
+        c.drawString(m, 52, b["nota_oculta"])
+
     c.setFillColor(GRIS)
     c.setFont("Vera", 7.5)
     c.drawString(m, 40, b["pie"])

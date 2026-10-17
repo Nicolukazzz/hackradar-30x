@@ -1,0 +1,14 @@
+{
+  "update_id": 900010,
+  "message": {
+    "message_id": 10,
+    "chat": {
+      "id": 700100004,
+      "type": "private"
+    },
+    "from": {
+      "language_code": "es"
+    },
+    "text": "Hola equipo de Nébula, les envío mi cuenta de cobro del hito 2. Quedo atento, gracias.\nCuenta de cobro N.º JPO-10\nFecha: 14/10/2026 · Vence: 30/10/2026\nConcepto: Hito 2 de 3 — tablero de datos (CT-JPO, hito 2 de 3)\nValor: USD 900,00\nPagar a: Juan Pablo Ortiz · Banco Cafetal · Cuenta de ahorros 999-000000-8812"
+  }
+}

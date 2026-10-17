@@ -14,10 +14,13 @@
     "extraer": "tsx --env-file-if-exists=.env scripts/extraer.ts",
     "dataset": "$([ -x .venv/bin/python ] && echo .venv/bin/python || echo python3) scripts/dataset/generar.py",
     "cargar-escenario": "tsx --env-file-if-exists=.env scripts/cargar-escenario.ts",
+    "telegram": "tsx --env-file-if-exists=.env scripts/telegram.ts",
+    "test:supabase": "bash scripts/test-supabase.sh"
     "test:supabase": "bash scripts/test-supabase.sh",
     "equipo:admin": "tsx --env-file-if-exists=.env scripts/equipo/admin.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.135.0",
     "@base-ui/react": "^1.9.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.117.2",

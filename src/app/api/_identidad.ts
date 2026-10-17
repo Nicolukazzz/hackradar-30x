@@ -2,7 +2,9 @@
 // Supabase que `conSesion` ya verificó (con el permiso de su rol, #51).
 
 import type { Aprobador } from "@/dominio/tipos";
-import type { Miembro } from "@/equipo/tipos";
+import { obtenerAlmacenEquipo } from "@/equipo";
+import { firmantes } from "@/equipo/servicio";
+import { EMPRESA_ID, type Miembro } from "@/equipo/tipos";
 import { NOMBRE_ROL, type Rol, type Sesion } from "@/lib/auth/permisos";
 
 /**
@@ -49,4 +51,13 @@ export function aprobadorDeLaCuenta(sesion: Sesion): Aprobador {
 
 export function aprobadorDeMiembro(m: Miembro): Aprobador {
   return comoAprobador(m);
+}
+
+/**
+ * Cuentas del equipo que hoy pueden firmar una aprobación (§10, #51), como aprobadores. Una sola fuente para
+ * POST /api/aprobaciones/:ref (decidir) y la Traza (`firmas[].cubre`), así nunca dicen cosas distintas.
+ */
+export async function cuentasFirmantes(): Promise<Aprobador[]> {
+  const almacen = await obtenerAlmacenEquipo();
+  return firmantes(await almacen.miembros(EMPRESA_ID)).map(aprobadorDeMiembro);
 }

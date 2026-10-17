@@ -213,7 +213,9 @@ def generar(salida: Path) -> list[dict]:
     historial_nov.sort(key=lambda e: e["momento"])
     trampas = generar_escenario(E.ESCENARIOS["trampas-extra"], salida, historial_nov,
                                 primera_ref=len(E.LOTE_DEMO) + 1)
-    return [lote, trampas]
+    # demo-en-vivo: mismo historial que noviembre (lote resuelto), pero sigue en octubre.
+    demo = generar_escenario(E.ESCENARIOS["demo-en-vivo"], salida, historial_nov, primera_ref=len(E.LOTE_DEMO) + 1)
+    return [lote, trampas, demo]
 
 
 def imprimir_resumen(corridas: list[dict]) -> None:

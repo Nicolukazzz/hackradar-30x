@@ -14,6 +14,8 @@
   --color-superficie-2: var(--superficie-2);
   --color-borde-fuerte: var(--borde-fuerte);
   --color-texto-3: var(--texto-3);
+  --color-dato: var(--dato);
+  --color-punto-neutro: var(--punto-neutro);
   --color-chip: var(--chip);
   --color-aviso: var(--aviso);
   --color-aviso-foreground: var(--aviso-foreground);
@@ -97,6 +99,8 @@
   --superficie-2: var(--background); /* cabecera de tablas, pies de tarjeta */
   --borde-fuerte: var(--input);
   --texto-3: #33403a; /* texto de tablas: entre tinta y secundario */
+  --dato: #e6eeff; /* resaltado de un dato extraído en el documento (Traza) */
+  --punto-neutro: #a7b1ac; /* hitos neutros de la línea de tiempo, "pagado antes del lote" */
   --chip: #f1f2ee; /* fondo de chips de comparación R9 · … */
   --aviso: #f2b544; /* badge de pendientes en la barra lateral */
   --aviso-foreground: #1a1206;

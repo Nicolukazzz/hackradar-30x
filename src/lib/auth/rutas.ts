@@ -9,6 +9,10 @@ export const PAGINAS_PUBLICAS = ["/entrar", "/sin-permiso"] as const;
  * miembro de la empresa, pero la ruta exige sesión, mismo origen y un enlace de invitación válido.
  */
 export const API_PUBLICAS: readonly string[] = ["/api/enviar"];
+ * Rutas de API sin sesión de usuario (webhooks de canales con su propia verificación). Telegram (#13): cabecera
+ * X-Telegram-Bot-Api-Secret-Token.
+ */
+export const API_PUBLICAS: readonly string[] = ["/api/canales/telegram/webhook"];
 
 export type DecisionRuta = "seguir" | "redirigir" | "no_autorizado";
 

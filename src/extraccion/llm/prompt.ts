@@ -28,7 +28,11 @@ Reglas: "monto" es un decimal con punto y sin separador de miles ("1.234,56" en 
 
 /** Evita que el documento cierre el bloque de datos antes de tiempo. */
 function escaparDocumento(texto: string): string {
-  return texto.replace(/<\s*\/?\s*documento\s*>/gi, "[documento]");
+  // Primero se quitan los caracteres Tags (U+E0000–E007F, invisibles para una persona pero legibles para el modelo) y
+  // se pliega a NFKC ("＜/documento＞" de ancho completo). Si no, un "</documento>" escrito en Tags cerraría el bloque.
+  // R10 ya los detecta en el motor: el modelo no los necesita para extraer.
+  const limpio = texto.replace(/[\u{E0000}-\u{E007F}]/gu, "").normalize("NFKC");
+  return limpio.replace(/<\s*\/?\s*documento\s*>/gi, "[documento]");
 }
 
 export function mensajeUsuario(texto: string, faltantes: readonly NombreCampo[], hayArchivos: boolean): string {

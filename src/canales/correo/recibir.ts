@@ -20,7 +20,6 @@ export type DependenciasCorreo = {
   repo: Repositorio;
   ahora: string;
   extractor: Extractor;
-  urlPortal: string;
   /** buzón real: true (sin dmarc=pass el remitente no se verifica). /simular: false. */
   exigirAutenticacion?: boolean;
   /** false: las cabeceras del .eml las escribió quien lo sube; el remitente nunca se verifica (ver correoAEntrada). */
@@ -54,7 +53,7 @@ export async function recibirCorreo(eml: Buffer, deps: DependenciasCorreo): Prom
     respuesta: {
       para: correo.de,
       asunto,
-      texto: textoRespuesta(entrada, entrada.extraccion?.idioma ?? "es", { urlPortal: deps.urlPortal }),
+      texto: textoRespuesta(entrada, entrada.extraccion?.idioma ?? "es"),
       en_respuesta_a: correo.message_id,
     },
   };

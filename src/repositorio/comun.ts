@@ -3,7 +3,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { DocumentoRecibido, EntradaRegistro, Reglas } from "@/dominio/tipos";
+import type { Beneficiario, DocumentoRecibido, EntradaRegistro, Reglas } from "@/dominio/tipos";
 
 import type { ArchivoGuardado, FiltroRegistro } from "./repositorio";
 
@@ -57,4 +57,13 @@ export async function leerAdjuntoDe(doc: DocumentoRecibido | null | undefined, i
   const ruta = path.resolve(/*turbopackIgnore: true*/ base, adj.ruta);
   if (!ruta.startsWith(base + path.sep)) return null; // nunca fuera de la carpeta del escenario
   return { nombre: adj.nombre, mime: adj.mime, bytes: await readFile(/*turbopackIgnore: true*/ ruta) };
+}
+
+/** Aplica los vínculos de Telegram (#13) sobre la lista de beneficiarios: un chat, un beneficiario. */
+export function conVinculosTelegram(beneficiarios: readonly Beneficiario[], vinculos: ReadonlyMap<string, string>): Beneficiario[] {
+  const chats = new Set(vinculos.values());
+  return beneficiarios.map((b) => {
+    const chat = vinculos.get(b.id) ?? (b.canales.telegram_chat_id && !chats.has(b.canales.telegram_chat_id) ? b.canales.telegram_chat_id : null);
+    return chat === b.canales.telegram_chat_id ? b : { ...b, canales: { ...b.canales, telegram_chat_id: chat } };
+  });
 }

@@ -1,6 +1,7 @@
 // Pipeline por documento (§8 pasos 3–7): ya ingerido (ref, hash, remitente) → extracción → motor →
 // registro. Devuelve la entrada para que el canal le responda al remitente (respuesta.ts).
 
+import { avisarEscaladas } from "@/avisos";
 import type { DocumentoRecibido, EntradaRegistro, Extraccion } from "@/dominio/tipos";
 import type { DependenciasExtraccion } from "@/extraccion/extraer";
 import { facturasVigentes } from "@/reglas/libro";
@@ -81,7 +82,7 @@ export async function procesarDocumento(ref: string, deps: DependenciasPipeline)
   const previo = await repo.registro();
   const ext = extraccionDelArchivoRepetido(doc, previo) ?? (await extraerSinFallar(deps.extractor, doc));
 
-  return repo.enExclusiva(async () => {
+  const registrada = await repo.enExclusiva(async () => {
     const [datos, reglas, historial] = await Promise.all([repo.datosComunes(), repo.reglasVigentes(), repo.registro()]);
     if (historial.some((e) => e.tipo === "DECISION_AGENTE" && e.ref_interna === ref)) {
       throw new Error(`El documento ${ref} ya tiene decisión del agente.`);
@@ -93,4 +94,7 @@ export async function procesarDocumento(ref: string, deps: DependenciasPipeline)
     await repo.agregarEntrada(entrada);
     return entrada;
   });
+  // Ya registrada: si escaló, se avisa a quien aprueba (#68) en segundo plano. Nunca cambia la decisión.
+  avisarEscaladas([registrada]);
+  return registrada;
 }

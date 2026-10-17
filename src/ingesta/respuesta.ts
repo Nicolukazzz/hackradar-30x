@@ -4,8 +4,11 @@
 import type { Canal, EntradaRegistro, Idioma, IdRegla } from "@/dominio/tipos";
 
 export type OpcionesRespuesta = {
-  /** enlace al portal para vincular el correo o el chat (R11) */
-  urlPortal: string;
+  /**
+   * Enlace para vincular el chat o el correo (R11), si el canal tiene uno (p. ej. `t.me/<bot>?start=…` que genera la
+   * empresa). Sin enlace se le dice al proveedor que lo pida a su contacto: desde #49 no hay portal de proveedores.
+   */
+  urlVincular?: string;
 };
 
 type Textos = {
@@ -15,7 +18,7 @@ type Textos = {
   frenar: (motivo: string) => string;
   no_factura: (ref: string) => string;
   motivos: { repetida: string; no_cuadra: string; general: string };
-  vincular: (medio: string, url: string) => string;
+  vincular: (medio: string, url: string | undefined) => string;
   medio: Record<Canal, string>;
 };
 
@@ -31,7 +34,10 @@ const TEXTOS: Record<Idioma, Textos> = {
       no_cuadra: "el monto o el concepto no coincide con lo acordado",
       general: "el equipo de finanzas te contactará",
     },
-    vincular: (medio, url) => `Para que tus facturas se procesen automáticamente, vincula este ${medio} en el portal: ${url}`,
+    vincular: (medio, url) =>
+      url
+        ? `Para que tus facturas se procesen automáticamente, vincula este ${medio}: ${url}`
+        : `Para que tus facturas se procesen automáticamente, pide a tu contacto en el equipo de finanzas el enlace para vincular este ${medio}.`,
     medio: { correo: "correo", telegram: "chat", portal: "usuario", carga_manual: "medio" },
   },
   en: {
@@ -45,7 +51,10 @@ const TEXTOS: Record<Idioma, Textos> = {
       no_cuadra: "the amount or description does not match what was agreed",
       general: "the finance team will contact you",
     },
-    vincular: (medio, url) => `To have your invoices processed automatically, link this ${medio} in the portal: ${url}`,
+    vincular: (medio, url) =>
+      url
+        ? `To have your invoices processed automatically, link this ${medio}: ${url}`
+        : `To have your invoices processed automatically, ask your contact on the finance team for the link to connect this ${medio}.`,
     medio: { correo: "email address", telegram: "chat", portal: "user", carga_manual: "channel" },
   },
   pt: {
@@ -59,7 +68,10 @@ const TEXTOS: Record<Idioma, Textos> = {
       no_cuadra: "o valor ou a descrição não corresponde ao combinado",
       general: "a equipe financeira entrará em contato",
     },
-    vincular: (medio, url) => `Para que suas faturas sejam processadas automaticamente, vincule este ${medio} no portal: ${url}`,
+    vincular: (medio, url) =>
+      url
+        ? `Para que suas faturas sejam processadas automaticamente, vincule este ${medio}: ${url}`
+        : `Para que suas faturas sejam processadas automaticamente, peça ao seu contato na equipe financeira o link para vincular este ${medio}.`,
     medio: { correo: "e-mail", telegram: "chat", portal: "usuário", carga_manual: "canal" },
   },
 };
@@ -71,14 +83,14 @@ function motivoFrenar(reglas: readonly IdRegla[], t: Textos): string {
   return t.motivos.general;
 }
 
-export function textoRespuesta(entrada: EntradaRegistro, idioma: Idioma, opciones: OpcionesRespuesta): string {
+export function textoRespuesta(entrada: EntradaRegistro, idioma: Idioma, opciones: OpcionesRespuesta = {}): string {
   const t = TEXTOS[idioma];
   if (entrada.decision === "RECHAZADA_NO_FACTURA") return t.no_factura(entrada.ref_interna);
 
   // Remitente no verificado (R11): puede ser alguien suplantando al proveedor. No se le confirma el número de
   // factura ni si ya existía: solo la ref de su envío, "en revisión" y cómo vincular su canal.
   if (entrada.reglas_que_fallaron.includes("R11")) {
-    return [t.recibida(null, entrada.ref_interna), t.escalar, t.vincular(t.medio[entrada.canal], opciones.urlPortal)].join(" ");
+    return [t.recibida(null, entrada.ref_interna), t.escalar, t.vincular(t.medio[entrada.canal], opciones.urlVincular)].join(" ");
   }
   const partes = [t.recibida(entrada.factura_numero, entrada.ref_interna)];
   if (entrada.decision === "PAGAR") partes.push(t.pagar);
