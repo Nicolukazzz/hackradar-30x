@@ -123,7 +123,7 @@ describe("POST /api/aprobaciones/:ref (ruta)", () => {
     const res = await post(lf.ref_interna, { accion: "aprobar", comentario: "Hito final entregado y revisado." });
     expect(res.status).toBe(201);
     const e = (await res.json()) as EntradaRegistro;
-    expect(e).toMatchObject({ decision: "APROBADA_HUMANO", actor: { tipo: "humano", aprobador_id: CUENTA.usuario_id, nombre: "Ana Torres" } });
+    expect(e).toMatchObject({ decision: "APROBADA_HUMANO", actor: { tipo: "humano", aprobador_id: CUENTA.usuario_id, nombre: "Ana Torres (ana@nebula.example)" } });
     const px = await entradaDe(repo, "PX-77");
     const r409 = await post(px.ref_interna, { accion: "aprobar", comentario: "Págala igual" });
     expect(r409.status).toBe(409);
@@ -140,6 +140,6 @@ describe("POST /api/aprobaciones/:ref (ruta)", () => {
     comoCuenta("Beto Ruiz");
     const segunda = await post(ref, { accion: "aprobar", comentario: "Segunda firma, de acuerdo" });
     expect(segunda.status).toBe(201);
-    expect(((await segunda.json()) as EntradaRegistro)).toMatchObject({ decision: "APROBADA_HUMANO", actor: { nombre: "Beto Ruiz" } });
+    expect(((await segunda.json()) as EntradaRegistro)).toMatchObject({ decision: "APROBADA_HUMANO", actor: { nombre: "Beto Ruiz (beto-ruiz@nebula.example)" } });
   });
 });

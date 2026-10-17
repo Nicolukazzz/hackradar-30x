@@ -51,7 +51,7 @@ describe("reglas: simular y guardar (§13.4, §14)", () => {
     expect(res.status).toBe(201);
     expect((await res.json()).version).toBe(8);
     const v8 = await repo.reglasVigentes();
-    expect(v8).toMatchObject({ version: 8, editada_por: "Ana Torres", limites: { pago_automatico_usd: 200000 } });
+    expect(v8).toMatchObject({ version: 8, editada_por: "Ana Torres (ana@nebula.example)", limites: { pago_automatico_usd: 200000 } });
     expect((await obtenerReglas(repo)).historial.map((h) => h.version)).toEqual([8, 7, 6]);
     expect(await repo.registro({ tipo: ["CAMBIO_REGLAS"] })).toHaveLength(1);
   });

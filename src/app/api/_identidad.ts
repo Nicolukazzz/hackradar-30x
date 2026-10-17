@@ -25,5 +25,7 @@ export function aprobadorDeLaCuenta(sesion: Sesion): Aprobador {
       .slice(0, 2)
       .map((p) => p[0]?.toUpperCase() ?? "")
       .join("") || "?";
-  return { id: sesion.usuario_id, nombre: sesion.nombre, rol: "Cuenta", limite_usd: null, principal: true, iniciales };
+  // El nombre lo escribe la persona al registrarse: va con su correo (confirmado) para que nadie pase por otro en el registro.
+  const nombre = `${sesion.nombre} (${sesion.correo})`;
+  return { id: sesion.usuario_id, nombre, rol: "Cuenta", limite_usd: null, principal: true, iniciales };
 }

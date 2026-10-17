@@ -17,7 +17,7 @@ export type EstadoEntrar = {
 type ErrorSupabase = { status?: number; code?: string } | null;
 
 export const MINIMO_CONTRASENA = 8;
-const MAXIMO_CONTRASENA = 72; // bcrypt ignora lo que pase de 72 bytes
+const MAXIMO_BYTES_CONTRASENA = 72; // bcrypt ignora lo que pase de 72 bytes (UTF-8: una ñ ocupa 2)
 
 /**
  * Tras pedir un código (crear cuenta, reenviar, olvidé mi contraseña). Un 4xx (p. ej. correo no registrado)
@@ -26,9 +26,11 @@ const MAXIMO_CONTRASENA = 72; // bcrypt ignora lo que pase de 72 bytes
  */
 export function respuestaEnvio(error: ErrorSupabase, siguiente: EstadoEntrar, origen: Vista = siguiente.vista): EstadoEntrar {
   if (!error) return siguiente;
-  if (error.status === 429) return { vista: origen, error: "Pediste muchos códigos seguidos. Espera un minuto e inténtalo de nuevo." };
+  // En error se conserva el correo: desde "confirmar" el siguiente paso lo necesita, y en los formularios se ve.
+  const conservar = siguiente.correo === undefined ? {} : { correo: siguiente.correo };
+  if (error.status === 429) return { vista: origen, ...conservar, error: "Pediste muchos códigos seguidos. Espera un minuto e inténtalo de nuevo." };
   if (error.status !== undefined && error.status >= 400 && error.status < 500) return siguiente;
-  return { vista: origen, error: "No pudimos enviar el código. Inténtalo de nuevo en un minuto." };
+  return { vista: origen, ...conservar, error: "No pudimos enviar el código. Inténtalo de nuevo en un minuto." };
 }
 
 /** Error de Supabase Auth → frase para la persona. Nunca dice si un correo existe. */
@@ -50,6 +52,6 @@ export function mensajeDeError(error: { status?: number; code?: string }): strin
 
 export function errorDeContrasena(contrasena: string): string | null {
   if (contrasena.length < MINIMO_CONTRASENA) return `La contraseña debe tener al menos ${MINIMO_CONTRASENA} caracteres.`;
-  if (contrasena.length > MAXIMO_CONTRASENA) return `La contraseña puede tener hasta ${MAXIMO_CONTRASENA} caracteres.`;
+  if (new TextEncoder().encode(contrasena).length > MAXIMO_BYTES_CONTRASENA) return "La contraseña es demasiado larga: usa hasta 72 caracteres sin tildes ni emojis.";
   return null;
 }

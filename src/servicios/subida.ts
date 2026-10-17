@@ -32,9 +32,13 @@ export type DependenciasSubida = {
   extractor: Extractor;
 };
 
-/** #49: quien sube es una cuenta del equipo (carga manual); el remitente es su correo, tomado de la sesión. */
+/**
+ * #49: cualquiera puede crear una cuenta, así que subir no prueba ser del equipo. El remitente es el correo
+ * de la cuenta (confirmado con código al registrarse) como `correo`, no `interno`: R11 solo cumple si ese
+ * correo está vinculado al beneficiario que cobra; si no, la factura escala y nunca se paga sola.
+ */
 function remitenteDe(sesion: Sesion): { canal: Canal; remitente: Remitente } {
-  return { canal: "carga_manual", remitente: { tipo: "interno", valor: sesion.correo } };
+  return { canal: "carga_manual", remitente: { tipo: "correo", valor: sesion.correo } };
 }
 
 /**

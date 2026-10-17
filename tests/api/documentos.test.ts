@@ -34,14 +34,24 @@ async function repoSinProcesar() {
 }
 
 describe("POST /api/documentos (#26)", () => {
-  it("tesorería sube 001-fac-1041.pdf → ref INT nueva, decidida y visible en la Bandeja", async () => {
+  it("#49: una cuenta cualquiera sube 001-fac-1041.pdf → ref INT nueva, visible en la Bandeja, y ESCALA por R11 (no se paga sola)", async () => {
     await repoSinProcesar();
     const res = await subir(await readFile(`${DOCS}/001-fac-1041.pdf`), "001-fac-1041.pdf");
     expect(res.status).toBe(201);
     const r = await res.json();
-    expect(r).toMatchObject({ ref_interna: "INT-2026-000013", estado: "PAGAR" });
+    expect(r).toMatchObject({ ref_interna: "INT-2026-000013", estado: "ESCALAR" });
+    const { obtenerRepositorio } = await import("@/repositorio");
+    const e = (await (await obtenerRepositorio()).registro({ ref_interna: r.ref_interna, tipo: ["DECISION_AGENTE"] }))[0];
+    expect(e?.reglas_que_fallaron).toEqual(["R11"]);
     const bandeja = await (await getBandeja(peticion("http://x/api/bandeja"))).json();
     expect(bandeja.filas.map((f: { ref_interna: string }) => f.ref_interna)).toContain("INT-2026-000013");
+  });
+
+  it("#49: si sube la cuenta con el correo vinculado al beneficiario (confirmado al registrarse), R11 cumple y puede pagarse", async () => {
+    await repoSinProcesar();
+    comoSesion({ usuario_id: "u-ana-maria", correo: "ana.gomez@amg-estudio.example", nombre: "Ana María Gómez" });
+    const r = await (await subir(await readFile(`${DOCS}/001-fac-1041.pdf`), "001-fac-1041.pdf")).json();
+    expect(r).toMatchObject({ estado: "PAGAR" });
   });
 
   it("el mismo archivo dos veces: la segunda frena por duplicado", async () => {

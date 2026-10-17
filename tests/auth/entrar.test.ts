@@ -16,12 +16,13 @@ describe("respuestaEnvio (código enviado al correo)", () => {
   it("429 se avisa en la misma vista", () => {
     expect(respuestaEnvio({ status: 429 }, { vista: "confirmar", correo }, "crear")).toEqual({
       vista: "crear",
+      correo,
       error: "Pediste muchos códigos seguidos. Espera un minuto e inténtalo de nuevo.",
     });
   });
 
   it("5xx o sin status se avisa: el código no va a llegar", () => {
-    const esperado = { vista: "olvide", error: "No pudimos enviar el código. Inténtalo de nuevo en un minuto." };
+    const esperado = { vista: "olvide", correo, error: "No pudimos enviar el código. Inténtalo de nuevo en un minuto." };
     expect(respuestaEnvio({ status: 500 }, { vista: "recuperar", correo }, "olvide")).toEqual(esperado);
     expect(respuestaEnvio({ status: undefined }, { vista: "recuperar", correo }, "olvide")).toEqual(esperado);
   });
@@ -54,8 +55,11 @@ describe("errorDeContrasena", () => {
     expect(errorDeContrasena("1234567")).toBe("La contraseña debe tener al menos 8 caracteres.");
   });
 
-  it("más de 72 (límite de bcrypt)", () => {
-    expect(errorDeContrasena("a".repeat(73))).toBe("La contraseña puede tener hasta 72 caracteres.");
+  it("más de 72 bytes (límite de bcrypt), contando tildes como 2", () => {
+    const larga = "La contraseña es demasiado larga: usa hasta 72 caracteres sin tildes ni emojis.";
+    expect(errorDeContrasena("a".repeat(73))).toBe(larga);
+    expect(errorDeContrasena("ñ".repeat(40))).toBe(larga);
+    expect(errorDeContrasena("ñ".repeat(36))).toBeNull();
   });
 
   it("válida", () => {

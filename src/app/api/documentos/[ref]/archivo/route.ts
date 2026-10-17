@@ -6,8 +6,7 @@ import { error, manejar } from "../../../_http";
 /**
  * GET /api/documentos/:ref/archivo (§12): el archivo original tal como llegó.
  * `?adjunto=0` devuelve el adjunto n.º 0 (el PDF dentro de un correo).
- * Panel: cualquier documento. Proveedor: solo los que subió él por el portal; los demás dan 404
- * (no se confirma que exista una ref ajena).
+ * Cualquier cuenta con sesión (#49, sin roles: no hay cuentas de proveedor).
  */
 export const GET = conSesion(async (req: Request, ctx: RouteContext<"/api/documentos/[ref]/archivo">) => {
   try {

@@ -82,7 +82,8 @@ async function crearCuenta(formulario: FormData): Promise<EstadoEntrar> {
   // Si el correo ya tiene cuenta, Supabase responde igual y no envía nada: no se delata quién está registrado.
   const { error } = await supabase.auth.signUp({ email: correo, password: contrasena, options: { data: { nombre: nombre.data } } });
   if (error?.code === "weak_password") return { vista: "crear", correo, nombre: nombre.data, error: mensajeDeError(error) };
-  const respuesta = respuestaEnvio(error, { vista: "confirmar", correo }, "crear");
+  const enviado = respuestaEnvio(error, { vista: "confirmar", correo }, "crear");
+  const respuesta = enviado.error ? { ...enviado, nombre: nombre.data } : enviado;
   if (!respuesta.error) {
     auditar({ tipo: "registro", usuario_id: null, ruta: "/entrar" });
   } else if (error?.status !== 429) {
