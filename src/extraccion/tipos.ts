@@ -34,7 +34,7 @@ export const CAMPOS_OBLIGATORIOS = [
   "concepto",
 ] as const;
 
-export const CAMPOS_OPCIONALES = ["subtotal", "impuestos", "referencia_acuerdo", "hito_numero"] as const;
+export const CAMPOS_OPCIONALES = ["subtotal", "impuestos", "referencia_acuerdo", "hito_numero", "identificacion_fiscal"] as const;
 
 export type ValoresCampos = {
   es_factura: boolean;
@@ -49,6 +49,7 @@ export type ValoresCampos = {
   concepto: string;
   referencia_acuerdo: string;
   hito_numero: number;
+  identificacion_fiscal: string;
 };
 
 export type NombreCampo = keyof ValoresCampos;

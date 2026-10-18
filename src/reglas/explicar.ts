@@ -75,7 +75,11 @@ const FRASES: Record<IdRegla, (f: Frase) => string> = {
       ? `el agente no pudo leer el documento${de} porque el servicio de lectura no respondió. Una persona debe revisarlo o pedir que se reenvíe.`
       : `el agente no está seguro de lo que leyó en la factura${de} (${e.comparacion}). Una persona debe confirmar los datos.`,
   R2: fraseDuplicado,
-  R3: ({ nombre }) => `${nombre} no está en la lista de beneficiarios permitidos.`,
+  R3: ({ d, nombre }) => {
+    if (d.motivo === "nit_distinto") return `la identificación fiscal de la factura (${texto(d.nit)}) no es la registrada para ${nombre} (${texto(d.nit_registrado)}).`;
+    if (d.modo === "nit") return `la identificación fiscal ${texto(d.nit)} no es de ningún proveedor de la lista permitida.`;
+    return `${nombre} no está en la lista de beneficiarios permitidos.`;
+  },
   R4: ({ d, nombre }) =>
     `la cuenta de la factura (•••• ${texto(d.cuenta_factura)}) no es la registrada para ${nombre} (•••• ${texto(d.cuenta_registrada)}).`,
   R5: ({ d, nombre }) =>
@@ -104,6 +108,7 @@ function fraseRegla(e: EvaluacionRegla, x: EntradaExplicacion, nombre: string, n
   const d = e.datos;
   if (e.resultado === "INDETERMINADO") {
     if (e.id === "R5") return `no se pudo asociar la factura a lo acordado con ${nombre} (${texto(d.motivo)}).`;
+    if (e.id === "R3") return `no se pudo confirmar quién cobra: ${e.comparacion}.`;
     return `no se pudo evaluar «${e.nombre}» (${e.comparacion}).`;
   }
   // Sin nombre legible no se escribe "la factura de El beneficiario".

@@ -198,6 +198,11 @@ async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Reposito
   return { entrada, parcial, beneficiario_agregado: nuevo };
 }
 
+function nitConfiable(origen: EntradaRegistro): string | null {
+  const c = origen.extraccion?.identificacion_fiscal;
+  return c?.valor && c.confianza >= 0.9 ? c.valor : null;
+}
+
 /** Beneficiario nuevo con la cuenta de la factura y el canal por el que llegó (§10). Sin escribir nada. */
 function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnType<Repositorio["documento"]>>): Beneficiario {
   const nombre = origen.beneficiario ?? origen.extraccion?.beneficiario_nombre.valor ?? null;
@@ -210,6 +215,8 @@ function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnTyp
   return {
     id: `ben-${slug(nombre)}`,
     nombre,
+    // #108: el NIT leído de la factura (si fue confiable), para reconocerlo después en modo NIT.
+    identificacion_fiscal: nitConfiable(origen),
     pais: "ZZ", // desconocido (ISO 3166 reserva ZZ): completarlo en Reglas
     categoria: "sin clasificar",
     tipo: "proveedor",

@@ -16,6 +16,7 @@ import type {
 } from "@/dominio/tipos";
 
 import { esFechaValida, fechaDe, fechaLegible } from "./fechas";
+import type { Identidad } from "./identidad";
 import type { EstadoPresupuesto } from "./presupuesto";
 
 export type ContextoRegla = {
@@ -23,8 +24,10 @@ export type ContextoRegla = {
   ext: Extraccion;
   reglas: Reglas;
   tasas: TablaTasas;
-  /** match por nombre normalizado; null = no está en la lista */
+  /** proveedor encontrado según el modo de identidad (#108); null = no está o no se pudo confirmar */
   beneficiario: Beneficiario | null;
+  /** cómo se buscó y por qué no se encontró (#108). Ausente = modo nombre (tests y llamadas antiguas). */
+  identidad?: Identidad;
   /** cuántos beneficiarios activos tiene la lista (para el texto de R3) */
   total_permitidos: number;
   /** registro previo + decisiones anteriores del mismo lote */

@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 ```
 
 ---
+## 2026-10-17 — Identidad del proveedor configurable: nombre, nombre + NIT o solo NIT (#108)
+- Estado: propuesta
+- Decisión: `Reglas.identidad?: { modo: "nombre" | "nombre_y_nit" | "nit" }` (ausente = nombre, como el dataset), editable en Reglas de pago («Cómo se reconoce a quien cobra · R3»). `Extraccion.identificacion_fiscal?` (opcional): el parser la toma por etiqueta (NIT, RUT, RFC, CUIT, CNPJ, CPF, RUC, EIN/TIN, Tax ID, VAT No) ignorando el bloque del cliente («Facturar a», «Cliente», «Bill to»… y 3 renglones), confianza 0,5 si quedan varias distintas; el LLM la pide como opcional («de quien cobra, no del cliente»). `src/reglas/identidad.ts` busca al proveedor según el modo (NIT comparado sin puntos ni guiones, solo si su confianza ≥ mínima) y el motor usa ese resultado como `beneficiario`. R3: NIT distinto al registrado → FALLA; la factura no trae NIT confiable o el proveedor no tiene NIT registrado (modo nombre_y_nit) → INDETERMINADO (escala), nunca se adivina; explicación con los dos NIT. Al aprobar con «Agregar a la lista» se guarda el NIT leído si fue confiable.
+- Por qué: el equipo quiere elegir cómo se reconoce al proveedor; el NIT es más difícil de suplantar que el nombre.
+- Quién: J
+
 ## 2026-10-17 — Proveedores reales: crear y editar desde la app (#107)
 - Estado: propuesta
 - Decisión: `Beneficiario` suma `identificacion_fiscal?: string | null` (NIT/RUT/RFC/CUIT/CNPJ/Tax ID; opcional, el dataset no lo trae) y `Repositorio` suma `actualizarBeneficiario` (solo los creados en la app; los del set de prueba no se editan). `src/servicios/proveedores.ts` crea y edita a partir de `EntradaProveedorSchema` (nombre, NIT, país, tipo, cuenta tipo/banco/últimos 4, correos, límite mensual, acuerdo de una línea opcional, estado): id `ben-<slug>`, cuenta enmascarada, palabras clave del concepto para R5, y rechaza (409) nombre, NIT (comparado sin puntos ni guiones) o correo de otro proveedor. Cada alta o edición escribe `CAMBIO_BENEFICIARIOS` (`ref_interna` `CONFIG-PROVEEDOR-<id>`) con lo que cambió. API `GET/POST /api/proveedores` y `PATCH /api/proveedores/:id` (escribir: solo admin). Pantalla Proveedores: lista (nombre + NIT, cuenta, canales, acordado, límite, estado) y asistente de 4 pasos; activar/desactivar con confirmación. Telegram y portal siguen vinculándose con sus enlaces. `slug` pasa a `dominio/normalizar.ts`.

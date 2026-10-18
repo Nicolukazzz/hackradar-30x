@@ -80,6 +80,7 @@ export const ReglasSchema = z
     extraccion: z.strictObject({ confianza_minima: z.number().min(0).max(1) }),
     aprobacion: z.strictObject({ doble_aprobacion_desde_usd: centavos }),
     activas: z.record(IdReglaSchema, z.boolean()),
+    identidad: z.strictObject({ modo: z.enum(["nombre", "nombre_y_nit", "nit"]) }).optional(),
   })
   .refine((r) => r.limites.pago_automatico_usd <= r.limites.maximo_absoluto_usd, {
     message: "el límite de pago automático (R9) no puede superar el máximo absoluto (R6)",
@@ -203,6 +204,7 @@ export const ExtraccionSchema = z.strictObject({
   concepto: campo(z.string()),
   referencia_acuerdo: campo(z.string()).optional(),
   hito_numero: campo(z.int().positive()).optional(),
+  identificacion_fiscal: campo(z.string()).optional(),
   idioma,
   texto_crudo: z.string(),
   senales_llm: z.strictObject({ instrucciones_sospechosas: z.array(z.string()), sin_respuesta: z.boolean().optional() }),

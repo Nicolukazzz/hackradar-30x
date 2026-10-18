@@ -54,6 +54,7 @@ export const RespuestaLlmSchema = z.object({
   concepto: campoLlm(z.string().min(1).max(300)),
   referencia_acuerdo: campoLlm(z.string().min(1).max(60)),
   hito_numero: campoLlm(z.int().positive()),
+  identificacion_fiscal: campoLlm(z.string().min(3).max(40)),
   idioma: z.enum(["es", "en", "pt"]).optional(),
   instrucciones_sospechosas: z.array(z.string().max(500)).max(20).optional(),
 });
@@ -98,6 +99,7 @@ export function validarRespuestaLlm(texto: string, proveedor: ProveedorLlm): Ext
   poner("concepto", d.concepto);
   poner("referencia_acuerdo", d.referencia_acuerdo);
   poner("hito_numero", d.hito_numero);
+  poner("identificacion_fiscal", d.identificacion_fiscal);
   if (d.idioma) parcial.idioma = d.idioma;
   parcial.instrucciones_sospechosas = (d.instrucciones_sospechosas ?? []).map((s) => s.trim()).filter(Boolean);
   return parcial;

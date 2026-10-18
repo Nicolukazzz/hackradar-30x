@@ -21,6 +21,7 @@ Responde solo un objeto JSON, sin texto adicional, con este esquema (incluye sol
   "concepto": { "valor": "descripción del cobro" | null, "confianza": 0..1 },
   "referencia_acuerdo": { "valor": "OC-121, CT-JPO, …" | null, "confianza": 0..1 },
   "hito_numero": { "valor": 2 | null, "confianza": 0..1 },
+  "identificacion_fiscal": { "valor": "NIT/RUT/RFC/CUIT/CNPJ/Tax ID de QUIEN COBRA (no el del cliente)" | null, "confianza": 0..1 },
   "idioma": "es" | "en" | "pt",
   "instrucciones_sospechosas": ["…"]
 }
