@@ -7,7 +7,7 @@ import type { Canal, DecisionAgente, Dinero, EntradaRegistro, Formato, IdRegla, 
 import { facturasVigentes, periodoDe, totalEn } from "@/reglas/libro";
 import type { Repositorio } from "@/repositorio/repositorio";
 
-import { ahoraHumano, descripcionBeneficiario, entradasDelLote, estadoActual, type EstadoFactura } from "./comun";
+import { ahoraHumano, descripcionBeneficiario, entradasDelLote, estadoActual, type EstadoFactura, montoEstimado } from "./comun";
 
 export type FiltroDecision = "todas" | "pagar" | "frenar" | "escalar";
 
@@ -26,6 +26,8 @@ export type FilaBandeja = {
   moneda_base: Moneda;
   /** #129: confianza con la que se leyó el total (monto_usd null = dudoso o sin leer) */
   monto_confianza: number | null;
+  /** #141: el total dudoso convertido a la moneda base, solo para mostrarlo (null si es seguro o no hay tasa) */
+  monto_estimado: Dinero | null;
   /** lo que decidió el agente */
   decision: DecisionAgente;
   /** lo que ve la persona hoy: la decisión del agente o la resolución humana */
@@ -164,6 +166,7 @@ export async function obtenerBandeja(repo: Repositorio, opciones: OpcionesBandej
       monto_original: e.monto_original,
       monto_usd_centavos: e.monto_usd_centavos,
       monto_confianza: e.extraccion?.monto_total.confianza ?? null,
+      monto_estimado: montoEstimado(e, datos, reglas),
       moneda_base: e.moneda_base ?? "USD",
       decision: e.decision as DecisionAgente,
       estado: estadoActual(registro, e).estado,

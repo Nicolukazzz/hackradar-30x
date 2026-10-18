@@ -78,7 +78,7 @@ export default async function RegistroPage({ searchParams }: PageProps<"/registr
         </Empty>
       ) : (
         // key: al cambiar los filtros la selección vuelve a la primera entrada del resultado nuevo.
-        <ListaRegistro key={`${decision}|${actor ?? ""}|${q}`} dias={r.dias} inicial={texto(sp.entrada) || null} hoy={hoy} ayer={ayer} criterios={criterios} />
+        <ListaRegistro key={`${decision}|${actor ?? ""}|${q}`} dias={r.dias} inicial={texto(sp.entrada) || null} hoy={hoy} ayer={ayer} criterios={criterios} estimados={r.estimados} />
       )}
     </>
   );

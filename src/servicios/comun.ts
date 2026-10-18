@@ -1,7 +1,10 @@
 // Piezas compartidas por los servicios que arman las respuestas de §12.
 
 import { instante } from "@/dominio/reloj";
-import type { Beneficiario, DecisionAgente, DecisionHumana, EntradaRegistro } from "@/dominio/tipos";
+import type { DatosComunes } from "@/dominio/cargar";
+import { aBase } from "@/dominio/dinero";
+import type { Beneficiario, DecisionAgente, DecisionHumana, Dinero, EntradaRegistro, Reglas } from "@/dominio/tipos";
+import { tasasDeLaFactura } from "@/reglas/motor";
 import { estadoHumano } from "@/aprobaciones/decidir";
 import { relojSistema } from "@/lib/reloj-sistema";
 import type { Repositorio } from "@/repositorio/repositorio";
@@ -46,4 +49,19 @@ export async function ahoraHumano(repo: Repositorio): Promise<string> {
   const esc = await repo.escenario();
   if (esc && instante(real) < instante(esc.config.ahora)) return esc.config.ahora;
   return real;
+}
+
+/**
+ * #141: un total que el agente leyó sin confianza (monto_usd null), convertido a la moneda base igual que los seguros,
+ * para mostrarlo en las listas (en naranja). Solo para mostrar: nunca entra a reglas ni presupuesto. null si no hay
+ * total leído o no hay tasa para convertirlo.
+ */
+export function montoEstimado(e: EntradaRegistro, datos: DatosComunes, reglas: Reglas): Dinero | null {
+  if (e.monto_usd_centavos !== null || !e.monto_original || !e.extraccion) return null;
+  try {
+    const { tabla } = tasasDeLaFactura(datos, reglas, e.momento, e.extraccion);
+    return { centavos: aBase(e.monto_original, tabla).base_centavos, moneda: tabla.base };
+  } catch {
+    return null;
+  }
 }

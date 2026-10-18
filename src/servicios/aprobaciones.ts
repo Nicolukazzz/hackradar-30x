@@ -7,7 +7,7 @@ import type { Aprobador, Canal, Dinero, EntradaRegistro, Formato, IdRegla, Moned
 import { canalAVincular, decisionAgente, estadoHumano } from "@/aprobaciones/decidir";
 import type { Repositorio } from "@/repositorio/repositorio";
 
-import { descripcionBeneficiario } from "./comun";
+import { descripcionBeneficiario, montoEstimado } from "./comun";
 import { asignacionDe, type AsignacionEscalada } from "./facturas";
 
 export type TarjetaAprobacion = {
@@ -23,6 +23,8 @@ export type TarjetaAprobacion = {
   monto_usd_centavos: number | null;
   /** #129: confianza con la que se leyó el total (monto_usd null = dudoso o sin leer) */
   monto_confianza: number | null;
+  /** #141: el total dudoso convertido a la moneda base, solo para mostrarlo */
+  monto_estimado: Dinero | null;
   tasa_usada: string | null;
   reglas_que_fallaron: IdRegla[];
   comparaciones: string[];
@@ -93,6 +95,7 @@ export async function obtenerAprobaciones(repo: Repositorio, orden: OrdenAprobac
         monto_original: e.monto_original,
         monto_usd_centavos: e.monto_usd_centavos,
         monto_confianza: e.extraccion?.monto_total.confianza ?? null,
+        monto_estimado: montoEstimado(e, datos, reglas),
         tasa_usada: e.tasa_usada,
         reglas_que_fallaron: e.reglas_que_fallaron,
         comparaciones: e.comparaciones,

@@ -14,9 +14,15 @@ import { FiltrosBandeja } from "./filtros";
 // Facturas de la Bandeja (#131): la lista del Registro (una línea por factura con su estado) y, a la derecha, la vista
 // previa de la factura elegida con lo que se leyó, lo que falta y por qué quedó así. La elección se copia a ?f=.
 
+// #141: el monto seguro va en verde (el de «Pagada»); el dudoso, en naranja y convertido a la moneda base igual.
 function MontoFila({ f }: { f: FilaBandeja }) {
-  if (f.monto_usd_centavos === null && f.decision !== "RECHAZADA_NO_FACTURA") return <MontoDudoso simple dinero={f.monto_original} confianza={f.monto_confianza} />;
-  return <Monto usd={f.humana?.monto_usd_centavos ?? f.monto_usd_centavos} moneda={f.moneda_base} />;
+  const usd = f.humana?.monto_usd_centavos ?? f.monto_usd_centavos;
+  if (usd === null && f.decision !== "RECHAZADA_NO_FACTURA") return <MontoDudoso simple dinero={f.monto_original} confianza={f.monto_confianza} estimado={f.monto_estimado} />;
+  return (
+    <span className={usd === null ? undefined : "font-medium text-pagada-foreground"}>
+      <Monto usd={usd} moneda={f.moneda_base} />
+    </span>
+  );
 }
 
 function Vista({ f, criterios }: { f: FilaBandeja; criterios: CriteriosExtraccion }) {

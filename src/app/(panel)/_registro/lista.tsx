@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 import { Monto, MontoDudoso, PILDORA, PildoraDecision, VistaFactura, fechaCorta, hora } from "@/app/_componentes";
 import type { CriteriosExtraccion, DiaRegistro } from "@/app/_datos/registro";
 import { Badge } from "@/components/ui/badge";
-import type { EntradaRegistro } from "@/dominio/tipos";
+import type { Dinero, EntradaRegistro } from "@/dominio/tipos";
 import { cn } from "@/lib/utils";
 
 // Registro (§13.5, #119): a la izquierda, una línea por entrada (cuándo, quién, qué, cuánto); a la derecha, la entrada
@@ -93,8 +93,11 @@ export function ListaRegistro({
   hoy,
   ayer,
   criterios,
+  estimados = {},
 }: {
   dias: DiaRegistro[];
+  /** #141: totales dudosos convertidos a la moneda base, por id de entrada */
+  estimados?: Record<string, Dinero>;
   inicial: string | null;
   hoy: string;
   ayer: string;
@@ -145,12 +148,14 @@ export function ListaRegistro({
                           {e.monto_usd_centavos !== null ? (
                             <>
                               {" · "}
-                              <Monto usd={e.monto_usd_centavos} moneda={e.moneda_base} />
+                              <span className="font-medium text-pagada-foreground">
+                                <Monto usd={e.monto_usd_centavos} moneda={e.moneda_base} />
+                              </span>
                             </>
                           ) : e.tipo === "DECISION_AGENTE" && e.decision !== "RECHAZADA_NO_FACTURA" && e.extraccion ? (
                             <>
                               {" · "}
-                              <MontoDudoso simple dinero={e.monto_original} confianza={e.extraccion.monto_total.confianza} />
+                              <MontoDudoso simple dinero={e.monto_original} confianza={e.extraccion.monto_total.confianza} estimado={estimados[e.id] ?? null} />
                             </>
                           ) : null}
                         </span>
