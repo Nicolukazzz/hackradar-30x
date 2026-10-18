@@ -5,7 +5,7 @@ import type { Aprobador } from "@/dominio/tipos";
 import { obtenerAlmacenEquipo } from "@/equipo";
 import { aprobadoresDelEquipo, comoAprobador } from "@/equipo/aprobadores";
 import { EMPRESA_ID, type Miembro } from "@/equipo/tipos";
-import type { Sesion } from "@/lib/auth/permisos";
+import { puede, type Sesion } from "@/lib/auth/permisos";
 
 /**
  * Ruta de demo (reiniciar el escenario): siempre en desarrollo; en producción solo con DEMO=1.
@@ -13,6 +13,15 @@ import type { Sesion } from "@/lib/auth/permisos";
  */
 export function demoActiva(): boolean {
   return process.env.NODE_ENV !== "production" || process.env.DEMO === "1";
+}
+
+/**
+ * ¿Se cree el remitente que escribe quien llama a un `/simular`? Solo en modo demo y solo si quien llama es
+ * administrador: si no, cualquier cuenta del panel podría hacerse pasar por el chat o el correo vinculado de un
+ * proveedor y hacer que R11 cumpla. Fuera de eso el remitente queda sin verificar y R11 escala.
+ */
+export function confiarRemitenteSimulado(sesion: Sesion): boolean {
+  return demoActiva() && puede(sesion, "editar_reglas");
 }
 
 /** La cuenta de la sesión. Solo para rutas que ya exigieron el permiso (`aprobar` o `editar_reglas`). */

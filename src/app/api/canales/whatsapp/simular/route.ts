@@ -6,7 +6,7 @@ import { conSesion } from "@/lib/auth/ruta";
 import { obtenerRepositorio } from "@/repositorio";
 
 import { cuerpo, manejar, ok } from "../../../_http";
-import { demoActiva } from "../../../_identidad";
+import { confiarRemitenteSimulado } from "../../../_identidad";
 
 const Cuerpo = z.strictObject({
   mensaje: MensajeSchema,
@@ -16,10 +16,10 @@ const Cuerpo = z.strictObject({
 
 /**
  * POST /api/canales/whatsapp/simular (#79): procesa un mensaje de WhatsApp como si hubiera llegado al webhook, para la
- * demo sin Meta. No envía la respuesta: la devuelve. En producción sin DEMO=1 el número lo escribió quien llama: el
+ * demo sin Meta. No envía la respuesta: la devuelve. Fuera de modo demo, o si quien llama no es administrador, el número lo escribió quien llama: el
  * remitente queda sin verificar (R11 escala) y VINCULAR y ESTADO no se aceptan.
  */
-export const POST = conSesion(async (req: Request) => {
+export const POST = conSesion(async (req: Request, _ctx, sesion) => {
   try {
     const { mensaje, archivos = {} } = await cuerpo(req, Cuerpo);
     const whatsapp = {
@@ -33,7 +33,7 @@ export const POST = conSesion(async (req: Request) => {
       ...(await dependenciasCanal(await obtenerRepositorio())),
       whatsapp,
       secreto: `whatsapp:${process.env.WHATSAPP_VERIFY_TOKEN ?? ""}`,
-      confiarNumero: demoActiva(),
+      confiarNumero: confiarRemitenteSimulado(sesion),
     });
     return ok(
       {

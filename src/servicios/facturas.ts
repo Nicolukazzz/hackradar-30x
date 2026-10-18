@@ -1,7 +1,7 @@
 // GET /api/facturas/:ref (§12, pantalla §13.2 Traza): entrada del agente, documento, extracción,
 // reglas evaluadas, línea de tiempo y decisiones humanas.
 
-import { formatearUsd } from "@/dominio/dinero";
+import { formatearBase } from "@/dominio/dinero";
 import { instante } from "@/dominio/reloj";
 import { normalizarNombre } from "@/dominio/normalizar";
 import type { Aprobador, Beneficiario, DocumentoRecibido, EntradaRegistro, EvaluacionRegla, Extraccion } from "@/dominio/tipos";
@@ -145,7 +145,7 @@ function hitoDecision(e: EntradaRegistro, quien: string): HitoLineaTiempo {
   if (e.decision === "PAGAR") return { momento: e.momento, titulo: "Pagada", texto: "Cumple todas las reglas: el agente la aprobó solo.", tono: "pagada" };
   if (e.decision === "FRENAR") return { momento: e.momento, titulo: "Frenada", texto: "No se paga. Para pagarla hay que corregir la factura y volver a enviarla.", tono: "frenada" };
   if (e.decision === "RECHAZADA_NO_FACTURA") return { momento: e.momento, titulo: "No es una factura", texto: "Se registró y no entra a las reglas de pago.", tono: "neutro" };
-  const usd = e.monto_usd_centavos === null ? "el monto" : `USD ${formatearUsd(e.monto_usd_centavos)}`;
+  const usd = e.monto_usd_centavos === null ? "el monto" : formatearBase(e.monto_usd_centavos, e.moneda_base ?? "USD");
   return { momento: e.momento, titulo: `Escalada a ${quien}`, texto: `${usd} reservados del presupuesto del periodo.`, tono: "escalada" };
 }
 

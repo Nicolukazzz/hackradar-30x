@@ -14,6 +14,9 @@ import { crearRepositorioMemoria } from "@/repositorio/memoria";
 import type { Repositorio } from "@/repositorio/repositorio";
 
 vi.mock("server-only", () => ({}));
+// `after` corre después de responder; en el test se guarda la tarea para esperarla.
+const tareas = vi.hoisted(() => [] as Promise<unknown>[]);
+vi.mock("next/server", async (original) => ({ ...(await original<typeof import("next/server")>()), after: (fn: () => Promise<unknown>) => void tareas.push(fn()) }));
 vi.stubEnv("LLM_PROVIDER", "ninguno");
 
 const AHORA = "2026-10-16T10:00:00-05:00";
@@ -178,10 +181,19 @@ describe("POST /api/canales/telegram/webhook", () => {
   it("con la cabecera: procesa y responde por sendMessage al mismo chat", async () => {
     const res = await pedir(await fixture("f-0101"), SECRETO);
     expect(res.status).toBe(200);
-    expect((await res.json()).ref_interna).toMatch(/^INT-2026-/);
+    await Promise.all(tareas.splice(0));
+    expect((await repo.documentos()).map((d) => d.canal)).toContain("telegram");
     expect(enviados).toHaveLength(1);
     expect(enviados[0]?.url).toBe("https://api.telegram.org/bot123:abc/sendMessage");
     expect(enviados[0]?.cuerpo).toMatchObject({ chat_id: "700100003" });
+  });
+
+  it("el mismo update_id dos veces (reintento de Telegram) entra una sola vez", async () => {
+    const u = { ...(await fixture("jpo-10")), update_id: 987654 };
+    await pedir(u, SECRETO);
+    expect(await (await pedir(u, SECRETO)).json()).toMatchObject({ ignorado: "repetido" });
+    await Promise.all(tareas.splice(0));
+    expect(await repo.documentos()).toHaveLength(1);
   });
 
   it("sin configurar → 503", async () => {

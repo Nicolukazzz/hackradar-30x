@@ -2,7 +2,7 @@
 // Plantilla en código desde la entrada del registro, sin LLM: dice quién cobra, cuánto, por qué se
 // escaló, a quién se asignó, para cuándo y dónde decidir. Puro: sin I/O ni reloj.
 
-import { formatearUsd } from "@/dominio/dinero";
+import { formatearBase } from "@/dominio/dinero";
 import type { Aprobador, EntradaRegistro } from "@/dominio/tipos";
 import { firmantes } from "@/equipo/servicio";
 import type { Miembro } from "@/equipo/tipos";
@@ -52,7 +52,7 @@ const momentoLegible = (iso: string) => `${fechaLegible(fechaDe(iso))} ${iso.sli
 
 export function armarAviso(e: EntradaRegistro, o: OpcionesAviso): Aviso {
   const asignacion = asignacionDe(e, o.aprobadores, o.decidido_en);
-  const monto = e.monto_usd_centavos === null ? "monto por confirmar" : `USD ${formatearUsd(e.monto_usd_centavos)}`;
+  const monto = e.monto_usd_centavos === null ? "monto por confirmar" : formatearBase(e.monto_usd_centavos, e.moneda_base ?? "USD");
   const urgente = asignacion?.urgente ?? false;
   const numero = e.factura_numero ? limpiar(e.factura_numero, 40) : e.ref_interna;
   const beneficiario = e.beneficiario ? limpiar(e.beneficiario, 80) : "beneficiario sin leer";
