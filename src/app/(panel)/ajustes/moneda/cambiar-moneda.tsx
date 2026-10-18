@@ -81,7 +81,9 @@ export function MonedaBase({ actual, nombres, permiso }: Readonly<{ actual: Mone
   return (
     <div className="flex flex-col gap-5 px-6 pb-6">
       <Field className="max-w-[360px]">
-        <FieldLabel htmlFor="moneda-base">Moneda base</FieldLabel>
+        <FieldLabel htmlFor="moneda-base" className="sr-only">
+          Moneda base
+        </FieldLabel>
         <SelectorOpciones id="moneda-base" opciones={opciones} valor={elegida} onCambio={elegir} />
         {cambiando ? null : <FieldDescription>Elige otra moneda para ver qué cambia antes de aplicarlo.</FieldDescription>}
       </Field>
