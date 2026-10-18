@@ -3,16 +3,16 @@ import type { DecisionAgente, DecisionHumana, ResultadoRegla } from "@/dominio/t
 import { cn } from "@/lib/utils";
 
 // Píldoras de decisión (§13 "Comunes") y de resultado de regla (§13.2 traza). Colores §15.
-// #131: el agente no paga, aprueba para pago: «Aprobada»; lo escalado es «Por aprobar» y su punto late (patrón
-// `status` de Kibo UI) porque es lo único que espera a alguien.
+// Estados originales: Pagada · Frenada · Escalada. Lo escalado tiene un punto que late (patrón `status` de Kibo UI,
+// #131) porque es lo único que espera a alguien.
 
 const DECISIONES: Record<DecisionAgente | DecisionHumana, { texto: string; clase: string; punto?: string }> = {
-  PAGAR: { texto: "Aprobada", clase: "bg-pagada text-pagada-foreground", punto: "bg-pagada-punto" },
+  PAGAR: { texto: "Pagada", clase: "bg-pagada text-pagada-foreground", punto: "bg-pagada-punto" },
   FRENAR: { texto: "Frenada", clase: "bg-frenada text-frenada-foreground", punto: "bg-frenada-punto" },
-  ESCALAR: { texto: "Por aprobar", clase: "bg-escalada text-escalada-foreground", punto: "bg-escalada-punto" },
+  ESCALAR: { texto: "Escalada", clase: "bg-escalada text-escalada-foreground", punto: "bg-escalada-punto" },
   RECHAZADA_NO_FACTURA: { texto: "No es factura", clase: "bg-muted text-muted-foreground", punto: "bg-muted-foreground" },
   APROBADA_HUMANO: { texto: "Aprobada por persona", clase: "border-pagada-punto bg-card text-pagada-foreground" },
-  RECHAZADA_HUMANO: { texto: "Rechazada", clase: "border-frenada-punto bg-card text-frenada-foreground" },
+  RECHAZADA_HUMANO: { texto: "Rechazada por persona", clase: "border-frenada-punto bg-card text-frenada-foreground" },
 };
 
 /** Forma común de las píldoras (también la del portal de proveedores, #12). */

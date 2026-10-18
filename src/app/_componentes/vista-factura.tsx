@@ -142,7 +142,7 @@ export function VistaFactura({
       ) : entrada.decision === "PAGAR" ? (
         <p className="flex items-center gap-2.5 rounded-2xl bg-pagada px-4 py-3 text-sm text-pagada-foreground">
           <span aria-hidden className="size-1.5 rounded-full bg-pagada-punto" />
-          Cumplió todas las reglas: aprobada para pago.
+          Cumplió todas las reglas: pagada.
         </p>
       ) : null}
     </div>
