@@ -11,3 +11,5 @@ export { Tarjeta, TarjetaEncabezado, TarjetaPie } from "./tarjeta";
 export * from "./formato";
 export { PanelDecision, type AprobadorCorto, type PropsPanelDecision } from "./panel-decision";
 export { VistaFactura } from "./vista-factura";
+export { CorreccionesProvider, useCorrecciones } from "./correcciones";
+export { MontoDudoso, razonMontoDudoso } from "./monto-dudoso";

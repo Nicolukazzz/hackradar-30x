@@ -6,11 +6,13 @@ import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { MINIMO_COMENTARIO } from "@/aprobaciones/decidir";
-import { formatearUsd } from "@/dominio/dinero";
-import type { Moneda } from "@/dominio/tipos";
+import { ETIQUETA_CAMPO, type CampoCorregible } from "@/aprobaciones/correcciones";
+import { formatear, formatearUsd } from "@/dominio/dinero";
+import type { Dinero, Moneda } from "@/dominio/tipos";
 import { cn } from "@/lib/utils";
 
 import { Boton } from "./boton";
+import { useCorrecciones } from "./correcciones";
 import { useMonedaBase } from "./moneda-base";
 
 // Decisión humana sobre una factura escalada (§10, §13.2 y §13.3). Dos pasos: elegir y confirmar.
@@ -32,6 +34,8 @@ export type PropsPanelDecision = {
   factura: string | null;
   beneficiario: string | null;
   montoUsd: number | null;
+  /** #129: total leído sin confianza (montoUsd null): se puede aprobar igual confirmándolo o corrigiéndolo */
+  montoDudoso?: Dinero | null;
   puedeAgregarALista: boolean;
   /** #110: canal (correo o chat) que se puede vincular al proveedor al aprobar; null si no aplica */
   canalAVincular?: { tipo: "correo" | "telegram"; valor: string } | null;
@@ -62,8 +66,17 @@ export function PanelDecision(p: PropsPanelDecision) {
   const [enviando, iniciar] = useTransition();
 
   const moneda = useMonedaBase();
+  const { correcciones, limpiar } = useCorrecciones();
+  const corregidas = Object.keys(correcciones) as CampoCorregible[];
+  const totalCorregido = correcciones.monto_total ?? null;
   // #86: el monto está en la moneda con la que se decidió la factura (la de la entrada); por defecto, la base de hoy.
-  const usd = p.montoUsd === null ? null : `${p.moneda ?? moneda} ${formatearUsd(p.montoUsd)}`;
+  // #129: si la persona corrigió el total, se aprueba por ese; si el agente no estaba seguro, por el que leyó.
+  let usd: string | null = null;
+  if (totalCorregido) usd = formatear(totalCorregido);
+  else if (p.montoUsd !== null) usd = `${p.moneda ?? moneda} ${formatearUsd(p.montoUsd)}`;
+  else if (p.montoDudoso) usd = formatear(p.montoDudoso);
+  const totalDudoso = p.montoUsd === null && !totalCorregido;
+  const sinTotal = totalDudoso && !p.montoDudoso;
   const comentarioOk = comentario.trim().length >= MINIMO;
   const firmaPropia = p.firmas.some((f) => f.aprobador_id === p.actual?.id);
   const superaLimite =
@@ -99,7 +112,12 @@ export function PanelDecision(p: PropsPanelDecision) {
         res = await fetch(`/api/aprobaciones/${encodeURIComponent(p.refInterna)}`, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ accion, comentario: comentario.trim(), ...(agregar && puedeAgregar && accion === "aprobar" ? { [vincular ? "vincular_canal" : "agregar_a_lista"]: true } : {}) }),
+          body: JSON.stringify({
+            accion,
+            comentario: comentario.trim(),
+            ...(agregar && puedeAgregar && accion === "aprobar" ? { [vincular ? "vincular_canal" : "agregar_a_lista"]: true } : {}),
+            ...(corregidas.length > 0 ? { correcciones } : {}),
+          }),
         });
       } catch {
         // Sin red o servidor reiniciando: no se registró nada; el comentario se conserva para reintentar.
@@ -118,6 +136,7 @@ export function PanelDecision(p: PropsPanelDecision) {
       else if (accion === "aprobar") toast.success(`Aprobaste ${quien}`, { description: `${usd ?? "El monto"} pasa de reservado a pagado. Quedó en el registro.` });
       else toast.success(`Rechazaste ${quien}`, { description: `La reserva de ${usd ?? "la factura"} vuelve al presupuesto.` });
       setComentario("");
+      limpiar();
       setAccion(null);
       setAgregar(false);
       setTocado(false);
@@ -210,10 +229,21 @@ export function PanelDecision(p: PropsPanelDecision) {
         </p>
       ) : null}
       {firmaPropia ? <p className="text-[13px] text-texto-3">Ya firmaste esta factura: la segunda aprobación debe ser de otra persona.</p> : null}
-      {p.montoUsd === null ? (
-        <p className="text-[13px] text-escalada-foreground">
-          No se puede aprobar: el monto no se leyó con confianza (R1) y no se aprueba un pago sin monto seguro. Recházala o pide al proveedor que la envíe de
-          nuevo (un PDF se lee mejor que una foto).
+      {corregidas.length > 0 ? (
+        <p className="rounded-xl bg-link/10 px-4 py-3 text-[13px] text-link">
+          Decides con {corregidas.length === 1 ? "1 dato corregido" : `${corregidas.length} datos corregidos`}: {corregidas.map((c) => ETIQUETA_CAMPO[c]).join(", ")}. Quedan en el
+          registro con tu decisión.
+        </p>
+      ) : null}
+      {totalDudoso && !sinTotal ? (
+        <p className="rounded-xl bg-escalada px-4 py-3 text-[13px] text-escalada-foreground">
+          El agente no está seguro del total. Si apruebas, confirmas <span className="font-mono font-semibold">{usd}</span>. Si no es correcto, corrígelo con
+          el lápiz junto al Total en «Datos extraídos».
+        </p>
+      ) : null}
+      {sinTotal ? (
+        <p className="rounded-xl bg-escalada px-4 py-3 text-[13px] text-escalada-foreground">
+          El agente no pudo leer el total. Escríbelo con el lápiz junto al Total en «Datos extraídos» para poder aprobar.
         </p>
       ) : null}
       {error ? (
@@ -225,7 +255,7 @@ export function PanelDecision(p: PropsPanelDecision) {
         <Boton variante="peligro" onClick={() => elegir("rechazar")}>
           Rechazar pago
         </Boton>
-        <Boton variante="primaria" onClick={() => elegir("aprobar")} disabled={bloqueoLimite || firmaPropia || p.montoUsd === null}>
+        <Boton variante="primaria" onClick={() => elegir("aprobar")} disabled={bloqueoLimite || firmaPropia || sinTotal}>
           {textoAprobar}
         </Boton>
       </div>

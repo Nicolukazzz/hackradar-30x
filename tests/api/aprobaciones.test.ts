@@ -221,3 +221,29 @@ describe("POST /api/aprobaciones/:ref — roles (#51)", () => {
     expect((await firmar(ref, "Segunda firma de control")).cuerpo.decision).toBe("APROBADA_HUMANO");
   });
 });
+
+describe("POST /api/aprobaciones/:ref con correcciones (#129)", () => {
+  it("las correcciones viajan con la aprobación: el total corregido se usa y queda en el registro", async () => {
+    const repo = await repoProcesado();
+    const lf = await entradaDe(repo, "LF-2026-10");
+    const res = await post(lf.ref_interna, {
+      accion: "aprobar",
+      comentario: "El proveedor reenvió el total correcto",
+      correcciones: { monto_total: { centavos: 440000, moneda: "USD" } },
+    });
+    expect(res.status).toBe(201);
+    const e = await res.json();
+    expect(e).toMatchObject({ decision: "APROBADA_HUMANO", monto_usd_centavos: 440000 });
+    expect(e.extraccion.monto_total).toEqual({ valor: { centavos: 440000, moneda: "USD" }, confianza: 1, fuente: "humano" });
+    expect(e.explicacion).toContain("Datos corregidos: total USD 4.500,00 → USD 4.400,00");
+  });
+
+  it("una corrección con formato inválido se rechaza (400) sin escribir nada", async () => {
+    const repo = await repoProcesado();
+    const lf = await entradaDe(repo, "LF-2026-10");
+    const largo = (await repo.registro()).length;
+    const res = await post(lf.ref_interna, { accion: "aprobar", comentario: "Revisado con el proveedor", correcciones: { cuenta_destino_ultimos4: "12" } });
+    expect(res.status).toBe(400);
+    expect(await repo.registro()).toHaveLength(largo);
+  });
+});

@@ -3,10 +3,13 @@
 // Sin reloj: `ahora` llega inyectado.
 
 import { correoDeInvitacion, esRemitenteInvitacion } from "@/dominio/remitente";
-import { formatearUsd } from "@/dominio/dinero";
+import { aBase, formatear, formatearUsd } from "@/dominio/dinero";
 import { slug } from "@/dominio/normalizar";
-import type { Aprobador, Beneficiario, DocumentoRecibido, EntradaRegistro } from "@/dominio/tipos";
+import type { Aprobador, Beneficiario, DocumentoRecibido, EntradaRegistro, Extraccion, Reglas } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
+import { tasasDeLaFactura } from "@/reglas/motor";
+
+import { aplicarCorrecciones, type Correcciones, extraccionVigente, resumenCorrecciones } from "./correcciones";
 
 export type EntradaDecision = {
   ref: string;
@@ -23,6 +26,8 @@ export type EntradaDecision = {
   agregar_a_lista?: boolean;
   /** #110: vincular el correo o chat desde el que llegó la factura al proveedor (falló solo por R11) */
   vincular_canal?: boolean;
+  /** #129: datos que la persona corrigió antes de decidir (quedan en el registro con la decisión) */
+  correcciones?: Correcciones;
 };
 
 export type CanalAVincular = { tipo: "correo" | "telegram"; valor: string; beneficiario_id: string };
@@ -171,10 +176,11 @@ function beneficiarioAAgregar(
   parcial: boolean,
   documento: Awaited<ReturnType<Repositorio["documento"]>>,
   existentes: readonly Beneficiario[],
+  ext: Extraccion | null,
 ): Beneficiario | null {
   if (!v.agregar) return null;
   if (parcial) throw new ErrorDecision(400, "El beneficiario se agrega a la lista con la segunda firma, no con la primera.");
-  const b = beneficiarioDesde(v.origen, documento);
+  const b = beneficiarioDesde(v.origen, documento, ext);
   if (existentes.some((x) => x.id === b.id)) throw new ErrorDecision(409, `${b.nombre} ya está en la lista permitida.`);
   return b;
 }
@@ -192,42 +198,116 @@ async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Reposito
   const base = entradaBase(v, reglas.version, ahora);
   const anio = Number(ahora.slice(0, 4));
 
+  // #129: datos corregidos (por esta persona o por la primera firma) y el monto con el que se decide.
+  const correcciones = input.correcciones ?? {};
+  const extPrevia = extraccionVigente(registro, v.origen);
+  if (Object.keys(correcciones).length > 0 && !extPrevia) throw new ErrorDecision(400, "Esta factura no tiene datos extraídos que corregir.");
+  const ext = extPrevia ? aplicarCorrecciones(extPrevia, correcciones) : null;
+  const cambio = extPrevia ? resumenCorrecciones(extPrevia, correcciones, formatear) : null;
+  const notaCambio = cambio ? ` Datos corregidos: ${cambio}.` : "";
+  const conDatos = { ...(ext && ext !== v.origen.extraccion ? { extraccion: ext } : {}) };
+
   if (input.accion === "rechazar") {
     // Rechazar nunca paga: no exige límite. Libera la reserva (§6).
     const entrada: EntradaRegistro = {
       ...base,
+      ...conDatos,
       id: await repo.siguienteIdRegistro(anio),
       decision: "RECHAZADA_HUMANO",
-      explicacion: `Rechazada por ${v.aprobador.nombre}: «${v.comentario}». La reserva volvió al presupuesto.`,
+      explicacion: `Rechazada por ${v.aprobador.nombre}: «${v.comentario}». La reserva volvió al presupuesto.${notaCambio}`,
     };
     await repo.agregarEntrada(entrada);
     return { entrada, parcial: false, beneficiario_agregado: null };
   }
 
-  const usd = v.origen.monto_usd_centavos;
-  if (usd === null) {
-    throw new ErrorDecision(409, "La factura no tiene un monto confiable (R1): corrige los datos y vuelve a enviarla antes de aprobar.");
-  }
-  const { parcial, explicacion } = resolverAprobacion(v, usd, reglas.aprobacion.doble_aprobacion_desde_usd, aprobadores);
-  const nuevo = beneficiarioAAgregar(v, parcial, documento, datos.beneficiarios);
+  const monto = montoParaAprobar(v.origen, ext, { datos, reglas, ahora });
+  const { parcial, explicacion } = resolverAprobacion(v, monto.usd, reglas.aprobacion.doble_aprobacion_desde_usd, aprobadores);
+  const nuevo = beneficiarioAAgregar(v, parcial, documento, datos.beneficiarios, ext);
   const vinculo = canalValidado(v, parcial, documento, datos.beneficiarios);
+  const notaMonto = monto.confirmado ? ` El agente no estaba seguro del total: ${v.aprobador.nombre} lo confirmó en ${monto.texto}.` : "";
 
-  const entrada: EntradaRegistro = { ...base, id: await repo.siguienteIdRegistro(anio), decision: parcial ? null : "APROBADA_HUMANO", explicacion };
+  const entrada: EntradaRegistro = {
+    ...base,
+    ...conDatos,
+    monto_original: monto.original,
+    monto_usd_centavos: monto.usd,
+    tasa_usada: monto.tasa_usada,
+    moneda_base: monto.moneda_base,
+    id: await repo.siguienteIdRegistro(anio),
+    decision: parcial ? null : "APROBADA_HUMANO",
+    explicacion: `${explicacion}${notaMonto}${notaCambio}`,
+  };
   await repo.agregarEntrada(entrada);
   if (nuevo) await agregarALista(nuevo, v.origen, entrada, { repo, ahora, aprobador: v.aprobador });
   if (vinculo) await vincularCanal(vinculo, v.origen, entrada, { repo, ahora, aprobador: v.aprobador });
   return { entrada, parcial, beneficiario_agregado: nuevo };
 }
 
-function nitConfiable(origen: EntradaRegistro): string | null {
-  const c = origen.extraccion?.identificacion_fiscal;
+type MontoAprobado = {
+  usd: number;
+  original: EntradaRegistro["monto_original"];
+  tasa_usada: string | null;
+  moneda_base: NonNullable<EntradaRegistro["moneda_base"]>;
+  /** el agente no tenía un total confiable y la persona aprueba con el que ve o corrigió */
+  confirmado: boolean;
+  texto: string;
+};
+
+/**
+ * #129: el monto con el que se aprueba. Si el agente tenía un total confiable y nadie lo corrigió, ese. Si no (R1 lo
+ * marcó dudoso o la persona lo corrigió), el total que ve la persona, convertido a la moneda base con la tasa de la
+ * factura: con ese se miden el límite de quien aprueba, la doble firma y el presupuesto. Sin ningún total, no se aprueba.
+ */
+function montoParaAprobar(
+  origen: EntradaRegistro,
+  ext: Extraccion | null,
+  ctx: { datos: Awaited<ReturnType<Repositorio["datosComunes"]>>; reglas: Reglas; ahora: string },
+): MontoAprobado {
+  const total = ext?.monto_total;
+  const corregido = total?.fuente === "humano";
+  if (origen.monto_usd_centavos !== null && !corregido) {
+    const moneda = origen.moneda_base ?? "USD";
+    return {
+      usd: origen.monto_usd_centavos,
+      original: origen.monto_original,
+      tasa_usada: origen.tasa_usada,
+      moneda_base: moneda,
+      confirmado: false,
+      texto: formatear({ centavos: origen.monto_usd_centavos, moneda }),
+    };
+  }
+  if (!ext || !total?.valor) {
+    throw new ErrorDecision(409, "La factura no tiene un total legible. Escríbelo con el lápiz junto al Total y vuelve a aprobar.");
+  }
+  const { tabla } = tasasDeLaFactura(ctx.datos, ctx.reglas, ctx.ahora, ext);
+  let convertido: ReturnType<typeof aBase>;
+  try {
+    convertido = aBase(total.valor, tabla);
+  } catch {
+    throw new ErrorDecision(400, `No hay tasa para convertir ${total.valor.moneda} a ${tabla.base}. Corrige la moneda del total o pídele a un administrador que la agregue.`);
+  }
+  if (convertido.base_centavos <= 0) throw new ErrorDecision(400, "El total debe ser mayor que cero.");
+  return {
+    usd: convertido.base_centavos,
+    original: total.valor,
+    tasa_usada: convertido.tasa_usada,
+    moneda_base: tabla.base,
+    confirmado: !corregido,
+    texto: formatear(total.valor),
+  };
+}
+
+function nitConfiable(ext: Extraccion | null): string | null {
+  const c = ext?.identificacion_fiscal;
   return c?.valor && c.confianza >= 0.9 ? c.valor : null;
 }
 
 /** Beneficiario nuevo con la cuenta de la factura y el canal por el que llegó (§10). Sin escribir nada. */
-function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnType<Repositorio["documento"]>>): Beneficiario {
-  const nombre = origen.beneficiario ?? origen.extraccion?.beneficiario_nombre.valor ?? null;
-  const ultimos4 = origen.extraccion?.cuenta_destino_ultimos4.valor ?? null;
+function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnType<Repositorio["documento"]>>, ext: Extraccion | null): Beneficiario {
+  // #129: con los datos corregidos por la persona, si los hay (nombre y cuenta mandan sobre lo que leyó el agente).
+  const nombreCorregido = ext?.beneficiario_nombre.fuente === "humano" ? ext.beneficiario_nombre.valor : null;
+  const nombre = nombreCorregido ?? origen.beneficiario ?? ext?.beneficiario_nombre.valor ?? null;
+  const ultimos4 = ext?.cuenta_destino_ultimos4.valor ?? null;
   if (!nombre || !ultimos4) throw new ErrorDecision(400, "Sin nombre o cuenta confiables en la factura no se puede agregar a la lista.");
   const rem = documento?.remitente;
   // Enlace de invitación (#28): se vincula el correo verificado de quien envió (sus próximas facturas por correo
@@ -237,7 +317,7 @@ function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnTyp
     id: `ben-${slug(nombre)}`,
     nombre,
     // #108: el NIT leído de la factura (si fue confiable), para reconocerlo después en modo NIT.
-    identificacion_fiscal: nitConfiable(origen),
+    identificacion_fiscal: nitConfiable(ext),
     pais: "ZZ", // desconocido (ISO 3166 reserva ZZ): completarlo en Reglas
     categoria: "sin clasificar",
     tipo: "proveedor",

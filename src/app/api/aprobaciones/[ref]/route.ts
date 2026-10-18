@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { CorreccionesSchema } from "@/aprobaciones/correcciones";
 import { decidir } from "@/aprobaciones/decidir";
 import { puede } from "@/lib/auth/permisos";
 import { conSesion } from "@/lib/auth/ruta";
@@ -15,6 +16,8 @@ const Cuerpo = z.strictObject({
   comentario: z.string().max(1000),
   agregar_a_lista: z.boolean().optional(),
   vincular_canal: z.boolean().optional(),
+  /** #129: datos corregidos por quien decide; quedan en el registro con la decisión */
+  correcciones: CorreccionesSchema.optional(),
 });
 
 /**

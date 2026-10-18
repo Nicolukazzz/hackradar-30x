@@ -1,37 +1,42 @@
-import { BarraConfianza, Monto, PildoraResultado, Tarjeta, TarjetaEncabezado, TarjetaPie, fechaCorta, hora } from "@/app/_componentes";
+import { PildoraResultado, Tarjeta, TarjetaEncabezado, TarjetaPie, hora } from "@/app/_componentes";
 import type { HitoLineaTiempo, RespuestaFactura } from "@/app/_datos/facturas";
-import type { Dinero, IdRegla } from "@/dominio/tipos";
+import type { IdRegla } from "@/dominio/tipos";
 import { cn } from "@/lib/utils";
+
+import { type FilaDato, TablaDatos } from "./datos-editables";
 
 // Secciones de la traza (§13.2) que no tienen interacción: datos extraídos, reglas y línea de tiempo.
 
-type CampoVista = { etiqueta: string; valor: React.ReactNode; confianza: number | null; total?: boolean };
-
-function campos(f: RespuestaFactura): CampoVista[] {
+/** Filas de «Datos extraídos» (#129: el total al final; cada dato corregible con su clave). */
+function campos(f: RespuestaFactura): FilaDato[] {
   const ext = f.extraccion;
   if (!ext) return [];
-  const fecha = (v: string | null) => (v ? fechaCorta(v) : null);
-  const dinero = (d: Dinero | null) => (d ? <Monto dinero={d} /> : null);
-  const lista: CampoVista[] = [
-    { etiqueta: "Beneficiario", valor: ext.beneficiario_nombre.valor, confianza: ext.beneficiario_nombre.confianza },
-    { etiqueta: "Número", valor: ext.numero.valor ? <span className="font-mono">{ext.numero.valor}</span> : null, confianza: ext.numero.confianza },
-    { etiqueta: "Emisión", valor: fecha(ext.fecha_emision.valor), confianza: ext.fecha_emision.confianza },
-    { etiqueta: "Vencimiento", valor: fecha(ext.fecha_vencimiento.valor), confianza: ext.fecha_vencimiento.confianza },
-    {
-      etiqueta: "Cuenta destino",
-      valor: ext.cuenta_destino_ultimos4.valor ? <span className="font-mono">•••• {ext.cuenta_destino_ultimos4.valor}</span> : null,
-      confianza: ext.cuenta_destino_ultimos4.confianza,
-    },
-    { etiqueta: "Concepto", valor: ext.concepto.valor, confianza: ext.concepto.confianza },
+  // Moneda para un monto que no se leyó: la de otro monto de la factura, si no la base con la que se decidió.
+  const moneda = ext.subtotal?.valor?.moneda ?? ext.impuestos?.valor?.moneda ?? f.entrada.moneda_base ?? "USD";
+  const fila = (etiqueta: string, clave: FilaDato["clave"], tipo: FilaDato["tipo"], c: { valor: unknown; confianza: number } | undefined): FilaDato => ({
+    etiqueta,
+    clave,
+    tipo,
+    valor: (c?.valor ?? null) as FilaDato["valor"],
+    confianza: c?.confianza ?? 0,
+    moneda,
+  });
+  const lista: FilaDato[] = [
+    fila("Beneficiario", "beneficiario_nombre", "texto", ext.beneficiario_nombre),
+    fila("Número", "numero", "mono", ext.numero),
+    fila("Emisión", "fecha_emision", "fecha", ext.fecha_emision),
+    fila("Vencimiento", "fecha_vencimiento", "fecha", ext.fecha_vencimiento),
+    fila("Cuenta destino", "cuenta_destino_ultimos4", "cuenta", ext.cuenta_destino_ultimos4),
+    fila("Concepto", "concepto", "texto", ext.concepto),
   ];
-  if (ext.subtotal?.valor) lista.push({ etiqueta: "Subtotal", valor: dinero(ext.subtotal.valor), confianza: ext.subtotal.confianza });
-  if (ext.impuestos?.valor) lista.push({ etiqueta: "Impuestos", valor: dinero(ext.impuestos.valor), confianza: ext.impuestos.confianza });
+  if (ext.subtotal?.valor) lista.push(fila("Subtotal", "subtotal", "dinero", ext.subtotal));
+  if (ext.impuestos?.valor) lista.push(fila("Impuestos", "impuestos", "dinero", ext.impuestos));
   if (ext.referencia_acuerdo?.valor) {
     const hito = ext.hito_numero?.valor ? ` · hito ${ext.hito_numero.valor}` : "";
-    lista.push({ etiqueta: "Acuerdo", valor: <span className="font-mono">{ext.referencia_acuerdo.valor + hito}</span>, confianza: ext.referencia_acuerdo.confianza });
+    lista.push({ ...fila("Acuerdo", hito ? null : "referencia_acuerdo", "mono", ext.referencia_acuerdo), valor: ext.referencia_acuerdo.valor + hito });
   }
   // El total va al final, debajo de subtotal e impuestos, como en una factura (#126).
-  lista.push({ etiqueta: "Total", valor: dinero(ext.monto_total.valor), confianza: ext.monto_total.confianza, total: true });
+  lista.push({ ...fila("Total", "monto_total", "dinero", ext.monto_total), total: true });
   return lista;
 }
 
@@ -60,24 +65,7 @@ export function DatosExtraidos({ f }: { f: RespuestaFactura }) {
       {lista.length === 0 ? (
         <p className="border-t border-border px-6 py-5 text-sm text-muted-foreground">No se pudieron extraer datos de este documento.</p>
       ) : (
-        <dl>
-          {lista.map((c) => (
-            <div
-              key={c.etiqueta}
-              className={cn(
-                "grid grid-cols-[96px_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 px-6 py-3 sm:grid-cols-[96px_minmax(0,1fr)_88px]",
-                // El total se separa con una línea punteada negra a lo ancho de la tabla.
-                c.total ? "border-t-2 border-dotted border-foreground" : "border-t border-subtle",
-              )}
-            >
-              <dt className={cn("text-[13px]", c.total ? "font-semibold text-foreground" : "text-muted-foreground")}>{c.etiqueta}</dt>
-              <dd className={cn("text-sm break-words", c.total ? "text-base font-semibold" : "font-medium")}>{c.valor ?? <span className="font-normal text-escalada-foreground">No se pudo leer</span>}</dd>
-              <dd className="col-span-2 sm:col-span-1">
-                <BarraConfianza campo={c.etiqueta} valor={c.confianza ?? 0} />
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <TablaDatos filas={lista} />
       )}
     </Tarjeta>
   );

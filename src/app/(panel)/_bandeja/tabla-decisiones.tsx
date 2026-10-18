@@ -1,7 +1,7 @@
 import { ChevronRightIcon } from "lucide-react";
 import Link from "next/link";
 
-import { Monto, PildoraDecision, Tarjeta, diaMes, etiquetaFormato, hora } from "@/app/_componentes";
+import { Monto, MontoDudoso, PildoraDecision, Tarjeta, diaMes, etiquetaFormato, hora } from "@/app/_componentes";
 import type { FilaBandeja, FiltroDecision, RespuestaBandeja } from "@/app/_datos/bandeja";
 
 import { FiltrosBandeja } from "./filtros";
@@ -59,9 +59,13 @@ export function TablaDecisiones({ datos, decision, q }: { datos: RespuestaBandej
                 </span>
                 <span className="flex flex-col items-end gap-0.5 md:items-start">
                   <span className="text-[15px] font-semibold">
-                    <Monto usd={f.monto_usd_centavos} moneda={f.moneda_base} />
+                    {f.monto_usd_centavos === null && f.decision !== "RECHAZADA_NO_FACTURA" ? (
+                      <MontoDudoso dinero={f.monto_original} confianza={f.monto_confianza} />
+                    ) : (
+                      <Monto usd={f.monto_usd_centavos} moneda={f.moneda_base} />
+                    )}
                   </span>
-                  {f.monto_original && f.monto_original.moneda !== f.moneda_base ? (
+                  {f.monto_usd_centavos !== null && f.monto_original && f.monto_original.moneda !== f.moneda_base ? (
                     <span className="text-xs text-muted-foreground">
                       <Monto dinero={f.monto_original} />
                     </span>

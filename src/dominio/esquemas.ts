@@ -188,7 +188,7 @@ function campo<T extends z.ZodType>(valor: T) {
   return z.strictObject({
     valor: valor.nullable(),
     confianza: z.number().min(0).max(1),
-    fuente: z.enum(["parser", "llm", "xml"]),
+    fuente: z.enum(["parser", "llm", "xml", "humano"]),
   });
 }
 

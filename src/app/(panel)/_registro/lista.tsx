@@ -4,7 +4,7 @@ import { ChevronRightIcon } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 
-import { Monto, PILDORA, PildoraDecision, VistaFactura, fechaCorta, hora } from "@/app/_componentes";
+import { Monto, MontoDudoso, PILDORA, PildoraDecision, VistaFactura, fechaCorta, hora } from "@/app/_componentes";
 import type { CriteriosExtraccion, DiaRegistro } from "@/app/_datos/registro";
 import { Badge } from "@/components/ui/badge";
 import type { EntradaRegistro } from "@/dominio/tipos";
@@ -146,6 +146,11 @@ export function ListaRegistro({
                             <>
                               {" · "}
                               <Monto usd={e.monto_usd_centavos} moneda={e.moneda_base} />
+                            </>
+                          ) : e.tipo === "DECISION_AGENTE" && e.decision !== "RECHAZADA_NO_FACTURA" && e.extraccion ? (
+                            <>
+                              {" · "}
+                              <MontoDudoso simple dinero={e.monto_original} confianza={e.extraccion.monto_total.confianza} />
                             </>
                           ) : null}
                         </span>

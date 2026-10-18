@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Boton, Monto, PanelDecision, PildoraDecision, Tarjeta, etiquetaCanal, fechaCorta, fechaHora, hora } from "@/app/_componentes";
+import { Boton, CorreccionesProvider, Monto, PanelDecision, PildoraDecision, Tarjeta, etiquetaCanal, fechaCorta, fechaHora, hora } from "@/app/_componentes";
 import { obtenerFactura, type RespuestaFactura } from "@/app/_datos/facturas";
 import { aprobadorDeLaCuenta } from "@/app/api/_identidad";
 import { permisoPara } from "@/lib/auth/permisos";
@@ -144,6 +144,7 @@ async function DecisionHumana({ f, verificar = false }: { f: RespuestaFactura; v
             factura={e.factura_numero}
             beneficiario={e.beneficiario}
             montoUsd={e.monto_usd_centavos}
+            montoDudoso={e.monto_usd_centavos === null ? e.monto_original : null}
             moneda={e.moneda_base ?? "USD"}
             // Agregar a la lista permitida cambia las reglas: solo `editar_reglas` (el servidor responde 403 si no).
             puedeAgregarALista={e.reglas_que_fallaron.includes("R3") && permisoPara(sesion, "editar_reglas").ok}
@@ -222,6 +223,8 @@ export default async function TrazaPage({ params, searchParams }: PageProps<"/fa
 
       <PorQue f={f} />
 
+      {/* #129: la tabla de datos corrige y el panel de decisión manda las correcciones con la decisión. */}
+      <CorreccionesProvider editable={pendiente && permisoPara(await obtenerSesion(), "aprobar").ok}>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-6">
           <VisorDocumento f={f} />
@@ -233,6 +236,7 @@ export default async function TrazaPage({ params, searchParams }: PageProps<"/fa
           <DecisionHumana f={f} verificar={verificar} />
         </div>
       </div>
+      </CorreccionesProvider>
     </>
   );
 }
