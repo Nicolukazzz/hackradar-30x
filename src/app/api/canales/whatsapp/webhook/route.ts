@@ -37,6 +37,7 @@ export async function GET(req: Request): Promise<Response> {
   const q = new URL(req.url).searchParams;
   const challenge = q.get("hub.challenge") ?? "";
   if (!verify || q.get("hub.mode") !== "subscribe" || !iguales(q.get("hub.verify_token") ?? "", verify) || !/^[\w-]{1,200}$/.test(challenge)) {
+    console.warn(`whatsapp: verificación GET rechazada (mode=${q.get("hub.mode") ?? "-"}, token ${q.get("hub.verify_token") ? "distinto" : "vacío"})`);
     return new Response("No autorizado.", { status: 403 });
   }
   return new Response(challenge, { status: 200, headers: { "content-type": "text/plain" } });
@@ -47,9 +48,15 @@ export async function POST(req: Request): Promise<Response> {
   const phone = process.env.WHATSAPP_PHONE_ID ?? "";
   const appSecret = process.env.WHATSAPP_APP_SECRET ?? "";
   const verify = process.env.WHATSAPP_VERIFY_TOKEN ?? "";
-  if (!token || !phone || !appSecret || !verify) return Response.json({ error: "WhatsApp no está configurado." }, { status: 503 });
+  if (!token || !phone || !appSecret || !verify) {
+    console.warn("whatsapp: POST sin configurar (faltan variables WHATSAPP_*)");
+    return Response.json({ error: "WhatsApp no está configurado." }, { status: 503 });
+  }
   const crudo = await req.text();
-  if (!firmaValida(crudo, req.headers.get("x-hub-signature-256"), appSecret)) return Response.json({ error: "No autorizado." }, { status: 401 });
+  if (!firmaValida(crudo, req.headers.get("x-hub-signature-256"), appSecret)) {
+    console.warn(`whatsapp: POST con firma inválida (${req.headers.get("x-hub-signature-256") ? "no coincide con WHATSAPP_APP_SECRET" : "sin cabecera"}, ${crudo.length} bytes)`);
+    return Response.json({ error: "No autorizado." }, { status: 401 });
+  }
 
   let json: unknown = null;
   try {
@@ -58,8 +65,14 @@ export async function POST(req: Request): Promise<Response> {
     return Response.json({ ok: true, ignorado: "cuerpo inválido" });
   }
   const webhook = WebhookSchema.safeParse(json);
-  if (!webhook.success) return Response.json({ ok: true, ignorado: "evento desconocido" });
-  const mensajes = mensajesDe(webhook.data).filter((m) => primeraVez(m.id) && porNumero.permitir(m.from));
+  if (!webhook.success) {
+    console.warn(`whatsapp: evento con forma desconocida: ${webhook.error.issues.slice(0, 3).map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`);
+    return Response.json({ ok: true, ignorado: "evento desconocido" });
+  }
+  const todos = mensajesDe(webhook.data);
+  const campos = webhook.data.entry.flatMap((e) => e.changes.map((c) => c.field));
+  console.info(`whatsapp: evento ${campos.join(",") || "sin cambios"} con ${todos.length} mensaje(s)`);
+  const mensajes = todos.filter((m) => primeraVez(m.id) && porNumero.permitir(m.from));
 
   after(async () => {
     const whatsapp = crearClienteWhatsapp(token, phone);
