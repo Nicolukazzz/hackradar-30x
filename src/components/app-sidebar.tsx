@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheckIcon, InboxIcon, ListIcon, LogOutIcon, SettingsIcon, UsersIcon } from "lucide-react";
+import { HourglassIcon, InboxIcon, LogOutIcon, SettingsIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense, use } from "react";
 import { usePathname } from "next/navigation";
@@ -26,8 +26,7 @@ import { cn } from "@/lib/utils";
 // empresa que usa la app (no un nombre de producto) y abajo solo quién está conectado.
 const navegacion = [
   { titulo: "Bandeja", href: "/", icono: InboxIcon },
-  { titulo: "Aprobaciones", href: "/aprobaciones", icono: CircleCheckIcon },
-  { titulo: "Registro", href: "/registro", icono: ListIcon },
+  { titulo: "Pendientes", href: "/pendientes", icono: HourglassIcon },
   { titulo: "Proveedores", href: "/proveedores", icono: UsersIcon },
   { titulo: "Ajustes", href: "/ajustes", icono: SettingsIcon },
 ] as const;
@@ -92,7 +91,8 @@ export function AppSidebar({
             <nav aria-label="Principal">
               <SidebarMenu className="gap-1">
                 {navegacion.map(({ titulo, href, icono: Icono }) => {
-                  const activa = href === "/" ? ruta === "/" : ruta.startsWith(href);
+                  // El registro de auditoría y la factura completa se abren desde la Bandeja (#131): siguen marcando «Bandeja».
+                  const activa = href === "/" ? ruta === "/" || ruta.startsWith("/registro") || ruta.startsWith("/facturas") : ruta.startsWith(href);
                   return (
                     <SidebarMenuItem key={href}>
                       <SidebarMenuButton
@@ -109,7 +109,7 @@ export function AppSidebar({
                         <Icono aria-hidden />
                         <span className="flex-1">{titulo}</span>
                         {activa ? <span aria-hidden className="size-1.5 rounded-full bg-sidebar-primary" /> : null}
-                        {href === "/aprobaciones" ? (
+                        {href === "/pendientes" ? (
                           <Suspense fallback={null}>
                             <BadgePendientes pendientes={pendientes} />
                           </Suspense>

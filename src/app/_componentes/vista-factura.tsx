@@ -1,4 +1,3 @@
-import { CheckCircle2Icon, CircleAlertIcon, CircleDashedIcon, CircleXIcon } from "lucide-react";
 
 import type { Campo, CampoRequerible, Dinero, EntradaRegistro, Extraccion } from "@/dominio/tipos";
 import { cn } from "@/lib/utils";
@@ -40,12 +39,18 @@ function estadoDe(f: Fila, requeridos: readonly CampoRequerible[], minima: numbe
   return f.campo!.confianza >= minima ? "leido" : "dudoso";
 }
 
-const ICONO: Record<Estado, { icono: React.ReactNode; texto: string }> = {
-  leido: { icono: <CheckCircle2Icon className="size-4 text-pagada-punto" aria-hidden />, texto: "Leído" },
-  dudoso: { icono: <CircleAlertIcon className="size-4 text-escalada-punto" aria-hidden />, texto: "Con dudas" },
-  falta: { icono: <CircleXIcon className="size-4 text-frenada-punto" aria-hidden />, texto: "Falta" },
-  opcional: { icono: <CircleDashedIcon className="size-4 text-muted-foreground" aria-hidden />, texto: "No viene" },
+// #131: marcas tipográficas en vez de íconos de círculo (se veían genéricos): un punto para lo leído y una etiqueta
+// corta solo donde hay algo que mirar.
+const MARCA: Record<Estado, { punto: string; texto: string }> = {
+  leido: { punto: "bg-pagada-punto", texto: "Leído" },
+  dudoso: { punto: "bg-escalada-punto", texto: "Con dudas" },
+  falta: { punto: "bg-frenada-punto", texto: "Falta" },
+  opcional: { punto: "bg-muted-foreground/40", texto: "No viene" },
 };
+
+function Marca({ estado }: { estado: Estado }) {
+  return <span aria-hidden title={MARCA[estado].texto} className={cn("mt-[7px] size-1.5 shrink-0 rounded-full", MARCA[estado].punto)} />;
+}
 
 export function VistaFactura({
   entrada,
@@ -80,13 +85,12 @@ export function VistaFactura({
           <dl className="flex flex-col">
             {visibles.map((f) => (
               <div key={f.clave} className={cn("flex items-start gap-3 px-5 py-2.5 text-sm not-last:border-b not-last:border-subtle", f.clave === "monto_total" && "bg-superficie-2")}>
-                <span className="mt-0.5" title={ICONO[f.estado].texto}>
-                  {ICONO[f.estado].icono}
-                  <span className="sr-only">{ICONO[f.estado].texto}: </span>
-                </span>
+                <Marca estado={f.estado} />
+                <span className="sr-only">{MARCA[f.estado].texto}: </span>
                 <dt className="w-[42%] shrink-0 text-muted-foreground">{f.etiqueta}</dt>
                 <dd className={cn("min-w-0 flex-1 text-right break-words", f.clave === "monto_total" && "font-semibold")}>
                   {f.estado === "falta" ? <span className="text-frenada-foreground">No se leyó</span> : f.mostrar(f.campo!.valor)}
+                  {f.estado === "dudoso" ? <span className="ml-2 rounded-full bg-escalada px-1.5 py-0.5 text-[11px] font-medium text-escalada-foreground">Con dudas</span> : null}
                 </dd>
               </div>
             ))}
@@ -101,8 +105,8 @@ export function VistaFactura({
         <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {(["leido", "dudoso", "falta"] as const).map((e) => (
             <span key={e} className="flex items-center gap-1.5">
-              {ICONO[e].icono}
-              {ICONO[e].texto}
+              <span aria-hidden className={cn("size-1.5 rounded-full", MARCA[e].punto)} />
+              {MARCA[e].texto}
             </span>
           ))}
         </p>
@@ -136,9 +140,9 @@ export function VistaFactura({
           </ul>
         </div>
       ) : entrada.decision === "PAGAR" ? (
-        <p className="flex items-center gap-2 rounded-2xl bg-pagada px-4 py-3 text-sm text-pagada-foreground">
-          <CheckCircle2Icon className="size-4" aria-hidden />
-          Cumplió todas las reglas.
+        <p className="flex items-center gap-2.5 rounded-2xl bg-pagada px-4 py-3 text-sm text-pagada-foreground">
+          <span aria-hidden className="size-1.5 rounded-full bg-pagada-punto" />
+          Cumplió todas las reglas: aprobada para pago.
         </p>
       ) : null}
     </div>

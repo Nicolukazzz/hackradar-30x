@@ -13,3 +13,4 @@ export { PanelDecision, type AprobadorCorto, type PropsPanelDecision } from "./p
 export { VistaFactura } from "./vista-factura";
 export { CorreccionesProvider, useCorrecciones } from "./correcciones";
 export { MontoDudoso, razonMontoDudoso } from "./monto-dudoso";
+export { Indicador } from "./indicador";
