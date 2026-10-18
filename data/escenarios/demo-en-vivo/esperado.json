@@ -85,17 +85,17 @@
   {
     "documento": "documentos/004-lum-0007.eml",
     "ref_esperada": "INT-2026-000016",
-    "decision": "ESCALAR",
+    "decision": "FRENAR",
     "reglas_que_fallan": [
       "R3",
       "R11"
     ],
-    "asignado_a": "ap",
-    "responder_antes_de": "2026-10-27T12:00:00-05:00",
+    "asignado_a": null,
+    "responder_antes_de": null,
     "trampa": [
       "beneficiario-nuevo"
     ],
-    "motivo": "Proveedor nuevo: no está en la lista y su remitente no está vinculado. En vivo llega por el enlace de invitación (#28).",
+    "motivo": "Proveedor nuevo por correo: no está en la lista y su remitente no está vinculado, se frena. Por el enlace de invitación (#85) escalaría.",
     "extraccion_esperada": {
       "es_factura": true,
       "beneficiario_nombre": "Lumen Diseño S.A.S.",

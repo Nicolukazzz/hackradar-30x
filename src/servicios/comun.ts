@@ -31,7 +31,16 @@ export function enLaBase(e: { monto_usd_centavos: number | null; moneda_base?: M
 export async function entradasDelLote(repo: Repositorio): Promise<{ registro: EntradaRegistro[]; lote: EntradaRegistro[] }> {
   const [registro, esc] = await Promise.all([registroEnBaseDeHoy(repo), repo.escenario()]);
   const importadas = esc?.entradas_importadas ?? 0;
-  const lote = registro.slice(importadas).filter((e) => e.tipo === "DECISION_AGENTE");
+  const agente = registro.slice(importadas).filter((e) => e.tipo === "DECISION_AGENTE");
+  // Una factura reevaluada (remitente confirmado) tiene dos decisiones: se muestra la última, en el lugar de la primera.
+  const ultima = new Map(agente.map((e) => [e.ref_interna, e]));
+  const vistas = new Set<string>();
+  const lote: EntradaRegistro[] = [];
+  for (const e of agente) {
+    if (vistas.has(e.ref_interna)) continue;
+    vistas.add(e.ref_interna);
+    lote.push(ultima.get(e.ref_interna) ?? e);
+  }
   return { registro, lote };
 }
 

@@ -1878,7 +1878,7 @@
     },
     "monto_usd_centavos": 115000,
     "tasa_usada": null,
-    "decision": "ESCALAR",
+    "decision": "FRENAR",
     "reglas_version": 7,
     "evaluaciones": [],
     "reglas_que_fallaron": [
@@ -1886,7 +1886,7 @@
       "R11"
     ],
     "comparaciones": [],
-    "explicacion": "Tecnologías Delta no está en la lista permitida y el remitente no está vinculado a ningún beneficiario.",
+    "explicacion": "Tecnologías Delta no está en la lista permitida (se frena: solo se paga a proveedores registrados) y el remitente no está vinculado.",
     "comentario": null,
     "entrada_origen": null,
     "extraccion": {
@@ -2046,7 +2046,7 @@
     },
     "monto_usd_centavos": 298000,
     "tasa_usada": null,
-    "decision": "ESCALAR",
+    "decision": "FRENAR",
     "reglas_version": 7,
     "evaluaciones": [],
     "reglas_que_fallaron": [
@@ -2124,10 +2124,10 @@
     "canal": "telegram",
     "formato": "imagen",
     "monto_original": {
-      "centavos": 2200000,
+      "centavos": 3600000,
       "moneda": "BRL"
     },
-    "monto_usd_centavos": 400000,
+    "monto_usd_centavos": 654545,
     "tasa_usada": "BRL 5,50",
     "decision": "FRENAR",
     "reglas_version": 7,
@@ -2137,7 +2137,7 @@
       "R9"
     ],
     "comparaciones": [],
-    "explicacion": "USD 4.000,00 supera el presupuesto disponible de USD 2.277,30 (ya descuenta lo reservado); frenar pesa más que escalar por el límite automático.",
+    "explicacion": "USD 6.545,45 supera el presupuesto disponible de USD 6.407,30 (ya descuenta lo reservado); frenar pesa más que escalar por el límite automático.",
     "comentario": null,
     "entrada_origen": null,
     "extraccion": {
@@ -2158,7 +2158,7 @@
       },
       "monto_total": {
         "valor": {
-          "centavos": 2200000,
+          "centavos": 3600000,
           "moneda": "BRL"
         },
         "confianza": 1.0,
@@ -2190,13 +2190,13 @@
         "fuente": "parser"
       },
       "idioma": "pt",
-      "texto_crudo": "Olá! Segue a fatura de outubro da trilha sonora.\nEstudio Sonoro Ltda.\nSão Paulo, Brasil\nCNPJ 99.900.010/0008-08 (fictício)\nFATURA Nº ES-4410\nData de emissão: 10/10/2026\nVencimento: 24/10/2026\nFaturar para: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nDescrição: Trilha sonora campanha (OC-124) · Valor: BRL 22.000,00\nTotal: BRL 22.000,00\nReferência: OC-124\nPagar a: Estudio Sonoro Ltda. · Banco Ipê Dourado · Conta corrente 999-0000-7340\nDocumento fictício gerado para o desafio Blinka. Sem validade fiscal.",
+      "texto_crudo": "Olá! Segue a fatura de outubro da trilha sonora.\nEstudio Sonoro Ltda.\nSão Paulo, Brasil\nCNPJ 99.900.010/0008-08 (fictício)\nFATURA Nº ES-4410\nData de emissão: 10/10/2026\nVencimento: 24/10/2026\nFaturar para: Nébula Studio Inc. · Wilmington, DE, EE. UU.\nDescrição: Trilha sonora campanha (OC-124) · Valor: BRL 36.000,00\nTotal: BRL 36.000,00\nReferência: OC-124\nPagar a: Estudio Sonoro Ltda. · Banco Ipê Dourado · Conta corrente 999-0000-7340\nDocumento fictício gerado para o desafio Blinka. Sem validade fiscal.",
       "senales_llm": {
         "instrucciones_sospechosas": []
       },
       "proveedor_llm": "ninguno"
     },
-    "sha256": "965d68e9c555fd7e0c0160f2ec620cf2dfe056bb72cd221e3f47931e5519472e"
+    "sha256": "6f68670a88e1d5b616b2eb086c639d332f70257a02d4e5aac74ebd04e2d5d2a4"
   },
   {
     "id": "REG-2026-000013",
@@ -2233,41 +2233,6 @@
   },
   {
     "id": "REG-2026-000014",
-    "momento": "2026-10-16T16:00:00-05:00",
-    "actor": {
-      "tipo": "humano",
-      "aprobador_id": "lm",
-      "nombre": "Laura Méndez"
-    },
-    "tipo": "DECISION_HUMANA",
-    "ref_interna": "INT-2026-000011",
-    "factura_numero": "OMI-3381",
-    "beneficiario": "Servicios Ómicron S.A.",
-    "canal": "correo",
-    "formato": "correo",
-    "monto_original": {
-      "centavos": 298000,
-      "moneda": "USD"
-    },
-    "monto_usd_centavos": 298000,
-    "tasa_usada": null,
-    "decision": "RECHAZADA_HUMANO",
-    "reglas_version": 7,
-    "evaluaciones": [],
-    "reglas_que_fallaron": [
-      "R3",
-      "R10",
-      "R11"
-    ],
-    "comparaciones": [],
-    "explicacion": "Rechazada por Laura Méndez: «Intento de fraude: instrucciones falsas a nombre de la CFO.». La reserva volvió al presupuesto.",
-    "comentario": "Intento de fraude: instrucciones falsas a nombre de la CFO.",
-    "entrada_origen": "REG-2026-000011",
-    "extraccion": null,
-    "sha256": null
-  },
-  {
-    "id": "REG-2026-000015",
     "momento": "2026-10-16T17:30:00-05:00",
     "actor": {
       "tipo": "humano",
@@ -2296,40 +2261,6 @@
     "explicacion": "Rechazada por Andrés Pardo: «Cambio de cuenta no confirmado por llamada con Diego.». La reserva volvió al presupuesto.",
     "comentario": "Cambio de cuenta no confirmado por llamada con Diego.",
     "entrada_origen": "REG-2026-000010",
-    "extraccion": null,
-    "sha256": null
-  },
-  {
-    "id": "REG-2026-000016",
-    "momento": "2026-10-17T10:00:00-05:00",
-    "actor": {
-      "tipo": "humano",
-      "aprobador_id": "ap",
-      "nombre": "Andrés Pardo"
-    },
-    "tipo": "DECISION_HUMANA",
-    "ref_interna": "INT-2026-000009",
-    "factura_numero": "TD-001",
-    "beneficiario": "Tecnologías Delta SpA",
-    "canal": "correo",
-    "formato": "correo",
-    "monto_original": {
-      "centavos": 115000,
-      "moneda": "USD"
-    },
-    "monto_usd_centavos": 115000,
-    "tasa_usada": null,
-    "decision": "RECHAZADA_HUMANO",
-    "reglas_version": 7,
-    "evaluaciones": [],
-    "reglas_que_fallaron": [
-      "R3",
-      "R11"
-    ],
-    "comparaciones": [],
-    "explicacion": "Rechazada por Andrés Pardo: «Proveedor no dado de alta; se le pidió registrarse en el portal.». La reserva volvió al presupuesto.",
-    "comentario": "Proveedor no dado de alta; se le pidió registrarse en el portal.",
-    "entrada_origen": "REG-2026-000009",
     "extraccion": null,
     "sha256": null
   }

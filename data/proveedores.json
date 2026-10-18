@@ -316,13 +316,13 @@
             "sonora"
           ],
           "monto": {
-            "centavos": 2200000,
+            "centavos": 3600000,
             "moneda": "BRL"
           }
         }
       ]
     },
-    "limite_mensual_usd": 600000,
+    "limite_mensual_usd": 800000,
     "estado": "activo",
     "canales": {
       "correos": [],

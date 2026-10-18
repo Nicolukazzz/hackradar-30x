@@ -7,7 +7,7 @@ export type SiFalla = EvaluacionRegla["si_falla"];
 export const CATALOGO: Record<IdRegla, { nombre: string; si_falla: SiFalla }> = {
   R1: { nombre: "Extracción completa y confiable", si_falla: "ESCALAR" },
   R2: { nombre: "No es duplicada", si_falla: "FRENAR" },
-  R3: { nombre: "Beneficiario en la lista permitida", si_falla: "ESCALAR" },
+  R3: { nombre: "Beneficiario en la lista permitida", si_falla: "FRENAR" },
   R4: { nombre: "Cuenta destino es la registrada", si_falla: "ESCALAR" },
   R5: { nombre: "Cuadra con lo acordado", si_falla: "FRENAR" },
   R6: { nombre: "Bajo el máximo absoluto por pago", si_falla: "FRENAR" },

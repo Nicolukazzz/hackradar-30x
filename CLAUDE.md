@@ -47,7 +47,7 @@ Dataset vive en `data/` (ver `data/README.md` y especificación §11): datos com
 
 ### Reglas de pago (resumen de especificación §4–§5)
 
-Frenar si falla: R2 duplicado · R5 no cuadra con lo acordado (±2 %) · R6 sobre máximo absoluto (USD 15.000) · R7 sin presupuesto (descontando reservado). Escalar si falla: R1 extracción incompleta o confianza < 90 % · R3 beneficiario fuera de lista · R4 cuenta distinta a la registrada · R8 límite mensual del beneficiario · R9 sobre pago automático (USD 3.000) · R10 instrucciones dirigidas al agente · R11 remitente no verificado. Combinación: alguna de frenar falla → FRENAR; si no, alguna falla o queda INDETERMINADA → ESCALAR; todas cumplen → PAGAR; error → ESCALAR. Montos en centavos enteros; `ahora` inyectado (nada de `Date.now()` en el dominio).
+Frenar si falla: R2 duplicado · R3 beneficiario fuera de lista o identidad (nombre/NIT) que no cumple — escala solo si llegó por el portal/enlace de invitación o no se pudo leer · R5 no cuadra con lo acordado (±2 %) · R6 sobre máximo absoluto (USD 15.000) · R7 sin presupuesto (descontando reservado). Escalar si falla: R1 extracción incompleta o confianza < 90 % · R4 cuenta distinta a la registrada · R8 límite mensual del beneficiario · R9 sobre pago automático (USD 3.000) · R10 instrucciones dirigidas al agente · R11 remitente no verificado. Remitente no vinculado de un proveedor conocido se resuelve aparte en Pendientes ("Remitentes por confirmar": sí → vincula y reevalúa sus facturas; no → las rechaza). Combinación: alguna de frenar falla → FRENAR; si no, alguna falla o queda INDETERMINADA → ESCALAR; todas cumplen → PAGAR; error → ESCALAR. Montos en centavos enteros; `ahora` inyectado (nada de `Date.now()` en el dominio).
 
 ## Stack y comandos
 

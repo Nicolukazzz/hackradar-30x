@@ -45,8 +45,8 @@ def aritmetica_lote_demo(corrida: dict) -> list[str]:
     if corrida["cierre"]["pagado_antes"] != 4100000:
         errores.append(f"pagado antes del lote = {corrida['cierre']['pagado_antes']} ≠ 4100000 (USD 41.000,00)")
     conteo = {d: sum(1 for e in corrida["esperado"] if e["decision"] == d) for d in ("PAGAR", "FRENAR", "ESCALAR")}
-    if conteo != {"PAGAR": 5, "FRENAR": 3, "ESCALAR": 4}:
-        errores.append(f"conteo del lote demo {conteo} ≠ 5 PAGAR · 3 FRENAR · 4 ESCALAR")
+    if conteo != {"PAGAR": 5, "FRENAR": 5, "ESCALAR": 2}:
+        errores.append(f"conteo del lote demo {conteo} ≠ 5 PAGAR · 5 FRENAR · 2 ESCALAR")
     return errores
 
 

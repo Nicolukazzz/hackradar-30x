@@ -68,6 +68,22 @@ export async function entradaDe(repo: Repositorio, numero: string): Promise<Entr
   return e;
 }
 
+/**
+ * Proveedor nuevo invitado al portal (#85): R3 falla pero escala (no frena) para que una persona apruebe y lo agregue.
+ * Copia de la decisión de TD-001 (frenada por R3 desde 2026-10-18) como si hubiera llegado por el enlace de invitación.
+ */
+export async function escaladaPorInvitacion(repo: Repositorio): Promise<EntradaRegistro> {
+  const td = await entradaDe(repo, "TD-001");
+  const e: EntradaRegistro = {
+    ...td,
+    id: await repo.siguienteIdRegistro(2026),
+    decision: "ESCALAR",
+    evaluaciones: td.evaluaciones.map((x) => (x.id === "R3" ? { ...x, si_falla: "ESCALAR" as const, datos: { ...x.datos, invitado: true } } : x)),
+  };
+  await repo.agregarEntrada(e);
+  return e;
+}
+
 /** ESCALAR sintético: copia de LF-2026-10 con otro monto y otra ref (para límites y doble aprobación). */
 export async function escaladaSintetica(repo: Repositorio, usd_centavos: number): Promise<string> {
   const base = await entradaDe(repo, "LF-2026-10");

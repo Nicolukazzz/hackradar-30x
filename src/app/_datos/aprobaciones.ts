@@ -5,6 +5,8 @@
 // Después de aprobar o rechazar (6c/6d), llamar `router.refresh()` para que el badge de la barra
 // lateral se actualice: el layout no se vuelve a montar en navegaciones del cliente.
 
+import { remitentesPorConfirmar, type RemitentePorConfirmar } from "@/aprobaciones/remitentes";
+import { permisoPara, type PermisoUI } from "@/lib/auth/permisos";
 import { obtenerRepositorio } from "@/repositorio";
 import { obtenerAprobaciones as servicio, type OrdenAprobaciones, type RespuestaAprobaciones } from "@/servicios/aprobaciones";
 
@@ -24,4 +26,10 @@ export async function contarPendientes(): Promise<number | null> {
   } catch {
     return null;
   }
+}
+
+/** Remitentes por confirmar (2026-10-18) y si quien mira puede responder (vincular un canal es de administrador). */
+export async function obtenerRemitentes(): Promise<{ remitentes: RemitentePorConfirmar[]; confirmar: PermisoUI }> {
+  const sesion = await exigirMiembro();
+  return { remitentes: await remitentesPorConfirmar(await obtenerRepositorio()), confirmar: permisoPara(sesion, "editar_reglas") };
 }

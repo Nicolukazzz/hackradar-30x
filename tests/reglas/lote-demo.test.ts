@@ -28,29 +28,29 @@ describe("lote-demo-oct (§11.4)", () => {
     });
   });
 
-  it("5 pagadas · 3 frenadas · 4 escaladas", () => {
+  it("5 pagadas · 5 frenadas · 2 escaladas (R3 frena: TD-001 y OMI-3381)", () => {
     const conteo = lote.resultados.reduce<Record<string, number>>((c, r) => ({ ...c, [r.decision]: (c[r.decision] ?? 0) + 1 }), {});
-    expect(conteo).toEqual({ PAGAR: 5, FRENAR: 3, ESCALAR: 4 });
+    expect(conteo).toEqual({ PAGAR: 5, FRENAR: 5, ESCALAR: 2 });
   });
 
   it("disponible antes de cada documento", () => {
     expect(lote.resultados.map((r) => formatearUsd(r.disponible_antes_usd_centavos))).toEqual([
       "19.000,00", "17.000,00", "15.760,00", "13.705,95", "12.805,95", "11.555,95",
-      "11.555,95", "11.555,95", "7.055,95", "5.905,95", "5.257,30", "2.277,30",
+      "11.555,95", "11.555,95", "7.055,95", "7.055,95", "6.407,30", "6.407,30",
     ]);
   });
 
-  it("cierre: pagado 7.444,05 · reservado 9.278,65 · disponible 2.277,30", () => {
+  it("cierre: pagado 7.444,05 · reservado 5.148,65 · disponible 6.407,30", () => {
     const p = lote.presupuestoFinal;
     expect(formatearUsd(p.pagado_antes)).toBe("41.000,00");
     expect(formatearUsd(p.pagado_en_lote)).toBe("7.444,05");
-    expect(formatearUsd(p.reservado)).toBe("9.278,65");
-    expect(formatearUsd(p.disponible)).toBe("2.277,30");
+    expect(formatearUsd(p.reservado)).toBe("5.148,65");
+    expect(formatearUsd(p.disponible)).toBe("6.407,30");
   });
 
-  it("frenadas suman USD 7.840,00", () => {
+  it("frenadas suman USD 14.515,45", () => {
     const frenado = lote.resultados.filter((r) => r.decision === "FRENAR").reduce((s, r) => s + (r.monto_usd_centavos ?? 0), 0);
-    expect(formatearUsd(frenado)).toBe("7.840,00");
+    expect(formatearUsd(frenado)).toBe("14.515,45");
   });
 
   it("entradas REG-2026-000001…012 en orden, con ref interna y evaluaciones R1–R11", () => {

@@ -31,14 +31,24 @@ export type FacturaVigente = {
 export function facturasVigentes(historial: readonly EntradaRegistro[], tasas?: TablaTasas): FacturaVigente[] {
   const resolucion = resoluciones(historial);
   const confirmados = montosConfirmados(historial);
+  const ultimas = ultimaDecisionPorRef(historial);
   const vigentes: FacturaVigente[] = [];
   for (const e of historial) {
+    // Una factura reevaluada (remitente confirmado) tiene dos decisiones del agente: solo cuenta la última.
+    if (e.tipo === "DECISION_AGENTE" && ultimas.get(e.ref_interna) !== e.id) continue;
     const estado = estadoDe(e, resolucion);
     // #129: si la persona aprobó con un monto confirmado o corregido, ese es el que se pagó (y el que cuenta).
     const humana = estado === "pagada" ? confirmados.get(e.id) : undefined;
     if (estado) vigentes.push(aVigente(e, estado, tasas, humana));
   }
   return vigentes;
+}
+
+/** ref_interna → id de su última DECISION_AGENTE. */
+function ultimaDecisionPorRef(historial: readonly EntradaRegistro[]): Map<string, string> {
+  const mapa = new Map<string, string>();
+  for (const e of historial) if (e.tipo === "DECISION_AGENTE") mapa.set(e.ref_interna, e.id);
+  return mapa;
 }
 
 /** Aprobaciones finales que traen monto (#129): la persona confirmó o corrigió el total al aprobar. */

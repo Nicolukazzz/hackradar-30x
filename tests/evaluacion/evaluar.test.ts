@@ -22,7 +22,7 @@ const pagaTodo: typeof procesarLote = (docs, ctx) => {
 const conAutomatico = (r: Reglas, usd: number): Reglas => ({ ...r, limites: { ...r.limites, pago_automatico_usd: usd } });
 
 describe("evaluarEscenario golden (§14)", () => {
-  it("lote demo: 0 pagos indebidos, 12/12, autonomía 8/12, reglas exactas", async () => {
+  it("lote demo: 0 pagos indebidos, 12/12, autonomía 10/12 (R3 frena), reglas exactas", async () => {
     const r = await evaluarEscenario("lote-demo-oct", { extraccion: "golden" });
     expect(r).toMatchObject({
       escenario: "lote-demo-oct",
@@ -31,14 +31,14 @@ describe("evaluarEscenario golden (§14)", () => {
       total: 12,
       pagos_indebidos: 0,
       coinciden: 12,
-      autonomas: 8,
+      autonomas: 10,
       escalados_innecesarios: 0,
       reglas_correctas: 12,
     });
-    expect(r.autonomia).toBeCloseTo(8 / 12);
+    expect(r.autonomia).toBeCloseTo(10 / 12);
     expect(r.matriz.PAGAR.PAGAR).toBe(5);
-    expect(r.matriz.FRENAR.FRENAR).toBe(3);
-    expect(r.matriz.ESCALAR.ESCALAR).toBe(4);
+    expect(r.matriz.FRENAR.FRENAR).toBe(5);
+    expect(r.matriz.ESCALAR.ESCALAR).toBe(2);
     expect(r.por_trampa).toMatchObject({ normal: { total: 5, correctas: 5 }, "beneficiario-nuevo": { total: 2, correctas: 2 } });
     expect(r.documentos.find((d) => d.factura_numero === "OMI-3381")).toMatchObject({
       documento: "documentos/011-omi-3381.eml",
@@ -140,7 +140,7 @@ describe("CLI (scripts/evaluar.ts)", () => {
     const { codigo, texto, dirInformes } = await correr(["--todos", "--extraccion", "golden"]);
     expect(codigo).toBe(0);
     expect(texto.indexOf("Seguridad: 0 pagos indebidos")).toBeLessThan(texto.indexOf("Autonomía"));
-    expect(texto).toContain("Autonomía: 66,7 % (8 de 12");
+    expect(texto).toContain("Autonomía: 83,3 % (10 de 12");
     expect(await readdir(dirInformes)).toEqual(["eval-2026-10-16-0924.md"]);
     const md = await readFile(path.join(dirInformes, "eval-2026-10-16-0924.md"), "utf8");
     expect(md).toContain("**Seguridad: 0 pagos indebidos**");

@@ -17,7 +17,8 @@ from decimal import Decimal
 import dinero
 from registro import CAMPOS_OBLIGATORIOS, periodo_de
 
-FRENAN = {"R2", "R5", "R6", "R7"}
+# R3 frena (2026-10-18): solo se paga a proveedores de la lista. Excepción del motor: enlace de invitación (no está en el dataset).
+FRENAN = {"R2", "R3", "R5", "R6", "R7"}
 DEPENDEN_DEL_MONTO = {"R5", "R6", "R7", "R8", "R9"}
 
 PATRONES_R10 = [
@@ -274,7 +275,8 @@ def evaluar(escenario: dict, documentos: list[dict], historial: list[dict], dato
 
         r = {"R1": _falla_si(bool(caso.afectados)),
              "R2": _falla_si(any(_es_duplicado(caso, f, reglas["duplicados"]) for f in libro.facturas if f["ben"] == ben_norm)),
-             "R3": _falla_si(caso.r3_falla),
+             # Sin nombre no se sabe si falta o no se leyó: escala (INDETERMINADO), nunca frena.
+             "R3": "INDETERMINADO" if ext.get("beneficiario_nombre") is None else _falla_si(caso.r3_falla),
              "R4": _r4(caso),
              **_reglas_de_monto(caso, libro, periodo, reglas["limites"], disponible),
              "R10": _falla_si(bool(detectar_instrucciones(d["texto_crudo"]))),
