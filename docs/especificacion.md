@@ -629,6 +629,7 @@ El modo `golden` (§14) incluye el texto de los adjuntos en `texto_crudo`: un ex
 | `POST /api/por-confirmar/proveedor` | `{ clave, respuesta: 'si'\|'no' }` | `ResultadoConfiar` (solo admin) | Pendientes |
 | `GET·POST /api/canales/whatsapp/webhook` | verificación de Meta · mensaje firmado (`X-Hub-Signature-256`) | `200` siempre que la firma sea válida | canal WhatsApp (#79) |
 | `GET /api/salud` | — | `{ ok: true }` (pública, sin base) | healthcheck de Railway |
+| `GET /api/demo/facturas` · `POST /api/demo/facturas` | — · `{ archivo }` | `{ facturas: FacturaEjemplo[] }` · `{ ref_interna, estado, mensaje, factura }` | Bandeja → «Probar con facturas de ejemplo» (#162; solo admin y modo demo; envía un archivo del catálogo de `facturas-de-prueba/` como su proveedor por el portal) |
 | `GET /api/equipo` | — | `{ miembros: Miembro[], invitaciones: (Invitacion & { estado })[] }` | Equipo (admin) |
 | `POST /api/equipo/invitaciones` | `{ rol, limite_aprobacion_usd?, correo_esperado, dias_vigencia? }` | `{ invitacion, enlace }` (el token solo viaja aquí; no se envía correo, el admin copia el enlace) | Equipo (admin) |
 | `DELETE /api/equipo/invitaciones/:id` | — | `{ revocada: true }` | Equipo (admin) |

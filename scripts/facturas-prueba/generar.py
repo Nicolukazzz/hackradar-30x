@@ -62,6 +62,26 @@ def proveedor_api(p) -> dict:
     }
 
 
+def catalogo(f: Factura, carpeta: str) -> dict:
+    """Entrada de `facturas.json`: lo que lee la app para «Probar con facturas de ejemplo»."""
+    c = contenido(f)
+    desconocido = f.nombre is not None  # proveedor fuera de la lista: no tiene portal, va por carga manual
+    return {
+        "archivo": f.archivo,
+        "carpeta": carpeta,
+        "proveedor": c.nombre,
+        "correo": None if desconocido else c.correo,
+        "canal": "carga_manual" if desconocido else "portal",
+        "numero": f.numero or None,
+        "formato": f.formato,
+        "efecto": f.efecto,
+        "total": monto(c.total, c.moneda, c.idioma) if f.esperado != "RECHAZADA_NO_FACTURA" else None,
+        "esperado": f.esperado,
+        "reglas": list(f.reglas),
+        "motivo": f.motivo,
+    }
+
+
 def fila(f: Factura, carpeta: str) -> str:
     c = contenido(f)
     tipo = f"{FORMATO[f.formato]}{EFECTO[f.efecto]}"
@@ -85,11 +105,14 @@ No es el dataset del CI: ese vive en `data/` y no cambia.
 
 ## Cómo probarlas
 
-1. Entra con la cuenta de administrador (README principal) y abre **Proveedores**: los {len(PROVEEDORES)} proveedores de la tabla
-   ya están en la lista permitida, con su cuenta, su correo y lo acordado.
-2. Abre el **portal del proveedor** que cobra la factura (enlace y código en [ACCESOS.md](ACCESOS.md)) y súbela en
-   «Ingrese sus facturas». Así llega con el correo verificado del proveedor (R11) y, si cumple todo, se paga sola.
-3. Mira el resultado en la **Bandeja** y abre la factura para ver la traza.
+**La forma rápida:** entra con la cuenta de administrador (README principal) y en la **Bandeja** pulsa **Probar con
+facturas de ejemplo**. Ahí están todas: «Enviar» manda cada una como si su proveedor la subiera por su portal y muestra
+el resultado al lado, junto al esperado y el enlace a su traza; «Enviar todas» manda las que se pagan solas.
+
+**Como lo haría un proveedor:** abre su portal (enlace y código en [ACCESOS.md](ACCESOS.md)) y sube el archivo en
+«Ingrese sus facturas». Llega con el correo verificado del proveedor (R11) y, si cumple todo, se paga sola.
+
+Los {len(PROVEEDORES)} proveedores de la tabla ya están en la lista permitida, con su cuenta, su correo y lo acordado.
 
 Subirlas con **Cargar factura manualmente** también funciona, pero llegan a nombre de quien sube (no del proveedor):
 por seguridad, R11 las deja esperando a una persona en vez de pagarlas.
@@ -139,6 +162,9 @@ def main() -> None:
             fh.write(archivo(f, 2000 + i))
     with open(os.path.join(args.salida, "proveedores.json"), "w") as fh:
         json.dump([proveedor_api(p) for p in PROVEEDORES], fh, ensure_ascii=False, indent=2)
+        fh.write("\n")
+    with open(os.path.join(args.salida, "facturas.json"), "w") as fh:
+        json.dump([catalogo(f, "pagan") for f in pagan] + [catalogo(f, "trampas") for f in malas], fh, ensure_ascii=False, indent=2)
         fh.write("\n")
     with open(os.path.join(args.salida, "README.md"), "w") as fh:
         fh.write(readme(pagan, malas))
