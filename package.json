@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "evaluar": "tsx scripts/evaluar.ts",
     "extraer": "tsx --env-file-if-exists=.env scripts/extraer.ts",
+    "facturas:prueba": "$([ -x .venv/bin/python ] && echo .venv/bin/python || echo python3) scripts/facturas-prueba/generar.py",
     "dataset": "$([ -x .venv/bin/python ] && echo .venv/bin/python || echo python3) scripts/dataset/generar.py",
     "cargar-escenario": "tsx --env-file-if-exists=.env scripts/cargar-escenario.ts",
     "telegram": "tsx --env-file-if-exists=.env scripts/telegram.ts",

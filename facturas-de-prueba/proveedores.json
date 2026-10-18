@@ -1,0 +1,277 @@
+[
+  {
+    "nombre": "Andes Software S.A.S.",
+    "identificacion_fiscal": "901.482.317-5",
+    "pais": "CO",
+    "tipo": "proveedor",
+    "categoria": "software",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Cafetal",
+      "ultimos4": "2817"
+    },
+    "correos": [
+      "facturacion@andessoftware.example"
+    ],
+    "limite_mensual_usd": 500000,
+    "acuerdo": {
+      "referencia": "AS-SOP",
+      "concepto": "Soporte y mantenimiento de software",
+      "monto": {
+        "centavos": 416500000,
+        "moneda": "COP"
+      }
+    },
+    "estado": "activo"
+  },
+  {
+    "nombre": "Camila Restrepo",
+    "identificacion_fiscal": "1.037.884.210",
+    "pais": "CO",
+    "tipo": "contratista",
+    "categoria": "diseño",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Llanos Unidos",
+      "ultimos4": "6034"
+    },
+    "correos": [
+      "camila.restrepo@ux-estudio.example"
+    ],
+    "limite_mensual_usd": 500000,
+    "acuerdo": {
+      "referencia": "CR-UX",
+      "concepto": "Diseño de experiencia de usuario",
+      "monto": {
+        "centavos": 320000000,
+        "moneda": "COP"
+      }
+    },
+    "estado": "activo"
+  },
+  {
+    "nombre": "Logística Maya S.A. de C.V.",
+    "identificacion_fiscal": "LMA190614KQ2",
+    "pais": "MX",
+    "tipo": "proveedor",
+    "categoria": "logística",
+    "cuenta": {
+      "tipo": "CLABE",
+      "banco": "Banco Nopal",
+      "ultimos4": "7291"
+    },
+    "correos": [
+      "cxc@logisticamaya.example"
+    ],
+    "limite_mensual_usd": 500000,
+    "acuerdo": {
+      "referencia": "LM-ENV",
+      "concepto": "Servicio de mensajería y envíos",
+      "monto": {
+        "centavos": 1160000,
+        "moneda": "MXN"
+      }
+    },
+    "estado": "activo"
+  },
+  {
+    "nombre": "Tropical Sound Ltda.",
+    "identificacion_fiscal": "48.231.907/0001-55",
+    "pais": "BR",
+    "tipo": "proveedor",
+    "categoria": "audio",
+    "cuenta": {
+      "tipo": "PIX",
+      "banco": "Banco Ipê Dourado",
+      "ultimos4": "8823"
+    },
+    "correos": [
+      "financeiro@tropicalsound.example"
+    ],
+    "limite_mensual_usd": 500000,
+    "acuerdo": {
+      "referencia": "TS-AUD",
+      "concepto": "Produção de áudio para vídeos",
+      "monto": {
+        "centavos": 480000,
+        "moneda": "BRL"
+      }
+    },
+    "estado": "activo"
+  },
+  {
+    "nombre": "Pampa Code S.R.L.",
+    "identificacion_fiscal": "30-71844562-9",
+    "pais": "AR",
+    "tipo": "proveedor",
+    "categoria": "desarrollo",
+    "cuenta": {
+      "tipo": "CBU",
+      "banco": "Banco Pampero Sur",
+      "ultimos4": "4561"
+    },
+    "correos": [
+      "admin@pampacode.example"
+    ],
+    "limite_mensual_usd": 500000,
+    "acuerdo": {
+      "referencia": "PC-MOB",
+      "concepto": "Desarrollo de aplicación móvil",
+      "monto": {
+        "centavos": 135000,
+        "moneda": "USD"
+      }
+    },
+    "estado": "activo"
+  },
+  {
+    "nombre": "Cordillera Data SpA",
+    "identificacion_fiscal": "77.412.880-3",
+    "pais": "CL",
+    "tipo": "proveedor",
+    "categoria": "datos",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Araucaria",
+      "ultimos4": "2880"
+    },
+    "correos": [
+      "pagos@cordilleradata.example"
+    ],
+    "limite_mensual_usd": 500000,
+    "acuerdo": {
+      "referencia": "CD-ANA",
+      "concepto": "Análisis de datos de producto",
+      "monto": {
+        "centavos": 98000000,
+        "moneda": "CLP"
+      }
+    },
+    "estado": "activo"
+  },
+  {
+    "nombre": "Inti Consultores S.A.C.",
+    "identificacion_fiscal": "20612984471",
+    "pais": "PE",
+    "tipo": "proveedor",
+    "categoria": "contabilidad",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Vicuña Andina",
+      "ultimos4": "7193"
+    },
+    "correos": [
+      "cobranzas@inticonsultores.example"
+    ],
+    "limite_mensual_usd": 500000,
+    "acuerdo": {
+      "referencia": "IC-TRI",
+      "concepto": "Consultoría tributaria",
+      "monto": {
+        "centavos": 354000,
+        "moneda": "PEN"
+      }
+    },
+    "estado": "activo"
+  },
+  {
+    "nombre": "Brightpath Analytics LLC",
+    "identificacion_fiscal": "88-4107326",
+    "pais": "US",
+    "tipo": "proveedor",
+    "categoria": "analítica",
+    "cuenta": {
+      "tipo": "ACH",
+      "banco": "Banco Canal Seguro",
+      "ultimos4": "2265"
+    },
+    "correos": [
+      "billing@brightpath.example"
+    ],
+    "limite_mensual_usd": 500000,
+    "acuerdo": {
+      "referencia": "BP-SUB",
+      "concepto": "Analytics platform subscription",
+      "monto": {
+        "centavos": 89000,
+        "moneda": "USD"
+      }
+    },
+    "estado": "activo"
+  },
+  {
+    "nombre": "Costa Azul Traducciones S.L.",
+    "identificacion_fiscal": "B-72618340",
+    "pais": "ES",
+    "tipo": "proveedor",
+    "categoria": "traducción",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Olivo Mediterráneo",
+      "ultimos4": "3017"
+    },
+    "correos": [
+      "facturas@costaazul.example"
+    ],
+    "limite_mensual_usd": 500000,
+    "acuerdo": {
+      "referencia": "CA-TRAD",
+      "concepto": "Traducción de contenidos al inglés",
+      "monto": {
+        "centavos": 72600,
+        "moneda": "EUR"
+      }
+    },
+    "estado": "activo"
+  },
+  {
+    "nombre": "Nodo Verde Hosting S.A.S.",
+    "identificacion_fiscal": "901.733.025-1",
+    "pais": "CO",
+    "tipo": "proveedor",
+    "categoria": "hosting",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Cafetal",
+      "ultimos4": "7752"
+    },
+    "correos": [
+      "billing@nodoverde.example"
+    ],
+    "limite_mensual_usd": 500000,
+    "acuerdo": {
+      "referencia": "NV-HOST",
+      "concepto": "Cloud hosting and backups",
+      "monto": {
+        "centavos": 64000,
+        "moneda": "USD"
+      }
+    },
+    "estado": "activo"
+  },
+  {
+    "nombre": "Vértice Arquitectura S.A.S.",
+    "identificacion_fiscal": "900.618.244-0",
+    "pais": "CO",
+    "tipo": "proveedor",
+    "categoria": "arquitectura",
+    "cuenta": {
+      "tipo": "cuenta",
+      "banco": "Banco Llanos Unidos",
+      "ultimos4": "9418"
+    },
+    "correos": [
+      "contabilidad@verticearq.example"
+    ],
+    "limite_mensual_usd": 2000000,
+    "acuerdo": {
+      "referencia": "VA-OBR",
+      "concepto": "Diseño arquitectónico de oficinas",
+      "monto": {
+        "centavos": 1400000000,
+        "moneda": "COP"
+      }
+    },
+    "estado": "activo"
+  }
+]
