@@ -12,7 +12,7 @@ const DECISIONES: Record<DecisionAgente | DecisionHumana, { texto: string; clase
   ESCALAR: { texto: "Escalada", clase: "bg-escalada text-escalada-foreground", punto: "bg-escalada-punto" },
   RECHAZADA_NO_FACTURA: { texto: "No es factura", clase: "bg-muted text-muted-foreground", punto: "bg-muted-foreground" },
   APROBADA_HUMANO: { texto: "Aprobada por persona", clase: "border-pagada-punto bg-card text-pagada-foreground" },
-  RECHAZADA_HUMANO: { texto: "Rechazada por persona", clase: "border-frenada-punto bg-card text-frenada-foreground" },
+  RECHAZADA_HUMANO: { texto: "Frenada por persona", clase: "border-frenada-punto bg-card text-frenada-foreground" },
 };
 
 /** Forma común de las píldoras (también la del portal de proveedores, #12). */

@@ -12,7 +12,7 @@ import { CAMPOS_OBLIGATORIOS } from "@/reglas/contexto";
 import { observaciones } from "@/reglas/explicar";
 import type { Repositorio } from "@/repositorio/repositorio";
 
-import { estadoActual, nombrePais, type EstadoFactura } from "./comun";
+import { estadoActual, nombrePais, registroEnBaseDeHoy, type EstadoFactura } from "./comun";
 
 export type HitoLineaTiempo = {
   momento: string | null;
@@ -119,7 +119,7 @@ function confianzaMinima(ext: Extraccion | null): number | null {
   return Math.min(...CAMPOS_OBLIGATORIOS.map((k) => ext[k].confianza));
 }
 
-const TITULO_HUMANA: Record<string, string> = { APROBADA_HUMANO: "Aprobada por persona", RECHAZADA_HUMANO: "Rechazada por persona" };
+const TITULO_HUMANA: Record<string, string> = { APROBADA_HUMANO: "Aprobada por persona", RECHAZADA_HUMANO: "Frenada por persona" };
 
 function hitoExtraccion(e: EntradaRegistro, hayInstrucciones: boolean): HitoLineaTiempo {
   const ext = e.extraccion;
@@ -184,7 +184,8 @@ export async function obtenerFactura(
   ref: string,
   cuentas: () => Promise<readonly Aprobador[]> = async () => [],
 ): Promise<RespuestaFactura | null> {
-  const [registro, datos, documento] = await Promise.all([repo.registro(), repo.datosComunes(), repo.documento(ref)]);
+  // #86: montos en la moneda base de hoy (una decisión tomada antes de cambiar la moneda se muestra convertida).
+  const [registro, datos, documento] = await Promise.all([registroEnBaseDeHoy(repo), repo.datosComunes(), repo.documento(ref)]);
   const e = decisionAgente(registro, ref);
   if (!e) return null;
   const [vigentes, deSuVersion] = await Promise.all([repo.reglasVigentes(), repo.reglasVersion(e.reglas_version)]);

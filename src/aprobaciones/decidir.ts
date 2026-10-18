@@ -3,10 +3,11 @@
 // Sin reloj: `ahora` llega inyectado.
 
 import { correoDeInvitacion, esRemitenteInvitacion } from "@/dominio/remitente";
-import { aBase, formatear, formatearUsd } from "@/dominio/dinero";
+import { aBase, formatear, formatearUsd, monedaBase } from "@/dominio/dinero";
 import { slug } from "@/dominio/normalizar";
-import type { Aprobador, Beneficiario, DocumentoRecibido, EntradaRegistro, Extraccion, Reglas } from "@/dominio/tipos";
+import type { Aprobador, Beneficiario, DocumentoRecibido, EntradaRegistro, Extraccion, Moneda, Reglas, TablaTasas } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
+import { montoEnBase, tablaDeHoy } from "@/reglas/en-base";
 import { tasasDeLaFactura } from "@/reglas/motor";
 
 import { aplicarCorrecciones, type Correcciones, extraccionVigente, resumenCorrecciones } from "./correcciones";
@@ -148,9 +149,9 @@ function entradaBase(v: Validado, reglasVersion: number, ahora: string): Omit<En
 }
 
 /** Una firma o la primera/segunda de dos (§10). Lanza 403/409 si no corresponde. */
-function resolverAprobacion(v: Validado, usd: number, dobleDesde: number, aprobadores: readonly Aprobador[]): { parcial: boolean; explicacion: string } {
+function resolverAprobacion(v: Validado, usd: number, dobleDesde: number, aprobadores: readonly Aprobador[], moneda: Moneda): { parcial: boolean; explicacion: string } {
   const { aprobador, comentario, firmas } = v;
-  const limite = aprobador.limite_usd === null ? null : `USD ${formatearUsd(aprobador.limite_usd)}`;
+  const limite = aprobador.limite_usd === null ? null : `${moneda} ${formatearUsd(aprobador.limite_usd)}`;
   if (usd < dobleDesde) {
     if (!cubre(aprobador, usd)) throw new ErrorDecision(403, `Supera tu límite de aprobación (${limite}). Pídele a un aprobador con límite suficiente que la apruebe.`);
     return { parcial: false, explicacion: `Aprobada por ${aprobador.nombre}: «${comentario}».` };
@@ -220,8 +221,9 @@ async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Reposito
     return { entrada, parcial: false, beneficiario_agregado: null };
   }
 
-  const monto = montoParaAprobar(v.origen, ext, { datos, reglas, ahora });
-  const { parcial, explicacion } = resolverAprobacion(v, monto.usd, reglas.aprobacion.doble_aprobacion_desde_usd, aprobadores);
+  const delDia = (await repo.tasasVigentes())?.tabla ?? null;
+  const monto = montoParaAprobar(v.origen, ext, { datos, reglas, ahora, delDia });
+  const { parcial, explicacion } = resolverAprobacion(v, monto.usd, reglas.aprobacion.doble_aprobacion_desde_usd, aprobadores, monedaBase(reglas));
   const nuevo = beneficiarioAAgregar(v, parcial, documento, datos.beneficiarios, ext);
   const vinculo = canalValidado(v, parcial, documento, datos.beneficiarios);
   const notaMonto = monto.confirmado ? ` El agente no estaba seguro del total: ${v.aprobador.nombre} lo confirmó en ${monto.texto}.` : "";
@@ -261,19 +263,25 @@ type MontoAprobado = {
 function montoParaAprobar(
   origen: EntradaRegistro,
   ext: Extraccion | null,
-  ctx: { datos: Awaited<ReturnType<Repositorio["datosComunes"]>>; reglas: Reglas; ahora: string },
+  ctx: { datos: Awaited<ReturnType<Repositorio["datosComunes"]>>; reglas: Reglas; ahora: string; delDia?: TablaTasas | null },
 ): MontoAprobado {
   const total = ext?.monto_total;
   const corregido = total?.fuente === "humano";
   if (origen.monto_usd_centavos !== null && !corregido) {
-    const moneda = origen.moneda_base ?? "USD";
+    // #86: decidida antes de cambiar la moneda base → convertida a la de hoy, que es la de los límites de aprobación y
+    // de la doble firma. Sin tasa no se aprueba: comparar USD contra un límite en BRL dejaría pasar montos mayores.
+    const base = monedaBase(ctx.reglas);
+    const usd = montoEnBase(origen, base, ctx.delDia ?? tablaDeHoy(ctx.datos, ctx.reglas, ctx.ahora));
+    if (usd === null) {
+      throw new ErrorDecision(409, `Esta factura se decidió en ${origen.moneda_base ?? "USD"} y no hay tasa del día para convertirla a ${base}. Intenta más tarde.`);
+    }
     return {
-      usd: origen.monto_usd_centavos,
+      usd,
       original: origen.monto_original,
       tasa_usada: origen.tasa_usada,
-      moneda_base: moneda,
+      moneda_base: base,
       confirmado: false,
-      texto: formatear({ centavos: origen.monto_usd_centavos, moneda }),
+      texto: formatear({ centavos: usd, moneda: base }),
     };
   }
   if (!ext || !total?.valor) {

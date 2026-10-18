@@ -3,7 +3,8 @@
 import { instante } from "@/dominio/reloj";
 import type { DatosComunes } from "@/dominio/cargar";
 import { aBase } from "@/dominio/dinero";
-import type { Beneficiario, DecisionAgente, DecisionHumana, Dinero, EntradaRegistro, Reglas } from "@/dominio/tipos";
+import type { Beneficiario, DecisionAgente, DecisionHumana, Dinero, EntradaRegistro, Moneda, Reglas } from "@/dominio/tipos";
+import { enBaseDeHoy } from "@/reglas/en-base";
 import { tasasDeLaFactura } from "@/reglas/motor";
 import { estadoHumano } from "@/aprobaciones/decidir";
 import { relojSistema } from "@/lib/reloj-sistema";
@@ -12,9 +13,23 @@ import type { Repositorio } from "@/repositorio/repositorio";
 /** Estado visible de una factura: la decisión del agente o, si una persona ya resolvió, la suya. */
 export type EstadoFactura = DecisionAgente | DecisionHumana;
 
-/** Entradas del agente que son del lote (no del historial importado), en orden de proceso. */
+/**
+ * Registro con los montos en la moneda base de hoy (#86): una decisión tomada antes de cambiar la moneda se muestra y
+ * se suma convertida. Si no hay tasa para convertirla, queda en su moneda y las sumas la dejan fuera.
+ */
+export async function registroEnBaseDeHoy(repo: Repositorio): Promise<EntradaRegistro[]> {
+  const [registro, datos, reglas, ahora, delDia] = await Promise.all([repo.registro(), repo.datosComunes(), repo.reglasVigentes(), ahoraHumano(repo), repo.tasasVigentes()]);
+  return enBaseDeHoy(registro, datos, reglas, ahora, delDia?.tabla ?? null);
+}
+
+/** Monto en la moneda base de hoy, o null si quedó en otra moneda (no se suma con los demás). */
+export function enLaBase(e: { monto_usd_centavos: number | null; moneda_base?: Moneda }, base: Moneda): number | null {
+  return (e.moneda_base ?? "USD") === base ? e.monto_usd_centavos : null;
+}
+
+/** Entradas del agente que son del lote (no del historial importado), en orden de proceso. Montos en la base de hoy. */
 export async function entradasDelLote(repo: Repositorio): Promise<{ registro: EntradaRegistro[]; lote: EntradaRegistro[] }> {
-  const [registro, esc] = await Promise.all([repo.registro(), repo.escenario()]);
+  const [registro, esc] = await Promise.all([registroEnBaseDeHoy(repo), repo.escenario()]);
   const importadas = esc?.entradas_importadas ?? 0;
   const lote = registro.slice(importadas).filter((e) => e.tipo === "DECISION_AGENTE");
   return { registro, lote };

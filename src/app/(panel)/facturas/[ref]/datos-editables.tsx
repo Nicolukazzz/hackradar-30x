@@ -27,6 +27,8 @@ export type FilaDato = {
   /** moneda para un monto sin leer (la de la factura o la base) */
   moneda: Moneda;
   total?: boolean;
+  /** dato calculado (no leído de la factura): en vez de la barra de confianza, esta nota (p. ej. "tasa del 10 oct") */
+  nota?: string;
 };
 
 function mostrar(tipo: TipoDato, v: string | Dinero | null): React.ReactNode {
@@ -167,6 +169,8 @@ function Fila({ f }: { f: FilaDato }) {
       <dd className="col-span-3 sm:col-span-1">
         {corregido !== undefined ? (
           <span className="block text-right text-xs font-medium text-link">Por ti</span>
+        ) : f.nota ? (
+          <span className="block text-right text-xs text-muted-foreground">{f.nota}</span>
         ) : (
           <BarraConfianza campo={f.etiqueta} valor={f.confianza} />
         )}

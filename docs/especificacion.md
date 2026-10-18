@@ -636,7 +636,7 @@ Errores: `{ error: string }` con 400/401/403/404/409. El **401** lo emite `src/p
 
 Comunes a las 5 (layout del prototipo, ancho de diseño 1440 px, usable a 390 px):
 - Barra lateral izquierda oscura (`#101614`): rol "Tesorero", "Agente de cuentas por pagar", bloque Empresa (nombre · jurisdicción · opera en N países, de la base desde #84), navegación **Bandeja · Aprobaciones (badge con pendientes) · Reglas · Registro**, estado "● Agente activo", pie "Reglas v7 · solo decide, nunca mueve dinero. Prototipo para el Reto Blinka."
-- Píldoras de decisión: Pagada / Frenada / Escalada / Aprobada por persona / Rechazada por persona (colores §15).
+- Píldoras de decisión: Pagada / Frenada / Escalada / Aprobada por persona / Frenada por persona (colores §15; la decisión sigue siendo `RECHAZADA_HUMANO`).
 - Montos e ids en Geist Mono. Botones ≥ 44 px de alto.
 
 ### 13.1 Bandeja de decisiones — `/` (prototipo pantalla 1; rediseñada en #119, ver `docs/decisiones.md`)
