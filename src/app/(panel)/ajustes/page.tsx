@@ -1,9 +1,10 @@
-import { BanknoteIcon, Building2Icon, KeyRoundIcon, MailIcon, SendIcon, SlidersHorizontalIcon, UserIcon, UsersIcon } from "lucide-react";
+import { BanknoteIcon, Building2Icon, KeyRoundIcon, MailIcon, SendIcon, SlidersHorizontalIcon, UsersIcon } from "lucide-react";
 import type { Metadata } from "next";
 
 import { FilaAjuste, GrupoAjustes } from "@/app/_componentes/ajustes";
 import { obtenerEmpresa } from "@/app/_datos/empresa";
 import { exigirMiembro } from "@/app/_datos/sesion";
+import { iniciales } from "@/lib/iniciales";
 import { NOMBRE_ROL, puede } from "@/lib/auth/permisos";
 
 export const metadata: Metadata = { title: "Ajustes · Agente de cuentas por pagar" };
@@ -24,17 +25,23 @@ export default async function AjustesPage() {
   const bot = variable("TELEGRAM_BOT_TOKEN") ? variable("TELEGRAM_BOT_USUARIO")?.replace(/^@/, "") : undefined;
 
   return (
-    <>
-      <header className="flex flex-col gap-1.5">
-        <h1 className="text-[32px] leading-tight font-semibold tracking-tight">Ajustes</h1>
-        <p className="text-[15px] text-muted-foreground">
-          {sesion.nombre} · {sesion.rol ? NOMBRE_ROL[sesion.rol] : ""}
-        </p>
-      </header>
+    <div className="mx-auto flex w-full max-w-[640px] flex-col gap-7">
+      <h1 className="text-[30px] leading-tight font-semibold tracking-tight">Ajustes</h1>
 
-      <div className="flex max-w-[680px] flex-col gap-7">
+      {/* Tarjeta de la persona, como la cabecera de Ajustes del iPhone. */}
+      <section aria-label="Tu cuenta" className="flex items-center gap-4 rounded-2xl bg-card p-5 ring-1 ring-border">
+        <span aria-hidden className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-semibold text-primary-foreground">
+          {iniciales(sesion.nombre || sesion.correo)}
+        </span>
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-lg leading-tight font-semibold break-words">{sesion.nombre || "Sin nombre"}</span>
+          <span className="text-sm break-all text-muted-foreground">{sesion.correo}</span>
+          {sesion.rol ? <span className="mt-1 w-fit rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">{NOMBRE_ROL[sesion.rol]}</span> : null}
+        </span>
+      </section>
+
+      <div className="flex flex-col gap-7">
         <GrupoAjustes titulo="Cuenta">
-          <FilaAjuste icono={UserIcon} titulo={sesion.nombre || "Mi perfil"} valor={sesion.correo} />
           <FilaAjuste icono={KeyRoundIcon} color="gris" titulo="Contraseña" valor="Cambiar" href="/ajustes/perfil/contrasena" />
         </GrupoAjustes>
 
@@ -50,6 +57,6 @@ export default async function AjustesPage() {
           <FilaAjuste icono={SendIcon} color="azul" titulo="Telegram" valor={bot ? `@${bot}` : "Sin configurar"} />
         </GrupoAjustes>
       </div>
-    </>
+    </div>
   );
 }

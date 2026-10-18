@@ -3,9 +3,11 @@
 export { BarraConfianza } from "./barra-confianza";
 export { Boton, type VarianteBoton } from "./boton";
 export { ChipRegla } from "./chip-regla";
+export { EncabezadoPagina } from "./encabezado";
 export { Kpi } from "./kpi";
 export { Monto } from "./monto";
 export { PILDORA, PildoraDecision, PildoraResultado } from "./pildora-decision";
 export { Tarjeta, TarjetaEncabezado, TarjetaPie } from "./tarjeta";
 export * from "./formato";
 export { PanelDecision, type AprobadorCorto, type PropsPanelDecision } from "./panel-decision";
+export { VistaFactura } from "./vista-factura";

@@ -133,7 +133,7 @@
   --sidebar-border: rgb(255 255 255 / 10%);
   --sidebar-ring: #c8f169;
   --sidebar-muted: #93a39b; /* texto secundario en la barra lateral */
-  --sidebar-card: #16211c; /* caja "Agente activo" */
+  --sidebar-card: #16211c; /* tarjeta de la persona conectada */
 }
 
 

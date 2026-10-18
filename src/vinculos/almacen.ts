@@ -15,4 +15,6 @@ export interface AlmacenEnlaces {
   /** Código nuevo para un enlace no revocado: el anterior deja de servir y las sesiones abiertas se cierran. */
   cambiarCodigo(id: string, codigo_hash: string, ahora: string): Promise<boolean>;
   registrarAcceso(id: string, ahora: string): Promise<void>;
+  /** Borra para siempre un enlace que ya no sirve (revocado o vencido). false si no existe o sigue activo. */
+  borrar(id: string, ahora: string): Promise<boolean>;
 }

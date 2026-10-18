@@ -83,6 +83,13 @@ export async function revocarEnlace(almacen: AlmacenEnlaces, id: string, ahora: 
   if (!z.uuid().safeParse(id).success || !(await almacen.revocar(id, ahora))) throw new ErrorVinculo(404, "No hay un enlace activo con ese id.");
 }
 
+/** Borra un enlace revocado o vencido para que no quede en la lista para siempre (#119). Uno activo hay que revocarlo antes. */
+export async function borrarEnlace(almacen: AlmacenEnlaces, id: string, ahora: string): Promise<void> {
+  if (!z.uuid().safeParse(id).success || !(await almacen.borrar(id, new Date(Date.parse(ahora)).toISOString()))) {
+    throw new ErrorVinculo(404, "Solo se pueden borrar accesos revocados o vencidos.");
+  }
+}
+
 /** Código nuevo para un enlace (el anterior deja de servir y cierra las sesiones abiertas). */
 export async function cambiarCodigo(almacen: AlmacenEnlaces, id: string, entrada: unknown, ahora: string): Promise<{ codigo: string }> {
   const { codigo } = validar(EsquemaCambioCodigo, entrada);

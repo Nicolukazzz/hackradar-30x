@@ -3,6 +3,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { AlmacenEnlaces } from "./almacen";
+import { estadoEnlace } from "./reglas";
 import { ErrorCodigoRepetido, type EnlaceConCodigo, type EnlaceProveedor } from "./tipos";
 
 type Fila = EnlaceConCodigo & { token_hash: string };
@@ -47,6 +48,12 @@ export function crearAlmacenEnlacesMemoria(): AlmacenEnlaces {
       if (!f || f.revocado_en !== null) return false;
       if (filas.some((x) => x.id !== id && x.codigo_hash === codigo_hash)) throw new ErrorCodigoRepetido();
       Object.assign(f, { codigo_hash, codigo_cambiado_en: ahora });
+      return true;
+    },
+    async borrar(id, ahora) {
+      const i = filas.findIndex((x) => x.id === id);
+      if (i < 0 || estadoEnlace(filas[i]!, ahora) === "activo") return false;
+      filas.splice(i, 1);
       return true;
     },
     async registrarAcceso(id, ahora) {

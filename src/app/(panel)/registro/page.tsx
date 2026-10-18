@@ -1,8 +1,8 @@
 import { DownloadIcon, ScrollTextIcon } from "lucide-react";
 import Link from "next/link";
 
-import { Boton } from "@/app/_componentes";
-import { ConsultaRegistro, obtenerRegistro } from "@/app/_datos/registro";
+import { Boton, EncabezadoPagina } from "@/app/_componentes";
+import { ConsultaRegistro, obtenerCriteriosExtraccion, obtenerRegistro } from "@/app/_datos/registro";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { relojSistema } from "@/lib/reloj-sistema";
 
@@ -27,35 +27,29 @@ export default async function RegistroPage({ searchParams }: PageProps<"/registr
   const decision = shape.decision.safeParse(texto(sp.decision) || undefined).data ?? "todas";
   const actor = shape.actor.safeParse(texto(sp.actor) || undefined).data;
   const q = shape.q.safeParse(texto(sp.q).slice(0, 100)).data ?? "";
-  const r = await obtenerRegistro({ decision, actor, q });
+  const [r, criterios] = await Promise.all([obtenerRegistro({ decision, actor, q }), obtenerCriteriosExtraccion()]);
 
   const { hoy, ayer } = hoyYAyer();
   const filtrado = decision !== "todas" || actor !== undefined || q !== "";
 
   return (
     <>
-      <header className="flex flex-wrap items-end justify-between gap-5">
-        <div className="flex max-w-[700px] flex-col gap-1.5">
-          <span className="text-[13px] text-muted-foreground">
-            Solo se agrega, nunca se edita · {r.total} {r.total === 1 ? "entrada" : "entradas"}
-          </span>
-          <h1 className="text-[32px] leading-tight font-semibold tracking-tight text-balance">Registro de decisiones</h1>
-          <p className="text-[15px] leading-relaxed text-pretty text-muted-foreground">
-            Cada entrada dice qué se decidió, quién lo decidió, qué reglas se evaluaron y con qué valores. Cualquiera puede entender un pago sin abrir
-            el código.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2.5">
-          <Boton variante="secundaria" nativeButton={false} render={<a href="/api/registro/export.json" download />}>
-            <DownloadIcon aria-hidden />
-            Exportar JSON
-          </Boton>
-          <Boton variante="primaria" nativeButton={false} render={<a href="/api/registro/export.csv" download />}>
-            <DownloadIcon aria-hidden />
-            Exportar CSV para conciliar
-          </Boton>
-        </div>
-      </header>
+      <EncabezadoPagina
+        titulo="Registro"
+        descripcion="Todo lo que se decidió, quién lo decidió y por qué. Nada se borra ni se edita."
+        acciones={
+          <>
+            <Boton variante="secundaria" nativeButton={false} render={<a href="/api/registro/export.json" download />}>
+              <DownloadIcon aria-hidden />
+              JSON
+            </Boton>
+            <Boton variante="primaria" nativeButton={false} render={<a href="/api/registro/export.csv" download />}>
+              <DownloadIcon aria-hidden />
+              Exportar CSV
+            </Boton>
+          </>
+        }
+      />
 
       <FiltrosRegistro q={q} decision={decision} actor={actor ?? "todos"} />
 
@@ -77,14 +71,14 @@ export default async function RegistroPage({ searchParams }: PageProps<"/registr
             <EmptyTitle>{r.total === 0 ? "El registro está vacío" : "Ninguna entrada coincide"}</EmptyTitle>
             <EmptyDescription>
               {r.total === 0
-                ? "Cada decisión del agente y de las personas quedará aquí con su explicación. Usa Procesar facturas nuevas en la Bandeja."
+                ? "Cada decisión del agente y de las personas quedará aquí con su explicación."
                 : `Prueba con otra búsqueda${q ? ` distinta de «${q}»` : ""} o quita los filtros.`}
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
       ) : (
         // key: al cambiar los filtros la selección vuelve a la primera entrada del resultado nuevo.
-        <ListaRegistro key={`${decision}|${actor ?? ""}|${q}`} dias={r.dias} inicial={texto(sp.entrada) || null} hoy={hoy} ayer={ayer} />
+        <ListaRegistro key={`${decision}|${actor ?? ""}|${q}`} dias={r.dias} inicial={texto(sp.entrada) || null} hoy={hoy} ayer={ayer} criterios={criterios} />
       )}
     </>
   );

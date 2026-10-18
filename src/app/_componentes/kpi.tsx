@@ -48,11 +48,11 @@ export function Kpi({
         {icono}
         {etiqueta}
       </span>
-      <span className={cn("font-mono text-4xl leading-none font-semibold tabular-nums", tono === "destacado" && "text-brand")}>{valor}</span>
+      <span className={cn("font-mono text-[32px] leading-none font-semibold tabular-nums", tono === "destacado" && "text-brand")}>{valor}</span>
       {detalle ? <span className={cn("text-[13px] leading-snug", t.detalle, detalleMono && "font-mono")}>{detalle}</span> : null}
     </>
   );
-  const clase = cn("flex flex-col gap-2 rounded-[14px] px-5 py-[18px]", t.caja, className);
+  const clase = cn("flex flex-col gap-2.5 rounded-[16px] px-5 py-4", t.caja, className);
   if (href) {
     return (
       <Link

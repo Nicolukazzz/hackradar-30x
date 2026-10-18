@@ -639,7 +639,7 @@ Comunes a las 5 (layout del prototipo, ancho de diseño 1440 px, usable a 390 px
 - Píldoras de decisión: Pagada / Frenada / Escalada / Aprobada por persona / Rechazada por persona (colores §15).
 - Montos e ids en Geist Mono. Botones ≥ 44 px de alto.
 
-### 13.1 Bandeja de decisiones — `/` (prototipo pantalla 1)
+### 13.1 Bandeja de decisiones — `/` (prototipo pantalla 1; rediseñada en #119, ver `docs/decisiones.md`)
 - Encabezado: "Octubre 2026 · Lote del 16 oct", título, subtítulo "El agente revisó {n} facturas a las {hora}. Pagó lo que cumple todas las reglas, frenó lo que las rompe y escaló a una persona lo que necesita criterio humano." Selector de periodo, botones "Exportar registro" y "Procesar facturas nuevas" (acento).
 - 5 KPIs: **Pagos fuera de reglas 0** ("12 de 12 coinciden con la decisión esperada del set de prueba") · **Autonomía 66,7 %** ("8 de 12 decididas sin intervención humana") · **Pagadas 5** (USD 7.444,05) · **Frenadas 3** (USD 7.840,00 sin pagar) · **Escaladas 4** ("Revisar aprobaciones →").
 - Tarjeta presupuesto: barra apilada pagado antes / pagado en lote / reservado / disponible, con montos (§11.4).
@@ -662,7 +662,7 @@ Comunes a las 5 (layout del prototipo, ancho de diseño 1440 px, usable a 390 px
 - Tarjeta por factura: id, canal · hora, beneficiario, país · condición, USD y original, chips de reglas fallidas, "Por qué se escaló", "Si apruebas", "{n} de 11 reglas cumplen o no aplican", asignada a, responder antes de (rojo si urgente), link a traza, casilla agregar a lista (R3), Rechazar / Aprobar pago, estado resultante + Deshacer.
 - Pie: "Montos sobre USD 10.000 requieren dos aprobaciones…"
 
-### 13.4 Reglas de pago — `/ajustes/reglas` (pantalla 4; `/reglas` redirige, #83)
+### 13.4 Reglas de pago — `/ajustes/reglas` (pantalla 4; `/reglas` redirige, #83; por pasos desde #119)
 - Encabezado "Versión 7 · editada el 14 oct 2026 por Laura Méndez", "Historial de versiones", "Guardar como v8".
 - Caja "Prueba las reglas antes de guardar": resultado de `POST /api/reglas/simular` (coinciden 12/12 · pagos fuera de reglas 0 · autonomía 66,7 %) + "Simular de nuevo". Si pagos fuera de reglas > 0 → bloquear "Guardar" con mensaje rojo.
 - Límites por pago: R9, R6, R8 default, R5 tolerancia (inputs numéricos con validación: R9 ≤ R6).
@@ -673,7 +673,7 @@ Comunes a las 5 (layout del prototipo, ancho de diseño 1440 px, usable a 390 px
 - Quién aprueba: tarjetas LM / AP + "Dos aprobaciones desde USD 10.000".
 - Orden de evaluación: chips R1→R11 coloreados por tipo + reglas de combinación.
 
-### 13.5 Registro de decisiones — `/registro` (pantalla 5)
+### 13.5 Registro de decisiones — `/registro` (pantalla 5; desde #119 el panel derecho es una vista de factura, no JSON)
 - Encabezado "Solo se agrega, nunca se edita · {n} entradas en los últimos 2 días", Exportar JSON / CSV.
 - Filtros: buscar, decisión (Todas/Pagadas/Frenadas/Escaladas/Decisiones humanas), quién decidió (Agente y personas/Solo el agente/Solo personas).
 - Lista agrupada por día ("Hoy · 16 oct 2026 · lote de 12 facturas", "Ayer · 15 oct 2026 · decisiones humanas"): hora · actor · píldora · id · beneficiario · USD · explicación · chips de comparación.

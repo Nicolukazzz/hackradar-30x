@@ -9,6 +9,7 @@ import { Boton } from "@/app/_componentes";
 import { BotonCopiar, EnlaceGenerado } from "@/app/_componentes/invitacion";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { PermisoUI } from "@/lib/auth/permisos";
 import { generarCodigo } from "@/vinculos/codigo";
@@ -24,12 +25,26 @@ type Creado = { url: string; codigo: string };
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function CrearEnlace({ permiso }: { permiso: PermisoUI }) {
+export function CrearEnlace({
+  permiso,
+  inicial,
+  etiqueta = "Dar acceso al portal",
+  variante = "secundaria",
+  compacto = false,
+}: {
+  permiso: PermisoUI;
+  /** para un proveedor de la lista: nombre y correo ya puestos */
+  inicial?: { nombre: string; correo: string };
+  etiqueta?: string;
+  variante?: "primaria" | "secundaria";
+  /** botón chico para una fila de la lista */
+  compacto?: boolean;
+}) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [paso, setPaso] = useState<Paso>("proveedor");
-  const [nombre, setNombre] = useState("");
-  const [correo, setCorreo] = useState("");
+  const [nombre, setNombre] = useState(inicial?.nombre ?? "");
+  const [correo, setCorreo] = useState(inicial?.correo ?? "");
   const [codigo, setCodigo] = useState("");
   const [creado, setCreado] = useState<Creado | null>(null);
   const [ocupado, iniciar] = useTransition();
@@ -41,8 +56,8 @@ export function CrearEnlace({ permiso }: { permiso: PermisoUI }) {
 
   function reiniciar() {
     setPaso("proveedor");
-    setNombre("");
-    setCorreo("");
+    setNombre(inicial?.nombre ?? "");
+    setCorreo(inicial?.correo ?? "");
     setCodigo("");
     setCreado(null);
   }
@@ -68,37 +83,43 @@ export function CrearEnlace({ permiso }: { permiso: PermisoUI }) {
   }
 
   const numero = { proveedor: 1, codigo: 2, listo: 3 }[paso];
-  const titulo = { proveedor: "¿Para qué proveedor?", codigo: "Código del proveedor", listo: "Enlace listo" }[paso];
+  const titulo = { proveedor: "¿A quién le das acceso?", codigo: "Código del proveedor", listo: "Enlace listo" }[paso];
   const descripcion = {
-    proveedor: "Con este correo y el código entrará al portal para subir sus facturas.",
+    proveedor: "Con este correo y un código entrará al portal para subir sus facturas.",
     codigo: "Un código de 8 caracteres que solo tendrá este proveedor. Si no te gusta, genera otro. Después también lo puedes cambiar.",
     listo: `Pásale a ${nombreLimpio} el enlace y el código por el medio que ya usan. Por seguridad no se vuelven a mostrar; el enlace vence en 30 días.`,
   }[paso];
 
   if (!permiso.ok) {
-    return (
+    return compacto ? null : (
       <div className="flex flex-col items-end gap-1.5">
-        <Boton variante="primaria" disabled>
+        <Boton variante={variante} disabled>
           <LinkIcon aria-hidden />
-          Crear enlace
+          {etiqueta}
         </Boton>
         <span className="max-w-[260px] text-right text-[13px] text-muted-foreground">{permiso.motivo}</span>
       </div>
     );
   }
 
+  const abrir = () => {
+    setCodigo(generarCodigo()); // en el navegador al abrir: nunca el mismo código que otro render
+    setAbierto(true);
+  };
+
   return (
     <>
-      <Boton
-        variante="primaria"
-        onClick={() => {
-          setCodigo(generarCodigo()); // en el navegador al abrir: nunca el mismo código que otro render
-          setAbierto(true);
-        }}
-      >
-        <LinkIcon aria-hidden />
-        Crear enlace
-      </Boton>
+      {compacto ? (
+        <Button variant="ghost" className="h-11 gap-1.5 px-3" onClick={abrir}>
+          <LinkIcon aria-hidden />
+          {etiqueta}
+        </Button>
+      ) : (
+        <Boton variante={variante} onClick={abrir}>
+          <LinkIcon aria-hidden />
+          {etiqueta}
+        </Boton>
+      )}
       <Dialog open={abierto} onOpenChange={cambiarAbierto}>
         <DialogContent className="gap-5 p-6 sm:max-w-md">
           <DialogHeader>

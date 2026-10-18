@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheckIcon, InboxIcon, ListIcon, LogOutIcon, SendIcon, SettingsIcon, ShieldCheckIcon } from "lucide-react";
+import { CircleCheckIcon, InboxIcon, ListIcon, LogOutIcon, SettingsIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense, use } from "react";
 import { usePathname } from "next/navigation";
@@ -19,28 +19,32 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { NOMBRE_ROL, type Rol } from "@/lib/auth/permisos";
+import { iniciales } from "@/lib/iniciales";
 import { cn } from "@/lib/utils";
 
-// Barra lateral de especificación §13 "Comunes", con el aspecto del prototipo.
-// #83: Reglas y Equipo pasan dentro de Ajustes.
+// Barra lateral de especificación §13 "Comunes". #83: Reglas y Equipo pasan dentro de Ajustes. #119: arriba va la
+// empresa que usa la app (no un nombre de producto) y abajo solo quién está conectado.
 const navegacion = [
   { titulo: "Bandeja", href: "/", icono: InboxIcon },
   { titulo: "Aprobaciones", href: "/aprobaciones", icono: CircleCheckIcon },
   { titulo: "Registro", href: "/registro", icono: ListIcon },
-  { titulo: "Proveedores", href: "/proveedores", icono: SendIcon },
+  { titulo: "Proveedores", href: "/proveedores", icono: UsersIcon },
   { titulo: "Ajustes", href: "/ajustes", icono: SettingsIcon },
 ] as const;
 
-/** Logo + rol. Lo comparten la barra lateral y la cabecera móvil. */
-export function MarcaTesorero({ className }: { className?: string }) {
+/** La empresa que usa la app, arriba de todo. La comparten la barra lateral y la cabecera móvil. */
+export function MarcaEmpresa({ nombre, className }: { nombre: string; className?: string }) {
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-sidebar-primary text-sidebar-primary-foreground">
-        <ShieldCheckIcon className="size-5" aria-hidden />
+    <div className={cn("flex min-w-0 items-center gap-3", className)}>
+      <span
+        aria-hidden
+        className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground"
+      >
+        {iniciales(nombre)}
       </span>
-      <span className="flex flex-col gap-0.5">
-        <span className="text-[17px] leading-tight font-semibold tracking-tight">Tesorero</span>
-        <span className="text-xs text-sidebar-muted">Agente de cuentas por pagar</span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-[16px] leading-tight font-semibold tracking-tight text-balance">{nombre}</span>
+        <span className="text-xs text-sidebar-muted">Cuentas por pagar</span>
       </span>
     </div>
   );
@@ -70,7 +74,7 @@ export function AppSidebar({
 }: {
   usuario: { nombre: string; correo: string; rol: Rol };
   /** #84: de la base (Ajustes → Datos de la empresa); null si no se pudo leer */
-  empresa: { nombre: string; resumen: string } | null;
+  empresa: { nombre: string } | null;
   pendientes: Promise<number | null>;
 }) {
   const ruta = usePathname();
@@ -79,20 +83,10 @@ export function AppSidebar({
   return (
     <Sidebar>
       <SidebarHeader className="px-4 pt-6 pb-0">
-        <MarcaTesorero className="px-2" />
+        <MarcaEmpresa nombre={empresa?.nombre ?? "Tu empresa"} className="px-2" />
       </SidebarHeader>
 
-      <SidebarContent className="gap-0 px-2 pt-5">
-        {empresa ? (
-          <SidebarGroup className="pb-5">
-            <div className="flex flex-col gap-1 rounded-xl border border-sidebar-border px-3.5 py-3">
-              <span className="text-[11px] tracking-[0.08em] text-sidebar-muted uppercase">Empresa</span>
-              <span className="text-sm font-semibold">{empresa.nombre}</span>
-              <span className="text-xs text-sidebar-muted">{empresa.resumen}</span>
-            </div>
-          </SidebarGroup>
-        ) : null}
-
+      <SidebarContent className="gap-0 px-2 pt-6">
         <SidebarGroup className="pt-0">
           <SidebarGroupContent>
             <nav aria-label="Principal">
@@ -130,32 +124,31 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="gap-3 px-4 pb-6">
-        <div className="flex flex-col gap-2.5 rounded-xl bg-sidebar-card p-3.5">
-          <span className="flex items-center gap-2 text-[13px] font-semibold">
-            <span aria-hidden className="size-2 rounded-full bg-sidebar-primary" />
-            Agente activo
-          </span>
-          <p className="text-xs leading-normal text-sidebar-muted">
-            Reglas v7 · solo decide, nunca mueve dinero. Prototipo para el Reto Blinka.
-          </p>
-        </div>
-
-        {/* Identidad desde la sesión (#25): nada de "actuar como". */}
-        <div className="flex items-center justify-between gap-2 px-1">
-          <span className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-medium text-sidebar-foreground">{usuario.nombre}</span>
-            <span className="truncate text-xs text-sidebar-muted">
-              {NOMBRE_ROL[usuario.rol]} · {usuario.correo}
+      <SidebarFooter className="px-3 pb-5">
+        {/* Identidad desde la sesión (#25). Nada se corta: el correo baja de línea si no cabe. */}
+        <div className="flex flex-col gap-3 rounded-2xl bg-sidebar-card p-3.5">
+          <div className="flex items-start gap-3">
+            <span
+              aria-hidden
+              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-[13px] font-semibold text-sidebar-accent-foreground"
+            >
+              {iniciales(usuario.nombre)}
             </span>
-          </span>
+            <span className="flex min-w-0 flex-col gap-1">
+              <span className="text-sm leading-tight font-semibold break-words text-sidebar-foreground">{usuario.nombre}</span>
+              <span className="w-fit rounded-full bg-sidebar-accent px-2 py-0.5 text-[11px] font-medium text-sidebar-accent-foreground">
+                {NOMBRE_ROL[usuario.rol]}
+              </span>
+              <span className="text-xs leading-snug break-all text-sidebar-muted">{usuario.correo}</span>
+            </span>
+          </div>
           <form action={salir}>
             <button
               type="submit"
-              className="flex items-center gap-1.5 rounded-[10px] px-2 py-1.5 text-xs font-medium text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] text-[13px] font-medium text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none"
             >
               <LogOutIcon className="size-4" aria-hidden />
-              Salir
+              Cerrar sesión
             </button>
           </form>
         </div>

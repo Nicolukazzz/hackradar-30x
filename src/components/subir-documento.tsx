@@ -100,8 +100,8 @@ export function SubirDocumento({
         )}
       >
         <FileUpIcon aria-hidden className="size-8 text-muted-foreground" />
-        <span className="text-base font-medium">Arrastra tu factura aquí o elige un archivo</span>
-        <span className="text-sm text-muted-foreground">PDF, PNG, JPG o XML · un archivo · hasta 10 MB</span>
+        <span className="text-base font-medium">Arrastra la factura aquí o elige un archivo</span>
+        <span className="text-sm text-muted-foreground">PDF o foto (JPG, PNG) · hasta 10 MB</span>
         <input
           ref={entrada}
           type="file"
