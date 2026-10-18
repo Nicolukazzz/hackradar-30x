@@ -14,6 +14,7 @@ export function msDeFecha(fecha: string): number | null {
   return ms;
 }
 
+/** true si `fecha` es AAAA-MM-DD y existe en el calendario. */
 export function esFechaValida(fecha: string): boolean {
   return msDeFecha(fecha) !== null;
 }

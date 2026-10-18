@@ -3,6 +3,10 @@
 import { evaluacion } from "./catalogo";
 import { afectado, type ContextoRegla, cuentaExigida, FUERA_DE_LISTA, r3Falla, SIN_DATO } from "./contexto";
 
+/**
+ * Compara los últimos 4 dígitos de la cuenta de la factura con los registrados. NO_APLICA si R3 falla, si la cuenta
+ * no se leyó (R1 ya escala) o si la empresa no exige cuenta y la factura no trae ninguna.
+ */
 export function r04Cuenta(ctx: ContextoRegla) {
   if (r3Falla(ctx) || ctx.beneficiario === null) return evaluacion("R4", "NO_APLICA", FUERA_DE_LISTA);
   const leida = ctx.ext.cuenta_destino_ultimos4.valor;

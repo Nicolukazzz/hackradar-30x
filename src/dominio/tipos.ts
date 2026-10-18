@@ -11,6 +11,10 @@ export type Moneda = (typeof MONEDAS)[number];
 /** COP 8.400.000 → { centavos: 840000000, moneda: "COP" } */
 export type Dinero = { centavos: number; moneda: Moneda };
 
+/**
+ * La empresa que usa la app. En producción vive en la tabla `empresas` (#84); `data/empresa.json` es el valor
+ * inicial.
+ */
 export type Empresa = {
   id: string;
   nombre: string;
@@ -23,28 +27,33 @@ export type Empresa = {
 
 export type TipoPeriodo = "mensual" | "quincenal" | "trimestral";
 
+/** Ventana de presupuesto (R7). `id` = "2026-10" para mensual; `inicio` y `fin` inclusivos (AAAA-MM-DD). */
 export type Periodo = { id: string; tipo: TipoPeriodo; inicio: string; fin: string };
 
-/** 1 USD = X. { COP: "4200.00", MXN: "18.50", USD: "1" } */
-/** 1 {base} = X {moneda}. La base es la moneda de la empresa (#86); el dataset usa USD. */
+/** 1 {base} = X {moneda}: con base USD, { COP: "4200.00", MXN: "18.50", USD: "1" }. La base es la moneda de la empresa (#86). */
 export type TablaTasas = { periodo: string; base: Moneda; tasas: Partial<Record<Moneda, string>> };
 
+/** Orden de evaluación del motor: R1 a R11, siempre todas y en este orden (§4.2). */
 export const ID_REGLAS = ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R11"] as const;
 export type IdRegla = (typeof ID_REGLAS)[number];
 
 /** Solo estas reglas se pueden desactivar (§4.2). El resto está siempre activa. */
 export const REGLAS_EDITABLES: readonly IdRegla[] = ["R5", "R8"];
 
+/**
+ * Una versión de las reglas de pago (§4). Cada guardado crea una versión nueva; nunca se edita una existente. La
+ * versión 0 es «sin configurar» y escala todo (#106).
+ */
 export type Reglas = {
   version: number;
   editada_por: string;
   editada_en: string;
   limites: {
-    /** R9, centavos USD */
+    /** R9, centavos de `moneda` */
     pago_automatico_usd: number;
-    /** R6, centavos USD */
+    /** R6, centavos de `moneda` */
     maximo_absoluto_usd: number;
-    /** R8, centavos USD, cuando el beneficiario no tiene límite propio */
+    /** R8, centavos de `moneda`, cuando el beneficiario no tiene límite propio */
     mensual_por_beneficiario_default_usd: number;
     /** R5, en puntos porcentuales: 2 = ±2 % */
     tolerancia_acordado_pct: number;
@@ -88,6 +97,10 @@ export const REQUERIDOS_POR_DEFECTO: readonly CampoRequerible[] = [
   "concepto",
 ];
 
+/**
+ * Una línea de lo acordado con el beneficiario. R5 la elige por `codigo` (referencia de la factura) o por
+ * `palabras_clave` en el concepto.
+ */
 export type LineaAcuerdo = {
   codigo: string;
   concepto: string;
@@ -99,10 +112,15 @@ export type LineaAcuerdo = {
 
 export type TipoAcuerdo = "contrato_mensual" | "orden_compra" | "hitos" | "honorario" | "licencia";
 
+/** Contrato, orden de compra, honorario o licencia con el que R5 compara la factura. */
 export type Acuerdo = { tipo: TipoAcuerdo; referencia: string; descripcion: string; lineas: LineaAcuerdo[] };
 
 export type TipoCuenta = "CLABE" | "cuenta" | "PIX" | "CBU" | "ACH";
 
+/**
+ * Proveedor o contratista de la lista permitida (R3). `canales` son los remitentes verificados (R11);
+ * `cuenta.ultimos4` es lo que compara R4.
+ */
 export type Beneficiario = {
   id: string;
   nombre: string;
@@ -113,7 +131,7 @@ export type Beneficiario = {
   tipo: "contratista" | "proveedor";
   cuenta: { tipo: TipoCuenta; banco: string; numero_enmascarado: string; ultimos4: string };
   acuerdo: Acuerdo | null;
-  /** centavos USD; null = usar el default de Reglas */
+  /** centavos en la moneda base; null = usar el default de Reglas */
   limite_mensual_usd: number | null;
   estado: "activo" | "inactivo";
   canales: {
@@ -125,17 +143,20 @@ export type Beneficiario = {
   };
 };
 
+/** Quien puede decidir escalados (§10). En producción se arma con los miembros del equipo que firman (#51). */
 export type Aprobador = {
   id: string;
   nombre: string;
   rol: string;
-  /** centavos USD; null = cualquier monto */
+  /** centavos en la moneda base; null = cualquier monto */
   limite_usd: number | null;
   principal: boolean;
   iniciales: string;
 };
 
+/** Por dónde llegó el documento. Todos entran por la misma ingesta (#11). */
 export type Canal = "portal" | "correo" | "telegram" | "whatsapp" | "carga_manual";
+/** Forma del documento recibido; decide qué parser lo lee. */
 export type Formato = "pdf" | "imagen" | "correo" | "chat" | "xml";
 
 /** "interno" = empleado de la empresa que reenvía una factura (R11 lo acepta solo si R3 cumple). */
@@ -156,6 +177,10 @@ export type DocumentoEntrante = {
 /** `.meta.json` del dataset: DocumentoEntrante + ruta del archivo tal como llegó (§11.1). */
 export type MetaDocumento = DocumentoEntrante & { archivo_original: string };
 
+/**
+ * Documento después de la ingesta: con ref interna, huella sha256 (R2) y el beneficiario al que está vinculado el
+ * remitente (R11).
+ */
 export type DocumentoRecibido = DocumentoEntrante & {
   /** INT-2026-000123 */
   ref_interna: string;
@@ -167,11 +192,13 @@ export type DocumentoRecibido = DocumentoEntrante & {
 
 /** `humano` (#129): un aprobador corrigió el dato al decidir. */
 export type FuenteCampo = "parser" | "llm" | "xml" | "humano";
+/** Un dato extraído con su confianza (0 a 1) y quién lo leyó. `valor: null` = no se pudo leer. */
 export type Campo<T> = { valor: T | null; confianza: number; fuente: FuenteCampo };
 
 export type Idioma = "es" | "en" | "pt";
 export type ProveedorLlm = "ninguno" | "gemini" | "groq" | "anthropic";
 
+/** Todo lo que se leyó de un documento. Es la entrada del motor; el texto nunca decide, solo se compara. */
 export type Extraccion = {
   es_factura: Campo<boolean>;
   beneficiario_nombre: Campo<string>;
@@ -202,8 +229,10 @@ export type Extraccion = {
   proveedor_llm: ProveedorLlm;
 };
 
+/** INDETERMINADO = falta un dato o no se pudo evaluar: siempre escala, aunque la regla sea de frenar (§4.2). */
 export type ResultadoRegla = "CUMPLE" | "FALLA" | "NO_APLICA" | "INDETERMINADO";
 
+/** Resultado de una regla para una factura: lo que la Traza muestra y lo que el registro guarda. */
 export type EvaluacionRegla = {
   id: IdRegla;
   nombre: string;
@@ -215,9 +244,12 @@ export type EvaluacionRegla = {
   datos: Record<string, string | number | boolean | null>;
 };
 
+/** Lo que decide el motor (§5). RECHAZADA_NO_FACTURA no pasa por las reglas de pago. */
 export type DecisionAgente = "PAGAR" | "FRENAR" | "ESCALAR" | "RECHAZADA_NO_FACTURA";
+/** Lo que decide una persona sobre una factura escalada (§10). */
 export type DecisionHumana = "APROBADA_HUMANO" | "RECHAZADA_HUMANO";
 
+/** Salida de `evaluarFactura`: la decisión, la traza completa y la explicación en lenguaje natural (§7). */
 export type ResultadoMotor = {
   decision: DecisionAgente;
   /** siempre R1..R11 en orden, aunque NO_APLICA */
@@ -239,8 +271,10 @@ export type ResultadoMotor = {
   observaciones: string[];
 };
 
+/** Quién escribió la entrada: el agente o una persona (con su id y nombre al momento de decidir). */
 export type ActorRegistro = { tipo: "agente" } | { tipo: "humano"; aprobador_id: string; nombre: string };
 
+/** Qué registra la entrada: decisiones (agente o humana) o cambios de configuración. */
 export type TipoEntrada = "DECISION_AGENTE" | "DECISION_HUMANA" | "CAMBIO_REGLAS" | "CAMBIO_BENEFICIARIOS" | "CAMBIO_EMPRESA";
 
 /** Registro append-only (§9). Nunca se edita ni se borra. */
@@ -300,6 +334,7 @@ export type ExtraccionPlana = {
   idioma: Idioma;
 };
 
+/** Casos trampa del dataset (§11.5). La evaluación reporta exactitud por cada una. */
 export const TRAMPAS = [
   "duplicado", "duplicado-exacto", "beneficiario-nuevo", "no-cuadra", "sobre-limite", "sobre-maximo",
   "sin-presupuesto", "limite-mensual", "moneda-distinta", "datos-bancarios-cambiados", "ilegible",
@@ -307,6 +342,7 @@ export const TRAMPAS = [
 ] as const;
 export type Trampa = (typeof TRAMPAS)[number];
 
+/** Respuesta esperada para un documento del dataset (§11.5): decisión, reglas que fallan y extracción perfecta. */
 export type EsperadoDocumento = {
   /** "documentos/011-omi-3381.eml", relativo a la carpeta del escenario */
   documento: string;
@@ -320,6 +356,7 @@ export type EsperadoDocumento = {
   extraccion_esperada: ExtraccionPlana;
 };
 
+/** `escenario.json`: periodo, instante `ahora` del lote y lo pagado antes del lote (§11.1). */
 export type ConfigEscenario = {
   id: string;
   periodo: string;

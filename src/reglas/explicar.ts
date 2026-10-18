@@ -9,6 +9,7 @@ import type { Beneficiario, DecisionAgente, DocumentoRecibido, EvaluacionRegla, 
 import { diasEntre, esFechaValida, fechaDe, fechaLegible, horaDe } from "./fechas";
 import { tolerancia } from "./r05-acordado";
 
+/** Lo necesario para redactar la explicación de una decisión del motor. */
 export type EntradaExplicacion = {
   decision: DecisionAgente;
   evaluaciones: readonly EvaluacionRegla[];
@@ -139,6 +140,11 @@ function explicarPago(x: EntradaExplicacion, nombre: string): string {
   return sinPuntoDoble(`Pagada: ${acuerdo}. ${cuenta}. Bajo el límite automático (${montoTexto} ≤ ${enBase(x.reglas.limites.pago_automatico_usd, x.reglas)}).`);
 }
 
+/**
+ * Explicación de una decisión en una o más frases (§7): la causa que frena primero, después las que escalan, en orden
+ * R1→R11, unidas con «Además,». ESCALAR cierra con lo que se reserva del presupuesto. El beneficiario se nombra una
+ * sola vez.
+ */
 export function explicar(x: EntradaExplicacion): string {
   const nombre = x.beneficiario?.nombre ?? x.ext.beneficiario_nombre.valor ?? SIN_NOMBRE;
   if (x.decision === "PAGAR") return explicarPago(x, nombre);
@@ -170,7 +176,10 @@ export function explicar(x: EntradaExplicacion): string {
   return sinPuntoDoble(`${prefijo}: ${frases.join(" Además, ")}${cierre}`);
 }
 
-/** Observaciones que no deciden (§7): monto a ≤ 1 % por debajo del límite automático. */
+/**
+ * Observaciones que no deciden (§7): el monto quedó a ≤ 1 % del límite automático, o la factura ya venció (#149).
+ * Se muestran en la Traza para que quien revisa las vea.
+ */
 export function observaciones(monto_usd_centavos: number | null, reglas: Reglas, vencimiento?: { fecha: string | null; ahora: string }): string[] {
   const obs: string[] = [];
   const limite = reglas.limites.pago_automatico_usd;
@@ -187,6 +196,8 @@ export function observaciones(monto_usd_centavos: number | null, reglas: Reglas,
   return obs;
 }
 
+/** Explicación cuando el motor falló: la factura escala por seguridad. */
 export const EXPLICACION_ERROR = "Error interno al evaluar: se escala por seguridad.";
+/** Explicación mientras la empresa no guarde sus reglas (versión 0): todo escala. */
 export const EXPLICACION_SIN_REGLAS =
   "Escalada: la empresa aún no configuró sus reglas de pago, así que ninguna factura se paga ni se frena sola. Una persona debe decidir.";

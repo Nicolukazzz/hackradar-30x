@@ -8,6 +8,7 @@ import { exigirMiembro } from "./sesion";
 
 export type { FilaBandeja, FiltroDecision, RespuestaBandeja } from "@/servicios/bandeja";
 
+/** Bandeja para la pantalla principal. Exige ser miembro. */
 export async function obtenerBandeja(opciones: OpcionesBandeja = {}): Promise<RespuestaBandeja> {
   await exigirMiembro();
   return servicio(await obtenerRepositorio(), opciones);

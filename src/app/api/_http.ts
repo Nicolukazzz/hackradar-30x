@@ -12,10 +12,12 @@ import { ErrorProveedor } from "@/servicios/proveedores";
 import { ErrorReglas } from "@/servicios/reglas";
 import { ErrorSubida } from "@/servicios/subida";
 
+/** Respuesta JSON 200 (o el estado de `init`). */
 export function ok<T>(datos: T, init?: ResponseInit): NextResponse<T> {
   return NextResponse.json(datos, init);
 }
 
+/** Respuesta `{ error }` con el estado dado. */
 export function error(estado: number, mensaje: string, extra?: Record<string, unknown>): NextResponse {
   return NextResponse.json({ error: mensaje, ...extra }, { status: estado });
 }
@@ -41,6 +43,7 @@ export async function cuerpo<T>(req: Request, esquema: z.ZodType<T>): Promise<T>
   return validar(esquema, await json(req));
 }
 
+/** Cuerpo inválido: se responde 400 con el mensaje de validación. */
 export class ErrorEntrada extends Error {
   readonly estado = 400;
 }

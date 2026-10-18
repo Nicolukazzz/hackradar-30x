@@ -9,8 +9,10 @@ const esquemaPublico = z.object({
   publishableKey: z.string().min(1, "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY falta"),
 });
 
+/** URL y llave pública de Supabase. */
 export type EntornoPublico = z.infer<typeof esquemaPublico>;
 
+/** Lee y valida las variables públicas de Supabase. Lanza con un mensaje claro si faltan. */
 export function entornoPublico(): EntornoPublico {
   const r = esquemaPublico.safeParse({
     url: process.env.NEXT_PUBLIC_SUPABASE_URL,

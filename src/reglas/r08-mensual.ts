@@ -7,6 +7,10 @@ import { type ContextoRegla, desactivada, FUERA_DE_LISTA, montoUsd, r3Falla, SIN
 import { periodoDe } from "./libro";
 import { porBeneficiario } from "./presupuesto";
 
+/**
+ * FALLA (escala) si lo pagado y reservado del beneficiario en el mes calendario más esta factura supera su límite
+ * mensual (el propio o el de las reglas).
+ */
 export function r08Mensual(ctx: ContextoRegla) {
   if (desactivada(ctx, "R8")) return evaluacion("R8", "NO_APLICA", textoDesactivada(ctx));
   if (r3Falla(ctx) || ctx.beneficiario === null) return evaluacion("R8", "NO_APLICA", FUERA_DE_LISTA);

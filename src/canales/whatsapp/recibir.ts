@@ -40,6 +40,7 @@ export const WebhookSchema = z.object({
     .max(50),
 });
 
+/** Mensaje entrante validado. */
 export type MensajeWhatsapp = z.infer<typeof MensajeSchema>;
 
 /** Los mensajes de un webhook, en orden. */
@@ -47,6 +48,7 @@ export function mensajesDe(webhook: z.infer<typeof WebhookSchema>): MensajeWhats
   return webhook.entry.flatMap((e) => e.changes.filter((c) => c.field === "messages").flatMap((c) => c.value.messages ?? []));
 }
 
+/** Repositorio, extractor, descarga de archivos, secreto de los enlaces y si el número es confiable. */
 export type DependenciasWhatsapp = {
   repo: Repositorio;
   ahora: string;
@@ -58,6 +60,7 @@ export type DependenciasWhatsapp = {
   confiarNumero: boolean;
 };
 
+/** Respuesta para el número, la decisión si hubo factura, o el motivo por el que se ignoró. */
 export type ResultadoWhatsapp = { numero: string; respuesta: string | null; entrada?: EntradaRegistro; ignorado?: string };
 
 const TEXTOS = {
@@ -131,6 +134,10 @@ async function estado(ref: string, numero: string, deps: DependenciasWhatsapp): 
   return mensajeFactura(agente, idioma);
 }
 
+/**
+ * Atiende un mensaje: `VINCULAR <token>` vincula el número, `ESTADO <ref>` responde el estado (solo de ese número) y
+ * una foto, PDF o texto con factura entra por la ingesta.
+ */
 export async function recibirWhatsapp(m: MensajeWhatsapp, deps: DependenciasWhatsapp): Promise<ResultadoWhatsapp> {
   const numero = m.from;
   const texto = (m.text?.body ?? "").trim();

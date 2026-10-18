@@ -8,6 +8,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 // siempre). En desarrollo sin ninguno, uno al azar por proceso (reiniciar el servidor cierra las sesiones).
 
 export const COOKIE_PROVEEDOR = "hr_proveedor";
+/** Duración de la sesión del proveedor: 2 horas. */
 export const DURACION_SESION_MS = 2 * 60 * 60 * 1000;
 
 const CLAVE = Symbol.for("hackradar.portal-proveedor.secreto");
@@ -38,6 +39,7 @@ export function hashesIguales(a: string, b: string): boolean {
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
+/** Valor de la cookie de sesión del proveedor, firmado con el código vigente, y cuándo vence. */
 export function crearValorSesion(enlace_id: string, codigo_hash: string, ahora: string): { valor: string; vence: Date } {
   const vence = Date.parse(ahora) + DURACION_SESION_MS;
   const base = `${enlace_id}.${vence.toString(36)}`;

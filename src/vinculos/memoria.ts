@@ -8,6 +8,7 @@ import { ErrorCodigoRepetido, type EnlaceConCodigo, type EnlaceProveedor } from 
 
 type Fila = EnlaceConCodigo & { token_hash: string };
 
+/** Almacén en memoria con las mismas reglas que la base: código único y revocar una sola vez. */
 export function crearAlmacenEnlacesMemoria(): AlmacenEnlaces {
   const filas: Fila[] = [];
 

@@ -33,8 +33,10 @@ export const UpdateSchema = z.object({
     .optional(),
 });
 
+/** Update de Telegram validado (solo los campos que se usan). */
 export type UpdateTelegram = z.infer<typeof UpdateSchema>;
 
+/** Repositorio, extractor, descarga de archivos, secreto de los enlaces y si el chat es confiable. */
 export type DependenciasTelegram = {
   repo: Repositorio;
   ahora: string;
@@ -50,6 +52,7 @@ export type DependenciasTelegram = {
   confiarChat: boolean;
 };
 
+/** Respuesta para el chat, la decisión si hubo factura, o el motivo por el que se ignoró. */
 export type ResultadoTelegram = { chat_id: string; respuesta: string | null; entrada?: EntradaRegistro; ignorado?: string };
 
 const TEXTOS = {
@@ -143,6 +146,10 @@ async function estado(ref: string, chat: string, deps: DependenciasTelegram, t: 
   return textoRespuesta(agente, idioma);
 }
 
+/**
+ * Atiende un mensaje: `/start <token>` vincula el chat, `/estado <ref>` responde el estado (solo de ese chat) y una
+ * foto, PDF o texto con factura entra por la ingesta. Solo chats privados.
+ */
 export async function recibirTelegram(update: UpdateTelegram, deps: DependenciasTelegram): Promise<ResultadoTelegram> {
   const m = update.message;
   if (!m) return { chat_id: "", respuesta: null, ignorado: "sin mensaje" };

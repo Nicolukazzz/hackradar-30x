@@ -13,6 +13,7 @@ type Cuenta = { usuario_id: string; nombre: string; correo: string; activo: bool
 type FilaInvitacion = Invitacion & { empresa_id: string; token_hash: string };
 type FilaMiembro = { empresa_id: string; usuario_id: string; rol: Rol; limite_aprobacion_usd: number | null; desde: string };
 
+/** Almacén en memoria con ayudas para preparar cuentas en los tests. */
 export type AlmacenEquipoMemoria = AlmacenEquipo & {
   /** Simula una cuenta creada en /entrar (perfil). */
   agregarCuenta(c: Omit<Cuenta, "activo"> & { activo?: boolean }): void;
@@ -20,6 +21,7 @@ export type AlmacenEquipoMemoria = AlmacenEquipo & {
   agregarMiembro(empresa_id: string, usuario_id: string, rol: Rol, limite_aprobacion_usd?: number | null): void;
 };
 
+/** Almacén en memoria con las mismas reglas que la base: nunca sin admin y cada invitación se usa una vez. */
 export function crearAlmacenEquipoMemoria(reloj: Reloj): AlmacenEquipoMemoria {
   const cuentas = new Map<string, Cuenta>();
   const membresias: FilaMiembro[] = [];

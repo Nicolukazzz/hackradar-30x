@@ -48,10 +48,12 @@ function ultimos4(texto: string | null): string | null {
   return digitos.length >= 4 ? digitos.slice(-4) : null;
 }
 
+/** true si el texto es un CFDI o una factura UBL. */
 export function esXmlFactura(texto: string): boolean {
   return /<(?:[\w-]+:)?(Comprobante|Invoice)\b/.test(texto);
 }
 
+/** Campos directos de la factura electrónica, con confianza 1 y fuente `xml`. */
 export function parsearXmlFactura(xml: string): ExtraccionParcial {
   const r: ExtraccionParcial = {};
   const poner = <K extends NombreCampo>(k: K, valor: ValoresCampos[K] | null) => {

@@ -34,8 +34,10 @@ export const CAMPOS_OBLIGATORIOS = [
   "concepto",
 ] as const;
 
+/** Campos que se piden al LLM solo si ya hay que consultarlo por un obligatorio. */
 export const CAMPOS_OPCIONALES = ["subtotal", "impuestos", "referencia_acuerdo", "hito_numero", "identificacion_fiscal"] as const;
 
+/** Tipo del valor de cada campo extraíble. */
 export type ValoresCampos = {
   es_factura: boolean;
   beneficiario_nombre: string;
@@ -54,6 +56,7 @@ export type ValoresCampos = {
 
 export type NombreCampo = keyof ValoresCampos;
 
+/** Todos los campos extraíbles, en el orden en que se arma la `Extraccion`. */
 export const NOMBRES_CAMPOS: readonly NombreCampo[] = ["es_factura", ...CAMPOS_OBLIGATORIOS, ...CAMPOS_OPCIONALES];
 
 /** Lo que aporta un parser o un LLM: solo los campos que encontró. */
@@ -71,4 +74,5 @@ export type ExtraccionParcial = { [K in NombreCampo]?: Campo<ValoresCampos[K]> }
 
 /** Confianzas del parser (issue #4): etiqueta + valor válido / valor inferido sin etiqueta. */
 export const CONFIANZA_ETIQUETA = 0.99;
+/** Confianza de un valor hallado sin etiqueta: por debajo del umbral de R1, así que se consulta al LLM. */
 export const CONFIANZA_INFERIDA = 0.6;

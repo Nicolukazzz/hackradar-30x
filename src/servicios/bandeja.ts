@@ -9,8 +9,10 @@ import type { Repositorio } from "@/repositorio/repositorio";
 
 import { ahoraHumano, descripcionBeneficiario, enLaBase, entradasDelLote, estadoActual, type EstadoFactura, montoEstimado } from "./comun";
 
+/** Pestaña de la Bandeja. */
 export type FiltroDecision = "todas" | "pagar" | "frenar" | "escalar";
 
+/** Una factura en la Bandeja: decisión del agente, estado actual y lo necesario para la vista previa. */
 export type FilaBandeja = {
   ref_interna: string;
   factura_numero: string | null;
@@ -55,8 +57,10 @@ export type ResumenBandeja = {
   frenadas: ConteoMonto;
 };
 
+/** Cantidad y suma en centavos de la moneda base (las facturas sin monto confiable cuentan pero no suman). */
 export type ConteoMonto = { n: number; usd_centavos: number };
 
+/** Indicadores, presupuesto del periodo, conteos por pestaña y filas filtradas. */
 export type RespuestaBandeja = {
   /** id del periodo de presupuesto (periodoDe: "2026-10" · "2026-10-Q2" · "2026-T4") */
   periodo: string;
@@ -107,8 +111,10 @@ function suma(lote: EntradaRegistro[], d: DecisionAgente, base: Moneda): ConteoM
   return { n: de.length, usd_centavos: de.reduce((s, e) => s + (enLaBase(e, base) ?? 0), 0) };
 }
 
+/** Filtros de la Bandeja; todos opcionales. */
 export type OpcionesBandeja = { decision?: FiltroDecision; q?: string; /** "AAAA-MM": solo facturas recibidas ese mes */ mes?: string };
 
+/** Arma la Bandeja: indicadores del día a día, presupuesto vigente y filas filtradas por decisión, mes y búsqueda. */
 export async function obtenerBandeja(repo: Repositorio, opciones: OpcionesBandeja = {}): Promise<RespuestaBandeja> {
   const [{ registro, lote: todoElLote }, esc, reglas, datos, pendientes] = await Promise.all([
     entradasDelLote(repo),

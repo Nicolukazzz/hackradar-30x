@@ -4,6 +4,7 @@
 /** #81: ya no se crean cuentas aquí (las crea el admin, #80). Quedan entrar y recuperar la contraseña con código. */
 export type Vista = "entrar" | "olvide" | "recuperar";
 
+/** Estado del formulario de /entrar entre acciones del servidor. */
 export type EstadoEntrar = {
   vista: Vista;
   /** correo escrito (se conserva tras un error) o al que se mandó el código (recuperar) */
@@ -13,6 +14,7 @@ export type EstadoEntrar = {
 
 type ErrorSupabase = { status?: number; code?: string } | null;
 
+/** Largo mínimo de una contraseña (también configurado en Supabase Auth). */
 export const MINIMO_CONTRASENA = 8;
 const MAXIMO_BYTES_CONTRASENA = 72; // bcrypt ignora lo que pase de 72 bytes (UTF-8: una ñ ocupa 2)
 

@@ -5,8 +5,10 @@ import { cargarDatosComunes, cargarEscenario, type DatosComunes, reglasVersion, 
 import type { Campo, DocumentoRecibido, EsperadoDocumento, Extraccion, ExtraccionPlana, Reglas } from "@/dominio/tipos";
 import { recibir } from "@/ingesta/ingerir";
 
+/** Un documento del escenario con su extracción perfecta y su respuesta esperada. */
 export type DocGolden = { doc: DocumentoRecibido; ext: Extraccion; esperado: EsperadoDocumento };
 
+/** Escenario listo para el motor en modo golden: datos, reglas de su versión y documentos en orden de llegada. */
 export type EscenarioGolden = {
   datos: DatosComunes;
   escenario: Escenario;
@@ -47,6 +49,10 @@ export async function cargarSinDocumentos(id: string, dir?: string): Promise<Esc
   return { datos, escenario, reglas: reglasVersion(datos, escenario.config.reglas_version), docs: [] };
 }
 
+/**
+ * Carga un escenario con la extracción esperada de cada documento (confianza 1). Aísla el motor del extractor: es lo
+ * que corre el CI.
+ */
 export async function cargarGolden(id: string, dir?: string): Promise<EscenarioGolden> {
   const [datos, escenario] = await Promise.all([cargarDatosComunes(dir), cargarEscenario(id, dir)]);
   // Import dinámico: los parsers de PDF y correo solo se cargan para leer el texto de los adjuntos.

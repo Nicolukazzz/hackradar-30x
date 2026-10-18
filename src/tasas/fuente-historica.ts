@@ -13,6 +13,7 @@ const urls = (base: string, fecha: string) => [
   `https://${fecha}.currency-api.pages.dev/v1/currencies/${base}.json`,
 ];
 
+/** Fuente de tasas de una fecha pasada (currency-api), con espejo si jsDelivr falla. */
 export function crearFuenteHistorica(f: typeof fetch = fetch): FuenteHistorica {
   return {
     nombre: "currency-api",

@@ -18,6 +18,7 @@ export function aTexto(n: number): string | null {
   return plano.includes(".") ? plano.replace(/0+$/, "").replace(/\.$/, "") : plano;
 }
 
+/** Fuente de tasas del día (open.er-api.com). Solo devuelve monedas soportadas, como texto decimal. */
 export function crearFuenteErApi(f: typeof fetch = fetch): FuenteTasas {
   return {
     nombre: "open.er-api.com",

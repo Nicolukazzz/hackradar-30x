@@ -2,6 +2,7 @@
 
 import { ErrorSubida } from "@/servicios/subida";
 
+/** Cuerpo completo de la petición, leído por partes. 413 apenas supera `maximo` (aunque no declare su tamaño). */
 export async function cuerpoLimitado(req: Request, maximo: number, mensaje: string): Promise<Buffer<ArrayBuffer>> {
   const declarado = Number(req.headers.get("content-length") ?? "0");
   if (declarado > maximo) throw new ErrorSubida(413, mensaje);

@@ -6,8 +6,10 @@ import { aBase } from "@/dominio/dinero";
 import { normalizarNombre, normalizarNumeroFactura } from "@/dominio/normalizar";
 import type { EntradaRegistro, TablaTasas, TipoPeriodo } from "@/dominio/tipos";
 
+/** pagada: cuenta como gastada · reservada: escalada pendiente, aparta su monto del presupuesto. */
 export type EstadoFactura = "pagada" | "reservada";
 
+/** Factura que hoy cuenta para presupuesto, R2 y R8: pagada (por el agente o una persona) o reservada. */
 export type FacturaVigente = {
   /** id de la DECISION_AGENTE */
   id: string;
@@ -18,6 +20,7 @@ export type FacturaVigente = {
   numero: string | null;
   numero_normalizado: string | null;
   fecha_emision: string | null;
+  /** centavos en la moneda base de hoy (el nombre es histórico, #86) */
   usd_centavos: number;
   sha256: string | null;
   hito: number | null;
@@ -71,6 +74,7 @@ function enBase(e: EntradaRegistro, tasas: TablaTasas | undefined): number {
   return aBase({ centavos: monto, moneda: de }, tasas).base_centavos;
 }
 
+/** Decisión humana final sobre una escalada. */
 export type Resolucion = "APROBADA_HUMANO" | "RECHAZADA_HUMANO";
 
 /** Decisión humana final de cada DECISION_AGENTE (por id de origen). La usa también el portal (#12). */
@@ -117,7 +121,7 @@ export function periodoDe(momento: string, tipo: TipoPeriodo = "mensual"): strin
   return `${momento.slice(0, 4)}-T${Math.ceil(Number(momento.slice(5, 7)) / 3)}`;
 }
 
-/** Suma USD de facturas en un estado, dentro del periodo (y de un beneficiario, si se da). */
+/** Suma, en la moneda base, de las facturas en `estado` dentro del periodo (y de un beneficiario, si se da). */
 export function totalEn(
   vigentes: readonly FacturaVigente[],
   periodo: string,

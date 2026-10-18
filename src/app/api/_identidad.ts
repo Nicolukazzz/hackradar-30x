@@ -30,6 +30,7 @@ export function aprobadorDeLaCuenta(sesion: Sesion): Aprobador {
   return comoAprobador({ ...sesion, rol: sesion.rol });
 }
 
+/** Un miembro del equipo como aprobador de §10. */
 export function aprobadorDeMiembro(m: Miembro): Aprobador {
   return comoAprobador(m);
 }

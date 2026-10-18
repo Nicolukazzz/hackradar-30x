@@ -7,6 +7,7 @@ import type { Beneficiario, DocumentoRecibido, EntradaRegistro, Reglas } from "@
 
 import type { ArchivoGuardado, FiltroRegistro } from "./repositorio";
 
+/** true si la entrada cumple todos los criterios del filtro (sin filtro, todas). */
 export function coincideFiltro(e: EntradaRegistro, f?: FiltroRegistro): boolean {
   return (
     !f ||
@@ -35,6 +36,7 @@ export function maxRef(refs: Iterable<string>, anio: number): number {
   return max;
 }
 
+/** Ref interna con 6 dígitos: `INT-2026-000017`. */
 export const formatoRef = (anio: number, n: number) => `INT-${anio}-${String(n).padStart(6, "0")}`;
 
 /** Cola de escrituras del proceso: cada operación exclusiva espera a que termine la anterior. */

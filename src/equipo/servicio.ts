@@ -11,7 +11,9 @@ import { EsquemaCambioMiembro, EsquemaNuevaInvitacion, estadoInvitacion, validar
 import { generarToken, hashToken, pareceToken } from "./token";
 import { EMPRESA_ID, ErrorEquipo, type EstadoInvitacion, type Invitacion, type Miembro, type ResultadoAceptar } from "./tipos";
 
+/** Invitación con su estado calculado al momento de leerla. */
 export type InvitacionConEstado = Invitacion & { estado: EstadoInvitacion };
+/** Lo que muestra la pantalla Equipo. */
 export type Equipo = { miembros: Miembro[]; invitaciones: InvitacionConEstado[] };
 
 function validar<T>(esquema: z.ZodType<T, unknown>, datos: unknown): T {
@@ -20,6 +22,7 @@ function validar<T>(esquema: z.ZodType<T, unknown>, datos: unknown): T {
   return r.data;
 }
 
+/** Miembros e invitaciones de la empresa. */
 export async function obtenerEquipo(almacen: AlmacenEquipo, ahora: string): Promise<Equipo> {
   const [miembros, invitaciones] = await Promise.all([almacen.miembros(EMPRESA_ID), almacen.invitaciones(EMPRESA_ID, ahora)]);
   return { miembros, invitaciones: invitaciones.map((i) => ({ ...i, estado: estadoInvitacion(i, ahora) })) };
@@ -69,12 +72,14 @@ export async function reenviar(almacen: AlmacenEquipo, autor: Sesion, id: string
   return nueva;
 }
 
+/** Revoca una invitación activa. 404 si no existe o ya no se puede revocar. */
 export async function revocar(almacen: AlmacenEquipo, id: string, ahora: string): Promise<void> {
   if (!z.uuid().safeParse(id).success || !(await almacen.revocarInvitacion(EMPRESA_ID, id, ahora))) {
     throw new ErrorEquipo(404, "No hay una invitación activa con ese id.");
   }
 }
 
+/** Cambia el rol o el límite de un miembro. 409 si la empresa se quedaría sin admin. */
 export async function cambiarMiembro(almacen: AlmacenEquipo, usuario_id: string, entrada: unknown, ahora: string): Promise<Miembro> {
   const cambio = validar(EsquemaCambioMiembro, entrada);
   const m = validarCambio(await almacen.miembros(EMPRESA_ID), usuario_id, cambio);
@@ -82,6 +87,7 @@ export async function cambiarMiembro(almacen: AlmacenEquipo, usuario_id: string,
   return { ...m, ...cambio };
 }
 
+/** Quita a un miembro de la empresa. 409 si es el último admin. */
 export async function quitarMiembro(almacen: AlmacenEquipo, usuario_id: string): Promise<void> {
   validarQuitar(await almacen.miembros(EMPRESA_ID), usuario_id);
   await almacen.quitarMiembro(EMPRESA_ID, usuario_id);
@@ -99,6 +105,7 @@ export async function vistaInvitacion(
   return { rol: inv.rol, limite_aprobacion_usd: inv.limite_aprobacion_usd, expira_en: inv.expira_en, correo_esperado: inv.correo_esperado };
 }
 
+/** Acepta una invitación con la sesión de quien abrió el enlace: el correo debe coincidir con el invitado. */
 export async function aceptar(almacen: AlmacenEquipo, token: string, sesion: Sesion): Promise<ResultadoAceptar> {
   if (!pareceToken(token)) return "invalida";
   return almacen.aceptarInvitacion(hashToken(token), sesion.usuario_id, sesion.correo);

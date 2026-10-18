@@ -11,6 +11,7 @@ import type { Repositorio } from "@/repositorio/repositorio";
 /** Lee el documento y devuelve su extracción. Por defecto `extraer` (#4); la demo y los tests inyectan la golden. */
 export type Extractor = (doc: DocumentoRecibido) => Promise<Extraccion>;
 
+/** Repositorio, instante de la decisión y el extractor a usar. */
 export type DependenciasPipeline = {
   repo: Repositorio;
   /** momento de la decisión (`ahora` del motor) */

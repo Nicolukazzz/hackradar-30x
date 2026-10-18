@@ -44,6 +44,7 @@ export function tramos(texto: string, marcas: readonly Marca[]): Tramo[] {
   return [...sospechosos, ...datos].sort((a, b) => a.inicio - b.inicio);
 }
 
+/** Texto con las marcas aplicadas: sospechoso en ámbar, dato extraído en azul. Sin HTML crudo. */
 export function Resaltado({ texto, marcas }: { texto: string; marcas: Marca[] }) {
   const partes: React.ReactNode[] = [];
   let cursor = 0;

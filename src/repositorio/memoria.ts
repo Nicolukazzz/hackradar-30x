@@ -26,6 +26,7 @@ type Estado = {
   carpeta: string;
 };
 
+/** Cómo arranca el repositorio en memoria. */
 export type OpcionesMemoria = {
   /**
    * "pendiente" (por defecto): los documentos del escenario esperan "Procesar facturas nuevas" con sus refs reservadas.
@@ -34,6 +35,10 @@ export type OpcionesMemoria = {
   lote?: "pendiente" | "vacio";
 };
 
+/**
+ * Repositorio en memoria sembrado con `data/` y el escenario `idEscenario`. Cumple el mismo contrato que el de
+ * Supabase.
+ */
 export async function crearRepositorioMemoria(
   idEscenario: string,
   dir: string = DIR_DATA_POR_DEFECTO,

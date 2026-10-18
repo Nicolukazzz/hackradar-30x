@@ -3,6 +3,7 @@
 
 import type { Canal, EntradaRegistro, Idioma, IdRegla } from "@/dominio/tipos";
 
+/** Opciones del texto al proveedor. */
 export type OpcionesRespuesta = {
   /**
    * Enlace para vincular el chat o el correo (R11), si el canal tiene uno (p. ej. `t.me/<bot>?start=…` que genera la
@@ -100,6 +101,10 @@ export type ResumenRespuesta = {
   vincular: string | null;
 };
 
+/**
+ * Qué se le puede decir al proveedor de esta decisión, ya filtrado: estado, ref, número (no se confirma si falló R3 o
+ * R11) y motivo apto para él.
+ */
 export function resumenRespuesta(entrada: EntradaRegistro, idioma: Idioma, opciones: OpcionesRespuesta = {}): ResumenRespuesta {
   const t = TEXTOS[idioma];
   const base = { ref: entrada.ref_interna, numero: entrada.factura_numero, motivo: null, vincular: null };
@@ -117,6 +122,7 @@ export function resumenRespuesta(entrada: EntradaRegistro, idioma: Idioma, opcio
   return { ...base, estado: "escalar" };
 }
 
+/** Respuesta en texto plano para correo y Telegram, en el idioma de la factura. */
 export function textoRespuesta(entrada: EntradaRegistro, idioma: Idioma, opciones: OpcionesRespuesta = {}): string {
   const t = TEXTOS[idioma];
   const r = resumenRespuesta(entrada, idioma, opciones);

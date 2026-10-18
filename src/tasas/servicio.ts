@@ -6,6 +6,7 @@ import type { Moneda, TablaTasas } from "@/dominio/tipos";
 
 import type { AlmacenTasas, FotoTasas, FuenteHistorica, FuenteTasas, TasasVigentes } from "./tipos";
 
+/** Dónde se guardan las fotos y de dónde se piden las del día. */
 export type DepsTasas = { almacen: AlmacenTasas; fuente: FuenteTasas; alFallar?: (e: unknown) => void };
 
 const tabla = (foto: FotoTasas, periodo: string) => ({ periodo, base: foto.base, tasas: { ...foto.tasas } });

@@ -8,6 +8,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 const LARGO_FIRMA = 16; // 12 bytes en base64url
 const LARGO_VENCE = 7; // segundos epoch en base 36
+/** Horas que vale un enlace de vinculación. */
 export const VIGENCIA_HORAS = 72;
 
 function firmar(secreto: string, datos: string): string {

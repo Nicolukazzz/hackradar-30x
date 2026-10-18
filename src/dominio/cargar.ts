@@ -31,8 +31,13 @@ import type {
   TablaTasas,
 } from "./tipos";
 
+/** Carpeta del dataset, relativa a la raíz del proyecto. */
 export const DIR_DATA_POR_DEFECTO = "data";
 
+/**
+ * Configuración compartida por todos los escenarios: empresa, aprobadores, lista permitida, versiones de reglas y
+ * tasas. En producción la arma el repositorio desde la base.
+ */
 export type DatosComunes = {
   empresa: Empresa;
   aprobadores: Aprobador[];
@@ -48,6 +53,9 @@ export type DatosComunes = {
   tasas_diarias?: Record<string, TablaTasas>;
 };
 
+/**
+ * Un escenario del dataset listo para correr: estado inicial, documentos en orden de llegada y respuesta esperada.
+ */
 export type Escenario = {
   config: ConfigEscenario;
   historial: EntradaRegistro[];
@@ -58,6 +66,7 @@ export type Escenario = {
   carpeta: string;
 };
 
+/** Archivo de `data/` inválido. El mensaje empieza por la ruta para saber qué corregir. */
 export class ErrorDatos extends Error {
   constructor(ruta: string, detalle: string) {
     super(`${ruta}: ${detalle}`);
@@ -81,6 +90,10 @@ async function archivosJson(dir: string): Promise<string[]> {
   return (await readdir(dir)).filter((n) => n.endsWith(".json")).sort();
 }
 
+/**
+ * Lee y valida los datos comunes de `dir`. Exige `reglas/vN.json` y `tasas/AAAA-MM.json` con nombre igual a su
+ * contenido. Lanza `ErrorDatos` ante el primer archivo inválido.
+ */
 export async function cargarDatosComunes(dir: string = DIR_DATA_POR_DEFECTO): Promise<DatosComunes> {
   const [empresa, aprobadores, beneficiarios] = await Promise.all([
     leerJson(path.join(dir, "empresa.json"), EmpresaSchema),
@@ -116,6 +129,10 @@ export async function cargarDatosComunes(dir: string = DIR_DATA_POR_DEFECTO): Pr
 /** Ids de escenario: minúsculas, dígitos y guiones. Evita salir de data/escenarios con "../". */
 const ID_ESCENARIO = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+/**
+ * Lee y valida `data/escenarios/<id>`: config, historial, esperado y documentos ordenados por `recibido_en`.
+ * Comprueba que cada documento tenga exactamente una respuesta esperada.
+ */
 export async function cargarEscenario(id: string, dir: string = DIR_DATA_POR_DEFECTO): Promise<Escenario> {
   if (!ID_ESCENARIO.test(id)) throw new Error(`id de escenario inválido: "${id}"`);
   const carpeta = path.join(dir, "escenarios", id);

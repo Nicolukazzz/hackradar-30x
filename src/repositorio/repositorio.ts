@@ -1,6 +1,6 @@
-// Interfaz de persistencia (#17). Las rutas y servicios solo hablan con esto; hay una versión en
-// memoria (demo local, tests) y habrá una de Supabase (deploy). El registro es append-only:
-// la interfaz no tiene forma de editar ni borrar una entrada.
+// Interfaz de persistencia (#17). Las rutas y servicios solo hablan con esto. Dos implementaciones con el mismo
+// contrato (tests/repositorio/contrato.ts): memoria (demo local, tests) y Supabase (producción, #44). El registro es
+// append-only: la interfaz no tiene forma de editar ni borrar una entrada.
 
 import type { DatosComunes, Escenario } from "@/dominio/cargar";
 import type {
@@ -16,6 +16,7 @@ import type {
 import type { DocGolden } from "@/evaluacion/escenario";
 import type { TasasVigentes } from "@/tasas/tipos";
 
+/** Criterios para leer el registro; todos opcionales y combinados con «y». */
 export type FiltroRegistro = {
   tipo?: TipoEntrada[];
   decision?: (DecisionAgente | DecisionHumana)[];
@@ -26,8 +27,10 @@ export type FiltroRegistro = {
 /** Lo que se edita en Ajustes → Datos de la empresa (#84). */
 export type CambiosEmpresa = Pick<Empresa, "nombre" | "jurisdiccion" | "paises_operacion"> & Partial<Pick<Empresa, "moneda_base">>;
 
+/** Una versión de reglas en el historial: número, quién y cuándo. */
 export type ResumenVersion = { version: number; editada_por: string; editada_en: string };
 
+/** Archivo original tal como llegó. */
 export type ArchivoGuardado = { nombre: string; mime: string; bytes: Buffer };
 
 /** Escenario cargado (demo): su configuración, el esperado y los documentos que aún no se procesaron. */
@@ -49,11 +52,13 @@ export interface Repositorio {
   empresa(): Promise<Empresa>;
   /** Guarda nombre, jurisdicción y países (el id, la moneda y la zona horaria no cambian aquí). */
   guardarEmpresa(cambios: CambiosEmpresa): Promise<Empresa>;
+  /** La versión más alta guardada; sin ninguna, la versión 0 «sin configurar» (#106). */
   reglasVigentes(): Promise<Reglas>;
   reglasVersion(version: number): Promise<Reglas | null>;
   historialReglas(): Promise<ResumenVersion[]>;
   /** Guarda una versión nueva (la siguiente a la vigente) y devuelve su número. */
   guardarReglas(r: Omit<Reglas, "version">): Promise<number>;
+  /** Agrega un beneficiario a la lista permitida (alta en Proveedores o «confiar siempre»). */
   guardarBeneficiario(b: Beneficiario): Promise<void>;
   /**
    * Tasas del día que usa el agente (#86) y de dónde salieron. null = tasas fijas del set de prueba (memoria, demo).
@@ -82,7 +87,9 @@ export interface Repositorio {
   /** Adjunto n.º `indice` del documento (el PDF dentro de un correo). */
   leerAdjunto(ref: string, indice: number): Promise<ArchivoGuardado | null>;
 
+  /** Reserva la siguiente ref `INT-AAAA-NNNNNN`. Una ref reservada nunca se reutiliza, aunque el documento falle. */
   siguienteRef(anio: number): Promise<string>;
+  /** Siguiente id consecutivo `REG-AAAA-NNNNNN` del registro. */
   siguienteIdRegistro(anio: number): Promise<string>;
   guardarDocumento(d: DocumentoRecibido): Promise<void>;
   documento(ref: string): Promise<DocumentoRecibido | null>;
@@ -94,6 +101,7 @@ export interface Repositorio {
   /** En orden de inserción. */
   registro(filtro?: FiltroRegistro): Promise<EntradaRegistro[]>;
 
+  /** Escenario cargado en modo demo; null en producción (sin datos de ejemplo). */
   escenario(): Promise<EscenarioCargado | null>;
   /**
    * Ejecuta `fn` en exclusiva frente a otras escrituras (leer → validar → agregar sin carreras:

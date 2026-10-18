@@ -13,6 +13,7 @@ import { sinConfigurar } from "@/reglas/sin-configurar";
 
 import { guardarReglas, sinVersion } from "./reglas";
 
+/** Cambio de moneda rechazado; `estado` es el código HTTP. */
 export class ErrorMoneda extends Error {
   constructor(
     readonly estado: 400 | 403 | 409,
@@ -23,8 +24,10 @@ export class ErrorMoneda extends Error {
   }
 }
 
+/** Un valor antes y después del cambio, ya formateado. */
 export type FilaConversion = { concepto: string; antes: string; despues: string };
 
+/** Lo que cambia con la moneda nueva, para confirmar antes de aplicar. */
 export type VistaPreviaMoneda = {
   actual: Moneda;
   nueva: Moneda;
@@ -94,10 +97,14 @@ async function planear(repo: Repositorio, equipo: AlmacenEquipo, nueva: Moneda):
   };
 }
 
+/** Calcula el cambio de moneda sin escribir nada. Exige tasas del día en la moneda actual. */
 export async function vistaPreviaMoneda(repo: Repositorio, equipo: AlmacenEquipo, nueva: Moneda): Promise<VistaPreviaMoneda> {
   return (await planear(repo, equipo, nueva)).vista;
 }
 
+/**
+ * Aplica el cambio en orden seguro: reglas nuevas (versión simulada), proveedores, aprobadores y al final la empresa.
+ */
 export async function cambiarMonedaBase(
   repo: Repositorio,
   equipo: AlmacenEquipo,

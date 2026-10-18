@@ -44,6 +44,7 @@ function fallar(error: PostgrestError, que: string): never {
   throw new Error(`Supabase (${que}): ${error.message}`);
 }
 
+/** Almacén del equipo con la llave secreta de Supabase (solo servidor). */
 export function crearAlmacenEquipoSupabase(config: { url: string; claveSecreta: string }): AlmacenEquipo {
   const db: SupabaseClient = createClient(config.url, config.claveSecreta, { auth: { persistSession: false, autoRefreshToken: false } });
 

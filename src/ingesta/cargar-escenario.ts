@@ -31,6 +31,10 @@ export async function extractorGolden(id: string, dir: string = DIR_DATA_POR_DEF
   };
 }
 
+/**
+ * Pasa todos los documentos de un escenario por `ingerir` y `procesarDocumento`, con el reloj del escenario. Devuelve
+ * una decisión por documento, en orden de llegada.
+ */
 export async function cargarEscenarioPorIngesta(
   id: string,
   deps: { repo: Repositorio; extractor: Extractor; dir?: string },

@@ -6,12 +6,14 @@ import { simpleParser } from "mailparser";
 import type { ExtraccionParcial } from "../tipos";
 import { parsearLineas } from "./etiquetas";
 
+/** Partes útiles de un correo: asunto, cuerpo en texto plano y todos sus adjuntos. */
 export type CorreoLeido = {
   asunto: string | null;
   cuerpo: string;
   adjuntos: { nombre: string; mime: string; bytes: Buffer }[];
 };
 
+/** Abre un `.eml` crudo con mailparser. */
 export async function leerEml(bytes: Buffer): Promise<CorreoLeido> {
   const correo = await simpleParser(bytes);
   return {
@@ -25,6 +27,7 @@ export async function leerEml(bytes: Buffer): Promise<CorreoLeido> {
   };
 }
 
+/** Lee los campos de una factura escrita en el cuerpo del correo. */
 export function parsearCuerpoCorreo(cuerpo: string): ExtraccionParcial {
   return parsearLineas(cuerpo.split(/\r?\n/), "chat");
 }

@@ -1,6 +1,6 @@
-// «Por verificar» (Bandeja): facturas escaladas que esperan a una persona porque quien cobra no está en la lista (R3) o
-// escribió desde un correo o chat no vinculado (R11). Al verificarlas, el admin aprueba y agrega al proveedor o vincula
-// el canal (#110), así las próximas no vuelven a escalar por lo mismo.
+// Facturas que esperan porque quien cobra no está en la lista (R3) o escribió desde un canal no vinculado (R11). La lista
+// de Pendientes dice quién escribió y desde dónde; agregar al proveedor o vincular el canal se responde una sola vez en
+// «Por confirmar», así las próximas no vuelven a escalar por lo mismo.
 
 import { decisionAgente, estadoHumano } from "@/aprobaciones/decidir";
 import { normalizarNombre } from "@/dominio/normalizar";
@@ -25,6 +25,7 @@ export type PorVerificar = {
   recibido_en: string;
 };
 
+/** Escaladas pendientes por R3 o R11, con quién escribió y desde dónde, más recientes primero. */
 export async function porVerificar(repo: Repositorio): Promise<PorVerificar[]> {
   // #86: montos en la moneda base de hoy.
   const registro = await registroEnBaseDeHoy(repo);

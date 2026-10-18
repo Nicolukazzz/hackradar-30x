@@ -3,6 +3,9 @@
 
 import type { EnlaceConCodigo, EnlaceProveedor, NuevoEnlace } from "./tipos";
 
+/**
+ * Persistencia de los enlaces del portal. Solo guarda hashes de token y código: quien lea la tabla no puede entrar.
+ */
 export interface AlmacenEnlaces {
   /** los más nuevos primero */
   listar(): Promise<EnlaceProveedor[]>;

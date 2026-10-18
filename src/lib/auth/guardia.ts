@@ -10,11 +10,13 @@ export type EventoAuditoria = {
   motivo?: string;
 };
 
+/** Cómo obtener la sesión y dónde auditar, inyectables en tests. */
 export type DependenciasGuardia = {
   obtenerSesion: () => Promise<Sesion | null>;
   auditar: (evento: EventoAuditoria) => void;
 };
 
+/** Route handler que recibe la sesión ya verificada. */
 export type Manejador<C> = (req: Request, ctx: C, sesion: Sesion) => Promise<Response>;
 
 /** Por defecto basta con ser miembro de la empresa (`ver`); una cuenta sin membresía recibe 403. */
@@ -34,6 +36,10 @@ export function mismoOrigen(req: Request): boolean {
   }
 }
 
+/**
+ * Fabrica `conSesion`: exige mismo origen en métodos que escriben, sesión válida y el permiso pedido. Responde
+ * 401/403 con su motivo y deja el evento en la auditoría.
+ */
 export function crearGuardia({ obtenerSesion, auditar }: DependenciasGuardia) {
   function conSesion<C>(manejador: Manejador<C>, { permiso = "ver" }: OpcionesRuta = {}) {
     // ctx opcional: las rutas sin parámetros (`/api/bandeja`) se llaman solo con la petición.

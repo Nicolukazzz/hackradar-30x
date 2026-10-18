@@ -17,6 +17,7 @@ import { beneficiarioDesde, decidir, decisionAgente, ErrorDecision, estadoHumano
 /** Reglas que fallan solo porque el proveedor no está en la lista. */
 const POR_SER_NUEVO = new Set(["R3", "R11"]);
 
+/** Factura escalada de un proveedor que no está en la lista. */
 export type FacturaDeProveedorNuevo = {
   ref_interna: string;
   factura_numero: string | null;
@@ -28,6 +29,7 @@ export type FacturaDeProveedorNuevo = {
   otras_reglas: string[];
 };
 
+/** Pregunta «¿confiar siempre en este proveedor?» con sus facturas pendientes, agrupadas por nombre. */
 export type ProveedorPorConfirmar = {
   /** nombre normalizado: la clave para responder */
   clave: string;
@@ -35,6 +37,7 @@ export type ProveedorPorConfirmar = {
   facturas: FacturaDeProveedorNuevo[];
 };
 
+/** Respuesta de un admin a la pregunta de un proveedor nuevo. */
 export type EntradaConfiar = {
   clave: string;
   respuesta: "si" | "no";
@@ -43,6 +46,7 @@ export type EntradaConfiar = {
   cuentas?: readonly Aprobador[];
 };
 
+/** Proveedor agregado (si fue sí) y cuántas facturas se aprobaron, rechazaron o siguen pendientes por otra regla. */
 export type ResultadoConfiar = {
   respuesta: "si" | "no";
   beneficiario: Beneficiario | null;

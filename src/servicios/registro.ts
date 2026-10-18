@@ -16,13 +16,16 @@ export const ConsultaRegistro = z.object({
   q: z.string().max(100).optional(),
 });
 
+/** Filtro de decisión del Registro, incluidas las decisiones humanas. */
 export type FiltroDecisionRegistro = NonNullable<z.infer<typeof ConsultaRegistro>["decision"]>;
 
+/** Entradas de un día, para la lista agrupada. */
 export type DiaRegistro = { fecha: string; entradas: EntradaRegistro[] };
 
 /** `estimados` (#141): por id de entrada, el total dudoso convertido a la moneda base (solo para mostrar). */
 export type RespuestaRegistro = { total: number; total_filtrado: number; dias: DiaRegistro[]; estimados: Record<string, Dinero> };
 
+/** Registro filtrado y agrupado por día, más recientes primero. */
 export async function obtenerRegistro(
   repo: Repositorio,
   f: { decision?: FiltroDecisionRegistro; actor?: "agente" | "humano"; q?: string } = {},
@@ -58,6 +61,7 @@ export async function obtenerRegistro(
   return { total: todas.length, total_filtrado: filtradas.length, dias, estimados };
 }
 
+/** Columnas del CSV exportado (§9), en este orden. */
 export const COLUMNAS_CSV = [
   "id", "momento", "actor", "ref_interna", "factura_numero", "beneficiario", "monto_original", "moneda",
   "monto_usd", "tasa_usada", "decision", "reglas_que_fallaron", "explicacion", "comentario", "reglas_version",

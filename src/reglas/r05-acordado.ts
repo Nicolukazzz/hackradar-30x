@@ -39,6 +39,10 @@ export function lineaAcordada(ben: Beneficiario, ext: Extraccion): { linea: Line
   };
 }
 
+/**
+ * FALLA (frena) si el total se aparta de la línea acordada más que la tolerancia. INDETERMINADO si no hay línea única
+ * o la moneda no coincide; NO_APLICA si está desactivada, si R3 falla o si el monto no es confiable.
+ */
 export function r05Acordado(ctx: ContextoRegla) {
   if (desactivada(ctx, "R5")) return evaluacion("R5", "NO_APLICA", textoDesactivada(ctx));
   if (r3Falla(ctx) || ctx.beneficiario === null) return evaluacion("R5", "NO_APLICA", FUERA_DE_LISTA);

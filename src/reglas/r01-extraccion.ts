@@ -3,6 +3,11 @@
 import { evaluacion } from "./catalogo";
 import { afectaciones, bajaConfianza, type ContextoRegla, obligatoriosDe, pctEntero } from "./contexto";
 
+/**
+ * FALLA si el lector no respondió, si no es seguro que sea factura, o si algún dato exigido falta, es dudoso o no
+ * valida (suma, fechas, monto, moneda con tasa). Los campos afectados quedan en `datos.campos_afectados` para que las
+ * reglas que dependen de ellos den NO_APLICA.
+ */
 export function r01Extraccion(ctx: ContextoRegla) {
   const { ext, reglas } = ctx;
   const minima = reglas.extraccion.confianza_minima;

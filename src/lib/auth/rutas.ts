@@ -1,8 +1,8 @@
 // Qué hace el proxy con cada ruta. Chequeo optimista (¿hay sesión válida?); la sesión se verifica
 // de nuevo en el servidor con `obtenerSesion()` (layout del panel y `conSesion`).
 
-/** Páginas que se ven sin sesión. */
 /**
+ * Páginas que se ven sin sesión.
  * `/unirse` (#80): la persona todavía no tiene cuenta; la crea con el enlace que le pasó el admin.
  * `/vincular` (#85): portal del proveedor, sin cuenta: entra con el enlace, su correo y su código, y sube facturas.
  */
@@ -18,6 +18,7 @@ export const PAGINAS_PUBLICAS = ["/entrar", "/sin-permiso", "/unirse", "/vincula
  */
 export const API_PUBLICAS: readonly string[] = ["/api/vincular", "/api/canales/telegram/webhook", "/api/canales/whatsapp/webhook", "/api/salud"];
 
+/** seguir · redirigir a /entrar · responder 401. */
 export type DecisionRuta = "seguir" | "redirigir" | "no_autorizado";
 
 function coincide(ruta: string, base: string): boolean {
@@ -34,6 +35,10 @@ export function destinoTrasEntrar(siguiente: string | null | undefined): string 
   return siguiente;
 }
 
+/**
+ * Qué hace el proxy con una ruta según haya sesión: páginas públicas y API públicas siguen; el resto de la API
+ * responde 401 y el resto de páginas redirige a /entrar.
+ */
 export function clasificarRuta(ruta: string, haySesion: boolean, apiPublicas: readonly string[] = API_PUBLICAS): DecisionRuta {
   if (haySesion) return "seguir";
   if (PAGINAS_PUBLICAS.some((p) => coincide(ruta, p))) return "seguir";

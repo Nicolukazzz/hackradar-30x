@@ -47,6 +47,7 @@ async function desdeEntorno(env: NodeJS.ProcessEnv = process.env): Promise<Avisa
   });
 }
 
+/** Avisador del proceso, armado una sola vez desde el entorno. null si no hay buzón ni Teams o si `AVISOS=0`. */
 export function obtenerAvisador(): Promise<Avisador | null> {
   const g = globalThis as Global;
   g[CLAVE] ??= desdeEntorno().catch((e: unknown) => {

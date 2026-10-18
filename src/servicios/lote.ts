@@ -14,11 +14,13 @@ import { proveedorDesdeEntorno } from "@/extraccion/llm/proveedor";
 import { procesarLote } from "@/reglas/motor";
 import type { Repositorio } from "@/repositorio/repositorio";
 
+/** Cuántos documentos se procesaron y cuántos quedaron en cada decisión. */
 export type ResumenLote = {
   procesadas: number;
   resumen: Record<DecisionAgente, number>;
 };
 
+/** «Procesar facturas nuevas» del modo demo: decide los documentos del escenario que faltan, en orden de llegada. */
 export async function procesarPendientes(repo: Repositorio): Promise<ResumenLote> {
   // En exclusiva: dos "Procesar" seguidos (doble clic) no procesan dos veces ni chocan en los ids.
   return repo.enExclusiva(() => procesar(repo));

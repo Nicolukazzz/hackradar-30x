@@ -100,6 +100,7 @@ export function detectarIdioma(texto: string): Idioma {
   return "es";
 }
 
+/** `chat` además separa la referencia que el remitente pone entre paréntesis al final del concepto. */
 export type ModoParser = "documento" | "chat";
 
 /**

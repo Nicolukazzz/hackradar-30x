@@ -2,8 +2,10 @@
 
 import type { EvaluacionRegla, IdRegla, ResultadoRegla } from "@/dominio/tipos";
 
+/** Efecto de una regla cuando da FALLA. INDETERMINADO siempre escala, sin importar este valor. */
 export type SiFalla = EvaluacionRegla["si_falla"];
 
+/** Nombre visible y efecto de cada regla. Las explicaciones, la Traza y la pantalla de reglas leen de aquí. */
 export const CATALOGO: Record<IdRegla, { nombre: string; si_falla: SiFalla }> = {
   R1: { nombre: "Extracción completa y confiable", si_falla: "ESCALAR" },
   R2: { nombre: "No es duplicada", si_falla: "FRENAR" },

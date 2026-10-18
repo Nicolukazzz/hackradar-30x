@@ -9,6 +9,7 @@ import type { Miembro } from "@/equipo/tipos";
 import { fechaDe, fechaLegible } from "@/reglas/fechas";
 import { asignacionDe } from "@/servicios/facturas";
 
+/** Aviso de una escalada listo para enviar por correo o Teams. */
 export type Aviso = {
   ref_interna: string;
   asunto: string;
@@ -22,6 +23,7 @@ export type Aviso = {
   urgente: boolean;
 };
 
+/** Datos para asignar la escalada y armar el enlace a la traza. */
 export type OpcionesAviso = {
   /** aprobadores del dataset (§10): a quién asigna el motor */
   aprobadores: readonly Aprobador[];
@@ -50,6 +52,10 @@ export function limpiar(texto: string, max = 400): string {
 
 const momentoLegible = (iso: string) => `${fechaLegible(fechaDe(iso))} ${iso.slice(11, 16)}`;
 
+/**
+ * Arma el aviso de una DECISION_AGENTE escalada: quién cobra, cuánto, por qué, a quién le toca y para cuándo. Todo
+ * texto que viene de la factura se limpia antes de incluirlo.
+ */
 export function armarAviso(e: EntradaRegistro, o: OpcionesAviso): Aviso {
   const asignacion = asignacionDe(e, o.aprobadores, o.decidido_en);
   const monto = e.monto_usd_centavos === null ? "monto por confirmar" : formatearBase(e.monto_usd_centavos, e.moneda_base ?? "USD");

@@ -3,18 +3,21 @@
 // La identidad y el rol salen siempre de la sesión, nunca del body ni de la URL.
 
 export const ROLES = ["admin", "aprobador", "tesoreria"] as const;
+/** admin: todo · aprobador: decide escalados hasta su límite · tesoreria: ve, sube y procesa. */
 export type Rol = (typeof ROLES)[number];
 
+/** Identidad verificada de quien hace la petición, con su rol en la empresa. */
 export type Sesion = {
   usuario_id: string;
   correo: string;
   nombre: string;
   /** null = la cuenta existe pero no pertenece a la empresa: no ve nada hasta aceptar una invitación */
   rol: Rol | null;
-  /** centavos USD; null = sin límite. Solo aplica a `aprobador` */
+  /** centavos en la moneda base; null = sin límite. Solo aplica a `aprobador` */
   limite_aprobacion_usd: number | null;
 };
 
+/** Acciones que se controlan por rol. */
 export type Permiso =
   | "ver" // panel, registro, subir y procesar facturas
   | "aprobar" // decidir sobre facturas escaladas (§10)
@@ -27,28 +30,35 @@ const PERMISOS: Record<Rol, readonly Permiso[]> = {
   tesoreria: ["ver"],
 };
 
+/** Nombre visible de cada rol. */
 export const NOMBRE_ROL: Record<Rol, string> = {
   admin: "Administrador",
   aprobador: "Aprobador",
   tesoreria: "Tesorería",
 };
 
+/** Qué puede hacer cada rol, en una frase (pantalla Equipo). */
 export const DESCRIPCION_ROL: Record<Rol, string> = {
   admin: "Ve todo, aprueba cualquier monto, cambia las reglas y administra el equipo.",
   aprobador: "Ve todo y aprueba o rechaza facturas escaladas, hasta su límite.",
   tesoreria: "Ve todo, sube y procesa facturas. No aprueba pagos ni cambia reglas.",
 };
 
+/** true si el rol tiene el permiso. Sin rol (sin membresía), nunca. */
 export function rolPuede(rol: Rol | null, permiso: Permiso): boolean {
   return rol !== null && PERMISOS[rol].includes(permiso);
 }
 
+/** true si la sesión tiene el permiso. */
 export function puede(sesion: Sesion, permiso: Permiso): boolean {
   return rolPuede(sesion.rol, permiso);
 }
 
+/** Respuesta sin sesión. */
 export const MENSAJE_401 = "Inicia sesión para continuar.";
+/** Respuesta genérica sin permiso. */
 export const MENSAJE_403 = "No tienes permiso para esta acción.";
+/** Respuesta para una cuenta que aún no es miembro de la empresa. */
 export const MENSAJE_SIN_EMPRESA = "Tu cuenta todavía no pertenece a la empresa. Pide a un administrador un enlace de invitación.";
 
 const MENSAJE_PERMISO: Record<Permiso, string> = {
@@ -61,11 +71,13 @@ const MENSAJE_PERMISO: Record<Permiso, string> = {
 /** Para las pantallas: si la sesión puede hacer algo y, si no, el motivo para mostrar al lado del botón. */
 export type PermisoUI = { ok: true } | { ok: false; motivo: string };
 
+/** Permiso para la interfaz: si la acción está permitida y, si no, por qué. */
 export function permisoPara(sesion: Sesion | null, permiso: Permiso): PermisoUI {
   if (!sesion) return { ok: false, motivo: MENSAJE_401 };
   return puede(sesion, permiso) ? { ok: true } : { ok: false, motivo: MENSAJE_PERMISO[permiso] };
 }
 
+/** 401 o 403 con el mensaje para la persona. `conSesion` lo convierte en la respuesta HTTP. */
 export class ErrorAuth extends Error {
   constructor(
     readonly status: 401 | 403,
@@ -76,6 +88,7 @@ export class ErrorAuth extends Error {
   }
 }
 
+/** La sesión, o 401 si no hay. */
 export function exigirSesion(sesion: Sesion | null): Sesion {
   if (!sesion) throw new ErrorAuth(401);
   return sesion;

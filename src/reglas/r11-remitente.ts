@@ -5,6 +5,10 @@ import { esRemitenteInvitacion } from "@/dominio/remitente";
 import { evaluacion } from "./catalogo";
 import { type ContextoRegla, r3Falla } from "./contexto";
 
+/**
+ * CUMPLE si el correo, chat, número o usuario de portal que envió la factura es canal del mismo beneficiario que la
+ * cobra. Un reenvío interno cumple solo si R3 cumple; un remitente de invitación nunca cumple.
+ */
 export function r11Remitente(ctx: ContextoRegla) {
   const { doc, beneficiario } = ctx;
   const rem = doc.remitente;

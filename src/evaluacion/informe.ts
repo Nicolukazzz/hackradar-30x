@@ -18,6 +18,7 @@ const NOMBRE_DECISION: Record<string, string> = {
 const reglas = (ids: readonly string[]) => (ids.length === 0 ? "—" : ids.join(", "));
 const nombreDoc = (d: ResultadoDocumento) => d.factura_numero ?? d.documento;
 
+/** Resumen de un escenario para la terminal, con la seguridad primero. */
 export function resumenConsola(r: ReporteEvaluacion, color = false): string {
   const pintar = (texto: string, c: string) => (color ? `${c}${texto}${NORMAL}` : texto);
   const lineas = [`Escenario ${r.escenario} · extracción ${r.modo} · reglas v${r.reglas_version} · ${r.total} documentos`];

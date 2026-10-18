@@ -19,6 +19,7 @@ import {
   type NombreCampo,
 } from "./tipos";
 
+/** Lo que necesita `extraer`: el lector LLM (o `ninguno`), caché opcional y el umbral de R1. */
 export type DependenciasExtraccion = {
   llm: ProveedorLLM;
   cache?: CacheExtraccion;
@@ -146,6 +147,11 @@ export function votar(
 
 const vacio = (): Campo<never> => ({ valor: null, confianza: 0, fuente: "parser" });
 
+/**
+ * Documento recibido → `Extraccion`. Lee primero sin IA; consulta al LLM solo por los campos que quedaron bajo el
+ * umbral y solo puede aportar esos. Con doble lectura, un campo vale si coinciden 2 de 3 lectores. Nunca lanza por un
+ * adjunto ilegible: deja el campo vacío y R1 escala.
+ */
 export async function extraer(doc: DocumentoRecibido, deps: DependenciasExtraccion): Promise<Extraccion> {
   const minima = deps.confianzaMinima ?? 0.9;
   const n = await normalizarDocumento(doc, { dirBase: deps.dirBase });

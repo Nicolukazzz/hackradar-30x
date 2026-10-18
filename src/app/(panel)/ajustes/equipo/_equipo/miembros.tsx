@@ -1,5 +1,8 @@
 "use client";
 
+// Tabla del equipo (#51): rol, límite de aprobación y desde cuándo. Cambiar el rol o quitar a alguien pide
+// confirmación; el servidor impide dejar a la empresa sin administrador.
+
 import { Loader2Icon, PencilIcon, UserMinusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -156,6 +159,7 @@ function Quitar({ miembro, esYo, alTerminar }: { miembro: Miembro; esYo: boolean
   );
 }
 
+/** Miembros de la empresa. `yo` marca la fila propia (quitarse a uno mismo dice «Salir»). */
 export function Miembros({ miembros, yo }: { miembros: Miembro[]; yo: string }) {
   const router = useRouter();
   const moneda = useMonedaBase();

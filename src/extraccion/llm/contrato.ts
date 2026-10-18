@@ -8,6 +8,10 @@ import type { Campo, ProveedorLlm } from "@/dominio/tipos";
 import { aDinero } from "../parsers/valores";
 import type { DocumentoNormalizado, ExtraccionParcial, NombreCampo, ValoresCampos } from "../tipos";
 
+/**
+ * Un lector de facturas. `extraer` recibe el documento normalizado y los campos que faltan; devuelve solo lo que
+ * encontró. `lectores` existe solo en la doble lectura.
+ */
 export interface ProveedorLLM {
   nombre: ProveedorLlm;
   /** modelo concreto (entra en la clave de caché: cambiar de modelo no reutiliza respuestas viejas) */

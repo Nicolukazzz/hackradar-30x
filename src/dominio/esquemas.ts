@@ -61,6 +61,10 @@ export const TablaTasasSchema = z.strictObject({
 
 const tipoPeriodo = z.enum(["mensual", "quincenal", "trimestral"]);
 
+/**
+ * Reglas válidas para guardar o simular. Además del formato exige: pago automático (R9) ≤ máximo (R6), solo R5 y R8
+ * desactivables, confianza mínima ≥ 50 % y tolerancia de lo acordado ≤ 50 %.
+ */
 export const ReglasSchema = z
   .strictObject({
     version: z.int().nonnegative(), // 0 = sin configurar (#106): nunca se guarda, solo se muestra y se simula
@@ -282,6 +286,10 @@ export const ExtraccionPlanaSchema = z.strictObject({
   idioma,
 }) satisfies z.ZodType<ExtraccionPlana>;
 
+/**
+ * Una respuesta esperada coherente: ESCALAR siempre trae aprobador y plazo (y solo ESCALAR); un PAGAR esperado no
+ * tiene reglas que fallen.
+ */
 export const EsperadoDocumentoSchema = z
   .strictObject({
     documento: texto,

@@ -15,6 +15,7 @@ import { exigirMiembro } from "./sesion";
 
 export type { RespuestaAprobaciones, TarjetaAprobacion } from "@/servicios/aprobaciones";
 
+/** Facturas escaladas pendientes para la pantalla Pendientes. Exige ser miembro. */
 export async function obtenerAprobaciones(orden?: OrdenAprobaciones): Promise<RespuestaAprobaciones> {
   await exigirMiembro();
   return servicio(await obtenerRepositorio(), orden);

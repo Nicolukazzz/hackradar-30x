@@ -44,6 +44,9 @@ export async function entradasDelLote(repo: Repositorio): Promise<{ registro: En
   return { registro, lote };
 }
 
+/**
+ * Lo que ve hoy una persona: la decisión humana final si la hay, si no la del agente. `firmas` cuenta las parciales.
+ */
 export function estadoActual(registro: readonly EntradaRegistro[], agente: EntradaRegistro): { estado: EstadoFactura; firmas: number } {
   const { final, firmas } = estadoHumano(registro, agente);
   const estado = (final?.decision as DecisionHumana | undefined) ?? (agente.decision as DecisionAgente);
@@ -54,6 +57,7 @@ const PAISES: Record<string, string> = {
   US: "EE. UU.", CO: "Colombia", MX: "México", AR: "Argentina", BR: "Brasil", CL: "Chile", PA: "Panamá", PE: "Perú",
 };
 
+/** Nombre en español de un código de país (ISO 3166-1 alfa-2). */
 export function nombrePais(codigo: string | null | undefined): string | null {
   return codigo ? (PAISES[codigo] ?? null) : null;
 }

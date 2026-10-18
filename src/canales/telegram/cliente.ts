@@ -3,12 +3,14 @@
 const API = "https://api.telegram.org";
 const TIEMPO_MAXIMO_MS = 20_000;
 
+/** Lo que se usa de la Bot API: enviar un mensaje y descargar un archivo. */
 export interface ClienteTelegram {
   enviarMensaje(chat_id: string, texto: string): Promise<void>;
   /** Bytes del archivo (getFile + descarga). Lanza si no existe o pesa más que `maximo`. */
   descargarArchivo(file_id: string, maximo: number): Promise<Buffer>;
 }
 
+/** Cliente con `fetch` y tiempo máximo por llamada. Lanza si la API responde error. */
 export function crearClienteTelegram(token: string, f: typeof fetch = fetch): ClienteTelegram {
   const metodo = async <T>(nombre: string, cuerpo: Record<string, unknown>): Promise<T> => {
     const res = await f(`${API}/bot${token}/${nombre}`, {

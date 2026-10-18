@@ -9,6 +9,7 @@ import { recibirCorreo } from "./recibir";
 
 const registrar = (datos: Record<string, unknown>) => console.info(JSON.stringify({ canal: "correo", ...datos }));
 
+/** Procesa los correos nuevos del buzón y responde cada uno. Devuelve cuántos procesó. */
 export async function revisarUnaVez(config: ConfigBuzon, transporte = crearTransporte(config)): Promise<number> {
   const repo = await obtenerRepositorio();
   return revisarBuzon(config, async (eml) => {
@@ -19,6 +20,7 @@ export async function revisarUnaVez(config: ConfigBuzon, transporte = crearTrans
   });
 }
 
+/** Revisa el buzón cada `cadaMs` sin solapar dos revisiones. Un error queda en el log y no detiene el sondeo. */
 export function iniciarSondeo(config: ConfigBuzon, cadaMs = 60_000): void {
   const transporte = crearTransporte(config);
   let ocupado = false;

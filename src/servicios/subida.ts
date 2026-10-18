@@ -9,6 +9,7 @@ import { sanearNombre, validarArchivo } from "@/ingesta/validar-archivo";
 import type { Sesion } from "@/lib/auth/permisos";
 import type { Repositorio } from "@/repositorio/repositorio";
 
+/** Subida rechazada; `estado` es el código HTTP. */
 export class ErrorSubida extends Error {
   constructor(
     readonly estado: 400 | 403 | 413 | 415 | 422 | 429 | 503,
@@ -19,6 +20,7 @@ export class ErrorSubida extends Error {
   }
 }
 
+/** Ref asignada, decisión del agente y su explicación. */
 export type ResultadoSubida = {
   ref_interna: string;
   estado: DecisionAgente;
@@ -26,6 +28,7 @@ export type ResultadoSubida = {
   mensaje: string;
 };
 
+/** Repositorio, instante y extractor. */
 export type DependenciasSubida = {
   repo: Repositorio;
   ahora: string;
@@ -33,9 +36,9 @@ export type DependenciasSubida = {
 };
 
 /**
- * #49: cualquiera puede crear una cuenta, así que subir no prueba ser del equipo. El remitente es el correo
- * de la cuenta (confirmado con código al registrarse) como `correo`, no `interno`: R11 solo cumple si ese
- * correo está vinculado al beneficiario que cobra; si no, la factura escala y nunca se paga sola.
+ * Subir una factura desde el panel no prueba que quien sube sea quien cobra. El remitente es el correo de la cuenta
+ * como `correo`, no `interno`: R11 solo cumple si ese correo está vinculado al beneficiario que cobra; si no, la factura
+ * escala y nunca se paga sola.
  */
 function remitenteDe(sesion: Sesion): { canal: Canal; remitente: Remitente } {
   return { canal: "carga_manual", remitente: { tipo: "correo", valor: sesion.correo } };

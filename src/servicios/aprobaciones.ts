@@ -10,6 +10,7 @@ import type { Repositorio } from "@/repositorio/repositorio";
 import { descripcionBeneficiario, enLaBase, montoEstimado, registroEnBaseDeHoy } from "./comun";
 import { asignacionDe, type AsignacionEscalada } from "./facturas";
 
+/** Una factura escalada pendiente, con todo lo que la pantalla necesita para decidir sin abrir la traza. */
 export type TarjetaAprobacion = {
   ref_interna: string;
   factura_numero: string | null;
@@ -46,6 +47,7 @@ export type TarjetaAprobacion = {
   canal_a_vincular: { tipo: "correo" | "telegram"; valor: string } | null;
 };
 
+/** Pendientes ordenadas, lo reservado del presupuesto y quiénes pueden aprobar. */
 export type RespuestaAprobaciones = {
   pendientes: TarjetaAprobacion[];
   reservado_usd: number;
@@ -55,6 +57,7 @@ export type RespuestaAprobaciones = {
   moneda_base: Moneda;
 };
 
+/** vencimiento: el plazo más próximo primero · monto: el más alto primero. */
 export type OrdenAprobaciones = "vencimiento" | "monto";
 
 function siApruebas(usd: number | null, beneficiario: string | null, reglas: IdRegla[], moneda: Moneda): string {
@@ -68,6 +71,7 @@ function siApruebas(usd: number | null, beneficiario: string | null, reglas: IdR
   return `Se paga ${monto} a ${a}${riesgo}. La reserva pasa a pagado y queda en el registro con tu comentario.`;
 }
 
+/** Facturas escaladas sin decisión humana final (una por ref: la última decisión del agente). */
 export async function obtenerAprobaciones(repo: Repositorio, orden: OrdenAprobaciones = "vencimiento"): Promise<RespuestaAprobaciones> {
   // #86: montos en la moneda base de hoy (una decisión tomada antes de cambiar la moneda se muestra convertida).
   const [registro, datos, reglas, esc] = await Promise.all([registroEnBaseDeHoy(repo), repo.datosComunes(), repo.reglasVigentes(), repo.escenario()]);

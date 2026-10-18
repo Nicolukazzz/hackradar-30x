@@ -12,6 +12,9 @@ import type { procesarLote } from "@/reglas/motor";
 import { evaluarEscenario, listarEscenarios, type ModoExtraccion, type ReporteEvaluacion } from "./evaluar";
 import { informeMarkdown, resumenConsola } from "./informe";
 
+/**
+ * Lo que el CLI recibe de afuera: hora para el nombre del informe, salida y carpetas. El motor se inyecta en tests.
+ */
 export type DependenciasCli = {
   /** hora local `AAAA-MM-DD-HHMM` para el nombre del informe (el dominio no lee el reloj) */
   marcaTiempo: string;

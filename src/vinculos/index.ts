@@ -18,6 +18,7 @@ async function crear(): Promise<AlmacenEnlaces> {
   return crearAlmacenEnlacesMemoria();
 }
 
+/** Almacén de enlaces del proceso, creado una sola vez. Si la creación falla, el próximo pedido reintenta. */
 export function obtenerAlmacenEnlaces(): Promise<AlmacenEnlaces> {
   const g = globalThis as Global;
   g[CLAVE] ??= crear().catch((e: unknown) => {

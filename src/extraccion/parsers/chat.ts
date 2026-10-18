@@ -9,6 +9,7 @@ export function cuerpoDeChat(texto: string): string {
   return m ? texto.slice(m[0].length) : texto;
 }
 
+/** Lee los campos de un mensaje de chat con las mismas etiquetas que el PDF. */
 export function parsearChat(texto: string): ExtraccionParcial {
   return parsearLineas(cuerpoDeChat(texto).split(/\r?\n/), "chat");
 }
