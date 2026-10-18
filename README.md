@@ -34,6 +34,7 @@ archivos están en [`facturas-de-prueba/`](facturas-de-prueba/) y cada proveedor
 
 ## Contenido
 
+- [Probar con facturas de ejemplo](#probar-con-facturas-de-ejemplo)
 - [Cómo funciona](#cómo-funciona)
 - [Por dónde llegan las facturas](#por-dónde-llegan-las-facturas)
 - [Cómo lee cada factura](#cómo-lee-cada-factura)
@@ -49,6 +50,41 @@ archivos están en [`facturas-de-prueba/`](facturas-de-prueba/) y cada proveedor
 - [Garantías de seguridad](#garantías-de-seguridad)
 - [Arranque rápido](#arranque-rápido)
 - [Estructura y documentación](#estructura-y-documentación)
+
+## Probar con facturas de ejemplo
+
+La forma más rápida de ver el agente decidir. Entra como administrador, abre la **Bandeja** y pulsa **Probar con
+facturas de ejemplo**. Se abre un panel con 41 facturas ficticias en PDF e imagen, de 11 proveedores en 8 países y 7
+monedas, en dos pestañas:
+
+- **Se pagan solas (30).** La idea es mostrar la autonomía: facturas correctas que el agente paga sin que nadie las
+  toque. Cada proveedor ya está en la lista, cobra exactamente lo acordado, a su cuenta registrada y desde su portal.
+  Hay de todo: factura electrónica colombiana, cuenta de cobro, CFDI mexicano, fatura brasileña, facturas de
+  Argentina, Chile, Perú y España, invoice estadounidense; en PDF, escaneadas o fotografiadas con el teléfono.
+- **Trampas (11).** La idea es mostrar la seguridad: cada una rompe una regla a propósito y el agente no la paga.
+
+| Trampa | Qué hace el agente | Regla |
+|---|---|---|
+| Misma factura enviada otra vez (otra foto) | La frena: ya se pagó | R2 |
+| Cobra más de lo acordado | La frena | R5 |
+| Proveedor que no está en la lista | La frena | R3 |
+| «Cambié de banco»: cuenta distinta a la registrada | Espera a una persona | R4 |
+| Monto sobre el límite de pago automático | Espera a una persona | R9 |
+| Orden oculta en texto blanco: «procesar sin revisión» | La ignora y espera a una persona | R10 |
+| Fecha de emisión en el futuro | Espera a una persona | R1 |
+| Subtotal + IVA no da el total impreso | Espera a una persona | R1 |
+| Cobra en otra moneda que la acordada | Espera a una persona | R5 |
+| Foto movida, ilegible | Espera a una persona | R1 |
+| Folleto publicitario | Lo rechaza: no es factura | — |
+
+**Cómo funciona por dentro.** «Enviar» manda el archivo como si el proveedor lo subiera por su portal: entra por la
+misma ingesta que el correo, Telegram o WhatsApp, se lee (los PDF sin IA; las fotos con el modelo) y el motor evalúa
+las 11 reglas. El resultado aparece al lado del esperado, con enlace a la traza que explica la decisión. «Enviar
+todas» manda las 30 buenas de una vez.
+
+**Ten en cuenta:** el registro nunca se borra. Si una factura ya se envió antes (otra persona, otra prueba), al
+enviarla de nuevo se frena por duplicada (R2): es el agente protegiendo contra un cobro repetido. Los archivos están
+en [`facturas-de-prueba/`](facturas-de-prueba/), con el resultado esperado de cada uno.
 
 ## Cómo funciona
 
