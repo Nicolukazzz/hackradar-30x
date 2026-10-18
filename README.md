@@ -20,6 +20,10 @@ Cada empresa lo ve con su nombre: Quadra solo firma al pie («Powered by Quadra�
 | Aprobador | `aprobador.nebula@gmail.com` | Ver todo y aprobar o rechazar escaladas hasta USD 5.000 |
 | Tesorería | `tesorero.nebula@gmail.com` | Ver todo, subir y procesar facturas; no aprueba ni cambia reglas |
 
+**Facturas para probar:** [`facturas-de-prueba/`](facturas-de-prueba/) trae 41 facturas ficticias en PDF e imagen
+(8 países, 7 monedas, 10 formatos distintos): 30 que se pagan solas y 11 trampas, cada una con el resultado esperado.
+Los proveedores ya están en la lista y cada uno tiene su portal ([accesos](facturas-de-prueba/ACCESOS.md)).
+
 > **El modelo solo lee. Las reglas deciden en código. Lo que no cumple espera a una persona, con la explicación escrita.**
 
 ![Bandeja: facturas recibidas, en qué quedó cada una y el presupuesto del mes](docs/capturas/bandeja.png)
@@ -365,6 +369,7 @@ Tests y evaluación no necesitan llaves ni base de datos. Para correr la app (`n
 | `npm run telegram -- webhook` · `-- enlace <proveedor>` | Registra el webhook del bot · genera un enlace de vinculación |
 | `npm run equipo:admin -- <correo>` | Crea el primer admin |
 | `npm run dataset` | Regenera `data/` |
+| `npm run facturas:prueba` | Regenera `facturas-de-prueba/` (PDF e imágenes para subir a mano) |
 | `npm run test:supabase` | Contrato del repositorio contra Supabase local (Docker) |
 | `npm run build` · `npm start` | Producción |
 
