@@ -24,7 +24,7 @@ const RotuloInner: React.FC<Props> = ({ nombre, rol }) => {
 
 const schema = {
   nombre: { type: "string", default: "Nombre del presentador", description: "Nombre" },
-  rol: { type: "string", default: "Equipo · HackRadar 30X", description: "Rol" },
+  rol: { type: "string", default: "Equipo Quadra · Hackathon 30X", description: "Rol" },
 } as const satisfies InteractivitySchema;
 
 export const Rotulo = Interactive.create({ Component: RotuloInner, layout: "absolute-fill", schema });

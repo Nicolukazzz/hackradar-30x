@@ -1,31 +1,33 @@
 import { Composition, Folder } from "remotion";
 import { Rotulo } from "./componentes/Rotulo";
+import { Canales } from "./escenas/Canales";
 import { Cierre } from "./escenas/Cierre";
 import { ComoFunciona } from "./escenas/ComoFunciona";
-import { Gancho } from "./escenas/Gancho";
-import { Metricas } from "./escenas/Metricas";
-import { PersonaDecide } from "./escenas/PersonaDecide";
-import { Problema } from "./escenas/Problema";
-import { RecorridoBandeja } from "./escenas/RecorridoBandeja";
-import { Trampas } from "./escenas/Trampas";
-import { Veredictos } from "./escenas/Veredictos";
+import { Intro } from "./escenas/Intro";
+import { Llegada } from "./escenas/Llegada";
+import { Moneda } from "./escenas/Moneda";
+import { PorDentro } from "./escenas/PorDentro";
+import { Portal } from "./escenas/Portal";
+import { Roles } from "./escenas/Roles";
+import { WhatsApp } from "./escenas/WhatsApp";
 import { Pitch } from "./Pitch";
 
 // 1920×1080 a 30 fps. Cada escena se puede abrir y exportar sola; `Pitch` las une.
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      <Composition id="Pitch" component={Pitch} durationInFrames={3810} fps={30} width={1920} height={1080} />
+      <Composition id="Pitch" component={Pitch} durationInFrames={4050} fps={30} width={1920} height={1080} />
       <Folder name="Escenas">
-        <Composition id="E1-Gancho" component={Gancho} durationInFrames={240} fps={30} width={1920} height={1080} />
-        <Composition id="E2-Problema" component={Problema} durationInFrames={420} fps={30} width={1920} height={1080} />
-        <Composition id="E3-ComoFunciona" component={ComoFunciona} durationInFrames={540} fps={30} width={1920} height={1080} />
-        <Composition id="E4-Veredictos" component={Veredictos} durationInFrames={420} fps={30} width={1920} height={1080} />
-        <Composition id="E5-Bandeja" component={RecorridoBandeja} durationInFrames={420} fps={30} width={1920} height={1080} />
-        <Composition id="E6-Trampas" component={Trampas} durationInFrames={720} fps={30} width={1920} height={1080} />
-        <Composition id="E7-PersonaDecide" component={PersonaDecide} durationInFrames={480} fps={30} width={1920} height={1080} />
-        <Composition id="E8-Metricas" component={Metricas} durationInFrames={390} fps={30} width={1920} height={1080} />
-        <Composition id="E9-Cierre" component={Cierre} durationInFrames={300} fps={30} width={1920} height={1080} />
+        <Composition id="E01-Intro" component={Intro} durationInFrames={150} fps={30} width={1920} height={1080} />
+        <Composition id="E02-Canales" component={Canales} durationInFrames={120} fps={30} width={1920} height={1080} />
+        <Composition id="E03-WhatsApp" component={WhatsApp} durationInFrames={420} fps={30} width={1920} height={1080} />
+        <Composition id="E04-Portal" component={Portal} durationInFrames={780} fps={30} width={1920} height={1080} />
+        <Composition id="E05-Llegada" component={Llegada} durationInFrames={390} fps={30} width={1920} height={1080} />
+        <Composition id="E06-ComoFunciona" component={ComoFunciona} durationInFrames={480} fps={30} width={1920} height={1080} />
+        <Composition id="E07-PorDentro" component={PorDentro} durationInFrames={540} fps={30} width={1920} height={1080} />
+        <Composition id="E08-Roles" component={Roles} durationInFrames={720} fps={30} width={1920} height={1080} />
+        <Composition id="E09-Moneda" component={Moneda} durationInFrames={375} fps={30} width={1920} height={1080} />
+        <Composition id="E10-Cierre" component={Cierre} durationInFrames={210} fps={30} width={1920} height={1080} />
       </Folder>
       <Folder name="Presentador">
         <Composition
@@ -35,7 +37,7 @@ export const RemotionRoot: React.FC = () => {
           fps={30}
           width={1920}
           height={1080}
-          defaultProps={{ nombre: "Nombre del presentador", rol: "Equipo · HackRadar 30X" }}
+          defaultProps={{ nombre: "Nombre del presentador", rol: "Equipo Quadra · Hackathon 30X" }}
         />
       </Folder>
     </>

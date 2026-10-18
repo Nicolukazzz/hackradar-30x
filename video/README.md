@@ -1,6 +1,6 @@
-# Video del pitch (Remotion)
+# Video del pitch de Quadra (Remotion)
 
-Animaciones y capturas para el pitch. Guion completo: [`docs/pitch/guion.md`](../docs/pitch/guion.md).
+Animaciones, grabaciones y capturas del pitch. Guion completo: [`docs/pitch/guion.md`](../docs/pitch/guion.md).
 
 Proyecto aparte de la app (su propio `package.json`): no entra al build de Railway, al typecheck ni al lint de la raíz.
 
@@ -8,50 +8,57 @@ Proyecto aparte de la app (su propio `package.json`): no entra al build de Railw
 cd video
 npm install
 npm run studio          # vista previa interactiva (http://localhost:3000)
-npm run render          # out/pitch.mp4 — las 9 escenas unidas (~2:07)
-npm run render:escenas  # out/escenas/E1-Gancho.mp4 … E9-Cierre.mp4
+npm run render          # out/pitch.mp4 — las 10 escenas unidas (2:15)
+npm run render:escenas  # out/escenas/E01-Intro.mp4 … E10-Cierre.mp4
 npm run render:rotulo   # out/rotulo.mov — rótulo del presentador con transparencia (ProRes 4444)
 npm run render:todo     # todo lo anterior
 ```
 
-`out/` no se versiona. Remotion trae su propio ffmpeg; no hace falta instalarlo. Licencia: Remotion es gratis para equipos de hasta 3 personas.
+`out/` no se versiona. Remotion trae su propio ffmpeg. Licencia: gratis para equipos de hasta 3 personas.
+
+## Presentador en el círculo
+
+Las escenas WhatsApp, Portal y Por dentro tienen un círculo de cámara abajo a la derecha. Guardar la toma del presentador en `public/camara/whatsapp.mp4`, `public/camara/portal.mp4` y `public/camara/por-dentro.mp4` y volver a exportar: si el archivo existe, se reproduce en el círculo; si no, se ve un marcador.
 
 ## Composiciones
 
 | Id | Duración | Qué muestra |
 |---|---|---|
-| `Pitch` | 127 s | Las 9 escenas en orden con fundidos de 0,5 s |
-| `E1-Gancho` | 8 s | El problema en cuatro líneas y la pregunta |
-| `E2-Problema` | 14 s | Los 5 pasos manuales del brief de Blinka; falta confianza |
-| `E3-ComoFunciona` | 18 s | Canales → ingesta → lee → 11 reglas → veredicto, y el registro |
-| `E4-Veredictos` | 14 s | FAC-1041 pagada, PX-77 frenada, LF-2026-10 escalada, con su porqué |
-| `E5-Bandeja` | 14 s | Captura de la Bandeja con zoom a indicadores, presupuesto y lista |
-| `E6-Trampas` | 24 s | Instrucciones al agente (F-0110, R10), duplicado (INV-2210, R2), cuenta cambiada (F-0101, R4) |
-| `E7-PersonaDecide` | 16 s | Pendientes → traza y decisión humana → registro |
-| `E8-Metricas` | 13 s | 0 pagos fuera de reglas · 83,3 % autonomía · 30/30 |
-| `E9-Cierre` | 10 s | La promesa y la firma |
+| `Pitch` | 135 s | Las 10 escenas con fundidos de 0,5 s |
+| `E01-Intro` | 5 s | Quadra y la promesa |
+| `E02-Canales` | 4 s | WhatsApp, portal, correo, Telegram |
+| `E03-WhatsApp` | 14 s | Grabación real: el proveedor manda fotos de factura por WhatsApp |
+| `E04-Portal` | 26 s | Grabación real: el admin da acceso (enlace + código) y el proveedor sube 3 facturas |
+| `E05-Llegada` | 13 s | Animación: la bandeja recibe facturas y cada una queda Pagada / Frenada / Escalada |
+| `E06-ComoFunciona` | 16 s | La IA lee (doble lectura), el algoritmo decide |
+| `E07-PorDentro` | 18 s | Traza de una factura: explicación, instrucción escondida, reglas |
+| `E08-Roles` | 24 s | Vista del tesorero, del aprobador y del administrador |
+| `E09-Moneda` | 12,5 s | Cambio de moneda base con los montos convirtiéndose |
+| `E10-Cierre` | 7 s | Quadra · Hackathon 30X |
 | `Rotulo` | 5 s | Nombre y rol del presentador (editable en Studio) |
 
 ## Estructura
 
 - `src/tema.ts`: colores y fuentes de la app (especificación §15), Geist y Geist Mono.
-- `src/animar.ts`: `entrada` (resorte sin rebote), `tramo` (curva tipo Apple), `subir`.
-- `src/componentes/`: `Pildora`, `TarjetaFactura`, `Captura` (paneo y zoom entre tomas), `Nota`, `Encabezado`, `Fondo`, `Rotulo`.
-- `src/escenas/`: una escena por archivo, cada una con `Interactive.create` (editable en Studio).
-- `public/capturas/`: capturas de la app a 3840×2160.
+- `src/componentes/`: `Pildora`, `Captura` (paneo y zoom), `Ventana`, `Etiqueta` («Vista del …»), `Camara` (círculo), `Pasos`, `Nota`, `Encabezado`, `Fondo`, `Rotulo`.
+- `src/escenas/`: una escena por archivo (`Interactive.create`, editable en Studio).
+- `public/capturas/`: capturas de la app a 3840×2160. `public/medios/`: grabaciones (H.264, sin audio).
 
-## Volver a tomar las capturas
+## Volver a grabar o capturar
 
-Siempre desde la app **local** con el escenario de prueba (datos ficticios), nunca desde producción:
+Siempre desde la app **local** con el set de prueba (datos ficticios), nunca desde producción. En la raíz, con buzón, canales y clave de Supabase en blanco (los enlaces de proveedor quedan en memoria, sin tocar la base del equipo):
 
 ```bash
-# en la raíz, con el buzón y las llaves en blanco para no tocar el Gmail real
-CORREO_IMAP_USUARIO= CORREO_IMAP_CLAVE= TELEGRAM_BOT_TOKEN= GEMINI_API_KEY= GROQ_API_KEY= ANTHROPIC_API_KEY= \
-REPOSITORIO=memoria AVISOS=0 LLM_PROVIDER=ninguno ESCENARIO=lote-demo-oct DEMO=1 npx next dev -p 3123
+CORREO_IMAP_USUARIO= CORREO_IMAP_CLAVE= TELEGRAM_BOT_TOKEN= WHATSAPP_TOKEN= SUPABASE_SECRET_KEY= \
+REPOSITORIO=memoria AVISOS=0 LLM_PROVIDER=gemini ESCENARIO=lote-demo-oct DEMO=1 npx next dev -p 3123
 ```
 
-Entrar con una cuenta admin, `POST /api/procesar` (o «Procesar facturas nuevas») y capturar a 1920×1080 con `deviceScaleFactor: 2`: `/`, `/pendientes`, `/registro`, `/facturas/INT-2026-000011` (traza de OMI-3381) y `/facturas/INT-2026-000008` → «Decidir ahora» (`decision.png`). En las capturas, el nombre y el correo de la cuenta de prueba se reemplazaron por «Laura Méndez · laura@nebula.example» (aprobadora ficticia del dataset).
+- Capturas: 1920×1080 con `deviceScaleFactor: 2`, después de `POST /api/procesar`.
+- Grabaciones: Playwright con `recordVideo` (1920×1080; instalar su ffmpeg con `npx playwright install ffmpeg`), convertidas a H.264 con `npx remotion ffmpeg … -r 30 -c:v libx264 -crf 20 -pix_fmt yuv420p -an`.
+- Portal: Proveedores → «Dar acceso al portal» con CloudNorte (`billing@cloudnorte.example`); el proveedor sube `data/escenarios/demo-en-vivo/documentos/adjuntos/002-inv-2216.pdf` (sale aprobada) y dos fotos de factura de ejemplo.
+- WhatsApp: grabación de pantalla del equipo (0–14,3 s), escalada a 1600 px.
+- En capturas y grabaciones del panel, el nombre y correo de la cuenta de prueba se reemplazan por «Laura Méndez · laura@nebula.example» (aprobadora ficticia del set).
 
 ## Skills de Remotion
 
-Las 12 skills oficiales (`remotion-dev/skills`) están en `.claude/skills/remotion-*` y en `skills-lock.json`. Empezar por `/remotion-best-practices` (enrutador); para escenas, `remotion-markup`; para exportar, `remotion-render`. Actualizar con `npx skills update`.
+Las 12 skills oficiales (`remotion-dev/skills`) están en `.claude/skills/remotion-*` y en `skills-lock.json`. Empezar por `/remotion-best-practices`; para escenas, `remotion-markup`; para exportar, `remotion-render`.

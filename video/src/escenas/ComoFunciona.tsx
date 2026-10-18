@@ -5,7 +5,7 @@ import { Fondo } from "../componentes/Fondo";
 import { Pildora } from "../componentes/Pildora";
 import { color, fuenteMono, sombra } from "../tema";
 
-// 3 · Cómo funciona (18 s): canales → ingesta → lee → decide → veredicto, y el registro debajo de todo.
+// 6 · Cómo funciona (16 s, voz en off): canales → ingesta → la IA lee (doble lectura) → el algoritmo decide → veredicto.
 const X = [140, 485, 830, 1175, 1520];
 const ANCHO = 260;
 const TOP = 470;
@@ -56,12 +56,12 @@ const Flecha: React.FC<{ x1: number; x2: number; desde: number }> = ({ x1, x2, d
 const ComoFuncionaInner = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const canales = ["Correo", "Telegram", "WhatsApp", "Portal web"];
+  const canales = ["WhatsApp", "Portal", "Correo", "Telegram"];
   const registro = entrada(frame, fps, 9 * fps);
   const nota = entrada(frame, fps, 11.5 * fps, 30);
   return (
     <Fondo>
-      <Encabezado kicker="Cómo funciona" titulo={<>Los canales transportan, el modelo lee,<br />el código decide.</>} />
+      <Encabezado kicker="Cómo funciona" titulo={<>Un agente de IA lee la factura.<br />Un algoritmo decide.</>} />
 
       {/* Canales */}
       <div style={{ position: "absolute", left: X[0], top: TOP, width: ANCHO, height: ALTO, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
@@ -75,9 +75,9 @@ const ComoFuncionaInner = () => {
       <Flecha x1={X[0] + ANCHO + 8} x2={X[1] - 8} desde={2 * fps} />
       <Caja x={X[1]} p={entrada(frame, fps, 2.4 * fps)} etiqueta="Ingesta" titulo="Recibe" lineas={["Número interno propio", "Identifica al remitente", "Descarta archivos repetidos"]} />
       <Flecha x1={X[1] + ANCHO + 8} x2={X[2] - 8} desde={3.4 * fps} />
-      <Caja x={X[2]} p={entrada(frame, fps, 3.8 * fps)} etiqueta="Lee" titulo="Extrae" lineas={["Parser de PDF y XML", "LLM solo si hace falta", "El texto nunca da órdenes"]} />
+      <Caja x={X[2]} p={entrada(frame, fps, 3.8 * fps)} etiqueta="Lee · IA" titulo="Agente IA" lineas={["Fotos, PDF y correos", "Doble lectura: 2 de 3", "deben coincidir"]} />
       <Flecha x1={X[2] + ANCHO + 8} x2={X[3] - 8} desde={4.8 * fps} />
-      <Caja x={X[3]} p={entrada(frame, fps, 5.2 * fps)} acento etiqueta="Decide" titulo="11 reglas" lineas={["Código determinista", "Duplicados, límites,", "presupuesto y cuenta"]} />
+      <Caja x={X[3]} p={entrada(frame, fps, 5.2 * fps)} acento etiqueta="Decide" titulo="11 reglas" lineas={["Algoritmo determinista", "Duplicados, límites,", "presupuesto y cuenta"]} />
       <Flecha x1={X[3] + ANCHO + 8} x2={X[4] - 8} desde={6.2 * fps} />
 
       {/* Veredictos */}
@@ -110,7 +110,7 @@ const ComoFuncionaInner = () => {
           borderRadius: 14,
         }}
       >
-        El modelo nunca decide un pago
+        Si la IA duda, no se paga
       </div>
     </Fondo>
   );
