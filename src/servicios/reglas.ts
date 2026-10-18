@@ -18,6 +18,8 @@ export type RespuestaReglas = {
   tasas: TablaTasas | null;
   /** cuántas facturas del lote usaron cada tasa ("uso en el lote") */
   uso_tasas: UsoTasa[];
+  /** #86: de dónde salieron las tasas (null = tabla fija del set de prueba) */
+  tasas_origen: { fecha: string | null; fuente: string | null; estado: "hoy" | "anterior" | "ninguna" } | null;
 };
 
 export class ErrorReglas extends Error {
@@ -39,14 +41,16 @@ export function sinVersion(r: Reglas): Omit<Reglas, "version"> {
 }
 
 export async function obtenerReglas(repo: Repositorio): Promise<RespuestaReglas> {
-  const [datos, vigente, historial, esc, registro] = await Promise.all([
+  const [datos, vigente, historial, esc, registro, vivas] = await Promise.all([
     repo.datosComunes(),
     repo.reglasVigentes(),
     repo.historialReglas(),
     repo.escenario(),
     repo.registro({ tipo: ["DECISION_AGENTE"] }),
+    repo.tasasVigentes(),
   ]);
-  const tasas = esc ? (datos.tasas[esc.config.periodo] ?? null) : null;
+  // Producción (#86): las tasas del día; demo: la tabla fija del periodo del escenario.
+  const tasas = vivas ? vivas.tabla : esc ? (datos.tasas[esc.config.periodo] ?? null) : null;
   const periodo = esc?.config.periodo;
   const uso_tasas: UsoTasa[] = Object.entries(tasas?.tasas ?? {})
     .filter(([m]) => m !== "USD")
@@ -55,7 +59,8 @@ export async function obtenerReglas(repo: Repositorio): Promise<RespuestaReglas>
       tasa: tasa ?? "",
       facturas: registro.filter((e) => e.monto_original?.moneda === m && (!periodo || e.momento.startsWith(periodo))).length,
     }));
-  return { vigente, historial, beneficiarios: datos.beneficiarios, aprobadores: datos.aprobadores, tasas, uso_tasas };
+  const tasas_origen = vivas ? { fecha: vivas.fecha, fuente: vivas.fuente, estado: vivas.estado } : null;
+  return { vigente, historial, beneficiarios: datos.beneficiarios, aprobadores: datos.aprobadores, tasas, uso_tasas, tasas_origen };
 }
 
 /**

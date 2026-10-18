@@ -25,7 +25,8 @@ export type TipoPeriodo = "mensual" | "quincenal" | "trimestral";
 export type Periodo = { id: string; tipo: TipoPeriodo; inicio: string; fin: string };
 
 /** 1 USD = X. { COP: "4200.00", MXN: "18.50", USD: "1" } */
-export type TablaTasas = { periodo: string; base: "USD"; tasas: Partial<Record<Moneda, string>> };
+/** 1 {base} = X {moneda}. La base es la moneda de la empresa (#86); el dataset usa USD. */
+export type TablaTasas = { periodo: string; base: Moneda; tasas: Partial<Record<Moneda, string>> };
 
 export const ID_REGLAS = ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R11"] as const;
 export type IdRegla = (typeof ID_REGLAS)[number];
@@ -52,6 +53,8 @@ export type Reglas = {
   extraccion: { confianza_minima: number };
   aprobacion: { doble_aprobacion_desde_usd: number };
   activas: Record<IdRegla, boolean>;
+  /** Moneda de los límites y del presupuesto (#86): la base de la empresa. Ausente = USD. Los campos `*_usd` están en esta moneda. */
+  moneda?: Moneda;
   /** Qué datos debe traer la factura para que R1 cumpla, además del monto (#109). Ausente = los de §4.3. */
   requisitos?: { obligatorios: CampoRequerible[] };
   /** Cómo se reconoce al proveedor en la factura (#108). Ausente = por nombre (como el dataset). */

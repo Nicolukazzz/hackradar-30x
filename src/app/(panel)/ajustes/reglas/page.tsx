@@ -41,6 +41,7 @@ export default async function ReglasPage() {
       historial={r.historial}
       simulacionInicial={r.simulacion}
       usoTasas={r.uso_tasas}
+      tasasOrigen={r.tasas_origen}
       aprobadores={r.aprobadores}
       beneficiarios={r.beneficiarios.map((b) => fila(b, r.vigente.limites.mensual_por_beneficiario_default_usd))}
       />

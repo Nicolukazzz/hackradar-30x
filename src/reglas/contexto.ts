@@ -132,9 +132,9 @@ function motivoMonto(ctx: ContextoRegla): string | null {
   const total = ext.monto_total.valor;
   if (!total) return null;
   if (!Number.isInteger(total.centavos) || total.centavos <= 0) return "el monto total no es mayor que 0";
-  if (total.moneda !== "USD" && tasas.tasas[total.moneda] === undefined) return `no hay tasa para ${total.moneda} en ${tasas.periodo}`;
+  if (total.moneda !== tasas.base && tasas.tasas[total.moneda] === undefined) return `no hay tasa para ${total.moneda} en ${tasas.periodo}`;
   // Encontrado por fast-check: COP 1 redondea a USD 0,00 y pasaría todos los límites.
-  if (aUsd(total, tasas).usd_centavos <= 0) return `${numeroEn(total)} ${total.moneda} equivale a USD 0,00`;
+  if (aUsd(total, tasas).usd_centavos <= 0) return `${numeroEn(total)} ${total.moneda} equivale a ${tasas.base} 0,00`;
   const sub = ext.subtotal?.valor;
   const imp = ext.impuestos?.valor;
   if (!sub || !imp) return null;

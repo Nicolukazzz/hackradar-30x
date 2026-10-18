@@ -10,6 +10,6 @@ export function r06Maximo(ctx: ContextoRegla) {
   if (usd === null) return evaluacion("R6", "NO_APLICA", SIN_DATO);
   const max = ctx.reglas.limites.maximo_absoluto_usd;
   const datos = { monto_usd: usd, maximo_usd: max };
-  if (usd > max) return evaluacion("R6", "FALLA", `${formatearUsd(usd)} > ${formatearUsd(max)} USD`, datos);
-  return evaluacion("R6", "CUMPLE", `${formatearUsd(usd)} ≤ ${formatearUsd(max)} USD`, datos);
+  if (usd > max) return evaluacion("R6", "FALLA", `${formatearUsd(usd)} > ${formatearUsd(max)} ${ctx.tasas.base}`, datos);
+  return evaluacion("R6", "CUMPLE", `${formatearUsd(usd)} ≤ ${formatearUsd(max)} ${ctx.tasas.base}`, datos);
 }

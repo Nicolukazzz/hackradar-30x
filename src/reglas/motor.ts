@@ -2,7 +2,7 @@
 // mismo input ⇒ mismo output. Sin I/O, sin reloj, sin LLM. Ante cualquier error, ESCALAR.
 
 import type { DatosComunes } from "@/dominio/cargar";
-import { aUsd } from "@/dominio/dinero";
+import { aUsd, monedaBase } from "@/dominio/dinero";
 import { instante } from "@/dominio/reloj";
 import {
   type DocumentoRecibido,
@@ -55,10 +55,18 @@ export type EntradaMotor = {
   ahora: string;
 };
 
-function tasasPara(datos: DatosMotor, ahora: string): TablaTasas {
+function tasasPara(datos: DatosMotor, reglas: Reglas, ahora: string): TablaTasas {
   const periodo = ahora.slice(0, 7);
-  // Sin tabla del periodo solo se puede convertir USD: cualquier otra moneda falla R1 y escala.
-  return datos.tasas[periodo] ?? { periodo, base: "USD", tasas: {} };
+  // Sin tabla del periodo solo se puede convertir la moneda base: cualquier otra falla R1 y escala.
+  return datos.tasas[periodo] ?? { periodo, base: monedaBase(reglas), tasas: {} };
+}
+
+function explicacionSinDecidir(reglas: Reglas, tasas: TablaTasas): string | null {
+  if (sinConfigurar(reglas)) return EXPLICACION_SIN_REGLAS;
+  if (tasas.base !== monedaBase(reglas)) {
+    return `Escalada: los límites de las reglas están en ${monedaBase(reglas)} y las tasas del día en ${tasas.base}; hasta guardar las reglas en ${tasas.base}, ninguna factura se paga ni se frena sola. Una persona debe decidir.`;
+  }
+  return null;
 }
 
 function todas(resultado: EvaluacionRegla["resultado"], comparacion: string): EvaluacionRegla[] {
@@ -128,7 +136,7 @@ function evaluarSinProteccion(input: EntradaMotor): ResultadoMotor {
     };
   }
 
-  const tasas = tasasPara(datos, ahora);
+  const tasas = tasasPara(datos, reglas, ahora);
   const identidad = identificar(ext, datos.beneficiarios, modoIdentidad(reglas), minima);
   const beneficiario = identidad.beneficiario;
   const ctx: ContextoRegla = {
@@ -142,7 +150,10 @@ function evaluarSinProteccion(input: EntradaMotor): ResultadoMotor {
   const tasa_usada = usd !== null && ext.monto_total.valor ? aUsd(ext.monto_total.valor, tasas).tasa_usada : null;
   const combinado = combinar(evaluaciones, usd);
   // #106: sin reglas guardadas por la empresa ninguna factura se decide sola; la traza igual muestra cada regla.
-  const decision = sinConfigurar(reglas) ? "ESCALAR" : combinado.decision;
+  // #86: límites en una moneda y tasas en otra (cambió la moneda base sin guardar reglas nuevas): tampoco.
+  const monedaDistinta = tasas.base !== monedaBase(reglas);
+  const sinDecidir = sinConfigurar(reglas) || monedaDistinta;
+  const decision = sinDecidir ? "ESCALAR" : combinado.decision;
   const { reglas_que_fallaron } = combinado;
 
   let asignado_a: string | null = null;
@@ -162,10 +173,8 @@ function evaluarSinProteccion(input: EntradaMotor): ResultadoMotor {
     disponible_antes_usd_centavos: presupuesto.disponible,
     asignado_a,
     responder_antes_de,
-    explicacion: sinConfigurar(reglas)
-      ? EXPLICACION_SIN_REGLAS
-      : explicar({ decision, evaluaciones, doc, ext, beneficiario, monto_usd_centavos: usd, reglas, ahora }),
-    observaciones: sinConfigurar(reglas) ? [] : observaciones(usd, reglas),
+    explicacion: explicacionSinDecidir(reglas, tasas) ?? explicar({ decision, evaluaciones, doc, ext, beneficiario, monto_usd_centavos: usd, reglas, ahora }),
+    observaciones: sinDecidir ? [] : observaciones(usd, reglas),
   };
 }
 

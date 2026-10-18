@@ -146,7 +146,7 @@ export type Periodo = {
 
 export type TablaTasas = {
   periodo: string;                  // '2026-10'
-  base: 'USD';
+  base: Moneda;                     // #86: moneda base de la empresa (dataset: 'USD')
   tasas: Partial<Record<Moneda, string>>; // 1 USD = X. { COP: '4200.00', MXN: '18.50', BRL: '5.50', USD: '1' }
 };
 
@@ -173,6 +173,7 @@ export type Reglas = {
   activas: Record<IdRegla, boolean>;       // solo R5 y R8 pueden ser false (§4)
   identidad?: { modo: 'nombre'|'nombre_y_nit'|'nit' }; // #108; ausente = nombre
   requisitos?: { obligatorios: CampoRequerible[] };     // #109; ausente = §4.3. El monto siempre es obligatorio
+  moneda?: Moneda;                  // #86: moneda de límites y presupuesto (los *_usd); ausente = USD
 };
 
 export type LineaAcuerdo = {

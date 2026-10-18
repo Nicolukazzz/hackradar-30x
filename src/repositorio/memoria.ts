@@ -111,6 +111,9 @@ export async function crearRepositorioMemoria(
       if (i >= 0) throw new Error(`el beneficiario ${b.id} ya existe`);
       s.datos.beneficiarios.push(structuredClone(b));
     },
+    tasasVigentes() {
+      return Promise.resolve(null); // tasas fijas de data/ (set de prueba)
+    },
     async actualizarBeneficiario(b: Beneficiario) {
       const i = s.datos.beneficiarios.findIndex((x) => x.id === b.id);
       if (i < 0) throw new Error(`no existe el beneficiario ${b.id}`);

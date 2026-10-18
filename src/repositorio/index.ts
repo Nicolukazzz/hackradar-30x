@@ -3,6 +3,7 @@
 // en caliente de `next dev`.
 
 import type { Aprobador } from "@/dominio/tipos";
+import { relojSistema } from "@/lib/reloj-sistema";
 
 import { crearRepositorioMemoria } from "./memoria";
 import type { Repositorio } from "./repositorio";
@@ -19,9 +20,18 @@ function crear(): Promise<Repositorio> {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const claveSecreta = process.env.SUPABASE_SECRET_KEY;
     if (!url || !claveSecreta) return Promise.reject(new Error("REPOSITORIO=supabase necesita NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SECRET_KEY"));
-    return import("./supabase").then((m) => m.crearRepositorioSupabase({ url, claveSecreta, escenario, aprobadores: aprobadoresDelEquipoActual }));
+    return import("./supabase").then((m) => m.crearRepositorioSupabase({ url, claveSecreta, escenario, aprobadores: aprobadoresDelEquipoActual, hoy: hoyEn }));
   }
   return crearRepositorioMemoria(process.env.ESCENARIO ?? "lote-demo-oct");
+}
+
+/** AAAA-MM-DD de hoy en la zona de la empresa (para la foto diaria de tasas, #86). */
+function hoyEn(zona: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: zona, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  } catch {
+    return relojSistema().ahora().slice(0, 10); // zona inválida: hora de Bogotá
+  }
 }
 
 /** Cuentas del equipo que firman (#106). Import dinámico: el equipo no se carga en tests del repositorio. */
