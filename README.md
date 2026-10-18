@@ -12,6 +12,14 @@ Cada empresa lo ve con su nombre: Quadra solo firma al pie («Powered by Quadra�
 
 **Demo en vivo:** https://web-production-6f160.up.railway.app
 
+**Cuentas de prueba** (contraseña `12345678` en las tres):
+
+| Rol | Correo | Qué puede hacer |
+|---|---|---|
+| Administrador | `admin.nebula@gmail.com` | Todo: reglas, moneda, proveedores, equipo y aprobar cualquier monto |
+| Aprobador | `aprobador.nebula@gmail.com` | Ver todo y aprobar o rechazar escaladas hasta USD 5.000 |
+| Tesorería | `tesorero.nebula@gmail.com` | Ver todo, subir y procesar facturas; no aprueba ni cambia reglas |
+
 > **El modelo solo lee. Las reglas deciden en código. Lo que no cumple espera a una persona, con la explicación escrita.**
 
 ![Bandeja: facturas recibidas, en qué quedó cada una y el presupuesto del mes](docs/capturas/bandeja.png)
