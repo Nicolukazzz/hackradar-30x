@@ -192,7 +192,7 @@ describe("proveedores HTTP (fetch simulado)", () => {
     expect(errores[0]).toBeInstanceOf(ErrorLLM);
 
     const caido = crearGroq({ apiKey: "k", fetch: (async () => respuesta(503, {})) as typeof fetch });
-    expect(await cadena([gemini, caido]).extraer(vacio, ["numero"])).toEqual({ proveedor_llm: "ninguno", sin_respuesta: true });
+    expect(await cadena([gemini, caido]).extraer(vacio, ["numero"])).toEqual({ proveedor_llm: "ninguno", sin_respuesta: true, fallo: "groq: HTTP 503" });
   });
 
   it("#103: GEMINI_MODEL admite lista; un modelo saturado (503) o retirado (404) pasa al siguiente", async () => {

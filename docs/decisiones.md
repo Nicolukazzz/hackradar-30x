@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 ```
 
 ---
+## 2026-10-18 — Doble lectura: la traza dice qué hizo cada lector
+- Estado: propuesta
+- Decisión: se mantiene «nunca paga con una sola lectura» (#58), pero cada extracción en modo doble guarda `senales_llm.lectores` (`leyo` · `fallo` con el error · `vacio`) y la traza lo muestra («Doble lectura: Gemini leyó · Groq falló (groq: HTTP 404)»). La cadena de proveedores conserva el último error (`fallo`). El panel de decisión dice por qué «Aprobar» está deshabilitado cuando el monto no es confiable.
+- Por qué: en producción las fotos quedaron en 50 % porque Groq no aportó nada y no había forma de ver por qué sin los logs de Railway; mientras se corrige, `LLM_PROVIDER=gemini` vuelve a la lectura simple.
+- Quién: J
+
 ## 2026-10-18 — Tasa de la fecha de emisión de la factura (#86)
 - Estado: propuesta
 - Decisión: el agente convierte cada factura con la tasa de su **fecha de emisión** (NIC 21: la de la fecha de la transacción), no la del día en que la procesa. Antes de decidir, `procesarDocumento` llama `repo.prepararTasas(fecha_emision)`: si no hay foto guardada de esa fecha, la pide a la fuente histórica (`crearFuenteHistorica`, currency-api de fawazahmed0 por jsDelivr con espejo en Cloudflare Pages, gratis y sin llave) y la guarda en `tasas_dia`; si falla, no lanza. El motor sigue puro: `DatosComunes.tasas_diarias` trae todas las fotos y `tasasDeLaFactura` usa la de la fecha de emisión o la anterior más cercana; si no hay ninguna anterior, la más reciente hasta hoy; si la fecha de emisión no es confiable (falta, baja confianza, inválida o futura), la de hoy; sin fotos (dataset, memoria), la del periodo como antes. La decisión guarda `tasa_fecha` y la traza dice «MXN 18,41 · del 10/10/2026». El presupuesto descuenta el monto convertido con la tasa de emisión.

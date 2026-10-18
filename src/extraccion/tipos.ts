@@ -65,6 +65,8 @@ export type ExtraccionParcial = { [K in NombreCampo]?: Campo<ValoresCampos[K]> }
   proveedor_llm?: ProveedorLlm;
   /** se consultó al LLM y ningún proveedor respondió (503, 429, red…) */
   sin_respuesta?: true;
+  /** por qué no respondió (último error: "groq: HTTP 404"), para la traza */
+  fallo?: string;
 };
 
 /** Confianzas del parser (issue #4): etiqueta + valor válido / valor inferido sin etiqueta. */
