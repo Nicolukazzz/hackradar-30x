@@ -79,7 +79,7 @@ export function BotonCopiar({ enlace, descripcion, texto = "Copiar enlace" }: { 
 }
 
 /** Revocar un enlace (DELETE a `url`) y refrescar la lista. */
-export function BotonRevocar({ url, exito }: { url: string; exito: string }) {
+export function BotonRevocar({ url, exito, texto = "Revocar" }: { url: string; exito: string; texto?: string }) {
   const router = useRouter();
   const [ocupado, iniciar] = useTransition();
   function revocar() {
@@ -97,7 +97,7 @@ export function BotonRevocar({ url, exito }: { url: string; exito: string }) {
   return (
     <Button variant="ghost" className="h-11 gap-1.5 px-3" onClick={revocar} disabled={ocupado}>
       {ocupado ? <Loader2Icon className="animate-spin" aria-hidden /> : <XIcon aria-hidden />}
-      Revocar
+      {texto}
     </Button>
   );
 }

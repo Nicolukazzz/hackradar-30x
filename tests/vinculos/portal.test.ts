@@ -15,7 +15,7 @@ import { crearValorSesion, hashValor, sesionValida } from "@/vinculos/acceso";
 import type { AlmacenEnlaces } from "@/vinculos/almacen";
 import { formatearCodigo, generarCodigo, normalizarCodigo } from "@/vinculos/codigo";
 import { crearAlmacenEnlacesMemoria } from "@/vinculos/memoria";
-import { cambiarCodigo, crearEnlace, enlaceActivo, entrar, enviarFactura, listarEnlaces, misEnvios, revocarEnlace } from "@/vinculos/servicio";
+import { borrarEnlace, cambiarCodigo, crearEnlace, enlaceActivo, entrar, enviarFactura, listarEnlaces, misEnvios, revocarEnlace } from "@/vinculos/servicio";
 import { MENSAJE_INVALIDO, MENSAJE_NO_COINCIDE } from "@/vinculos/tipos";
 
 const AHORA = "2026-10-16T10:00:00-05:00";
@@ -105,6 +105,19 @@ describe("entrar (proveedor)", () => {
     const nuevo = (await enlaceActivo(almacen, token, AHORA))!;
     expect(sesionValida(valor, nuevo.id, nuevo.codigo_hash, AHORA)).toBe(false);
     await expect(entrar(almacen, token, { correo: "a@b.example", codigo: "aaaabbbb" }, AHORA)).resolves.toMatchObject({ id: r.enlace.id });
+  });
+});
+
+describe("borrar accesos (#119)", () => {
+  it("solo se borra un acceso revocado o vencido; uno activo no", async () => {
+    const r = await crear("Lumen", "a@b.example");
+    await expect(borrarEnlace(almacen, r.enlace.id, AHORA)).rejects.toMatchObject({ estado: 404 });
+    await revocarEnlace(almacen, r.enlace.id, AHORA);
+    await borrarEnlace(almacen, r.enlace.id, AHORA);
+    expect(await listarEnlaces(almacen, AHORA)).toHaveLength(0);
+    const v = await crear("Otro", "c@d.example", "BBBB-CCCC");
+    await borrarEnlace(almacen, v.enlace.id, "2026-11-16T10:00:01-05:00");
+    expect(await listarEnlaces(almacen, AHORA)).toHaveLength(0);
   });
 });
 

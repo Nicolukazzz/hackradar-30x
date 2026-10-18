@@ -59,6 +59,17 @@ describe("lote demo de punta a punta (§11.4)", () => {
     expect(res.status).toBe(400);
   });
 
+  it("filtro por mes (#119): lista los meses con facturas; un mes sin facturas no filtra (y la API da 404)", async () => {
+    const repo = await repoProcesado();
+    const b = await obtenerBandeja(repo, { mes: "2026-10" });
+    expect(b.meses).toEqual(["2026-10"]);
+    expect(b.mes_filtrado).toBe("2026-10");
+    expect(b.kpis.total).toBe(12);
+    const otro = await obtenerBandeja(repo, { mes: "2026-09" });
+    expect(otro.mes_filtrado).toBeNull();
+    expect((await getBandeja(peticion("http://x/api/bandeja?periodo=2026-09"))).status).toBe(404);
+  });
+
   it("presupuesto quincenal: el periodo sale de las reglas (no se cae a cero)", async () => {
     const repo = await repoProcesado();
     const v7 = await repo.reglasVigentes();

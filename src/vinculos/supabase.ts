@@ -63,6 +63,12 @@ export function crearAlmacenEnlacesSupabase(config: { url: string; claveSecreta:
       if (error) fallar(error, "cambiar código");
       return (data ?? []).length > 0;
     },
+    async borrar(id, ahora) {
+      // Solo lo que ya no sirve: revocado, o vencido según la hora del servidor.
+      const { data, error } = await db.from(TABLA).delete().eq("id", id).or(`revocado_en.not.is.null,expira_en.lte."${ahora}"`).select("id");
+      if (error) fallar(error, "borrar enlace");
+      return (data ?? []).length > 0;
+    },
     async registrarAcceso(id, ahora) {
       const { error } = await db.from(TABLA).update({ ultimo_acceso: ahora }).eq("id", id);
       if (error) fallar(error, "registrar acceso");

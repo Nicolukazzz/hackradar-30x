@@ -3,11 +3,10 @@ import { redirect } from "next/navigation";
 
 import { MonedaBaseProvider } from "@/app/_componentes/moneda-base";
 import { contarPendientes } from "@/app/_datos/aprobaciones";
-import { AppSidebar, MarcaTesorero } from "@/components/app-sidebar";
+import { AppSidebar, MarcaEmpresa } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { obtenerSesion } from "@/lib/auth/sesion";
 import { obtenerEmpresa } from "@/app/_datos/empresa";
-import { resumenOperacion } from "@/empresa/datos";
 
 export default async function PanelLayout({ children }: LayoutProps<"/">) {
   // Sin sesión (o cuenta desactivada) → /entrar. Cuenta que no es miembro de la empresa (#51) → /sin-permiso.
@@ -31,14 +30,14 @@ export default async function PanelLayout({ children }: LayoutProps<"/">) {
       </a>
       <AppSidebar
         usuario={{ nombre: sesion.nombre, correo: sesion.correo, rol: sesion.rol }}
-        empresa={empresa ? { nombre: empresa.nombre, resumen: resumenOperacion(empresa) } : null}
+        empresa={empresa ? { nombre: empresa.nombre } : null}
         pendientes={pendientes}
       />
       {/* Equivale a SidebarInset, pero como div: así la cabecera móvil es un banner propio y <main> solo tiene el contenido. */}
       <div data-slot="sidebar-inset" className="relative flex w-full min-w-0 flex-1 flex-col bg-background">
-        {/* En móvil la barra lateral se vuelve menú superior: marca + botón que abre el panel. */}
+        {/* En móvil la barra lateral se vuelve menú superior: empresa + botón que abre el panel. */}
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between bg-sidebar px-4 text-sidebar-foreground md:hidden">
-          <MarcaTesorero />
+          <MarcaEmpresa nombre={empresa?.nombre ?? "Tu empresa"} />
           <SidebarTrigger
             aria-label="Abrir menú"
             className="size-11 rounded-[10px] text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground [&_svg]:size-5"

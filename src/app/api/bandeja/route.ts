@@ -17,9 +17,9 @@ export const GET = conSesion(async (req: Request) => {
   try {
     const c = Consulta.safeParse(Object.fromEntries(new URL(req.url).searchParams));
     if (!c.success) return error(400, "Parámetros inválidos: decision es todas|pagar|frenar|escalar y periodo AAAA-MM.");
-    const bandeja = await obtenerBandeja(await obtenerRepositorio(), c.data);
-    // Por ahora hay un solo periodo cargado (el del escenario).
-    if (c.data.periodo && c.data.periodo !== bandeja.periodo) return error(404, `No hay datos del periodo ${c.data.periodo}.`);
+    // `periodo` filtra por el mes en que se recibieron las facturas (#119).
+    const bandeja = await obtenerBandeja(await obtenerRepositorio(), { decision: c.data.decision, q: c.data.q, mes: c.data.periodo });
+    if (c.data.periodo && !bandeja.meses.includes(c.data.periodo)) return error(404, `No hay facturas del periodo ${c.data.periodo}.`);
     return ok(bandeja);
   } catch (e) {
     return manejar(e);

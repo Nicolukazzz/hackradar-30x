@@ -39,6 +39,10 @@ export type RespuestaBandeja = {
   periodo: string;
   /** mes calendario del lote, para mostrar ("2026-10") */
   mes: string;
+  /** meses con facturas, el más reciente primero (filtro de periodo de la Bandeja, #119) */
+  meses: string[];
+  /** mes filtrado ("2026-10") o null = todos */
+  mes_filtrado: string | null;
   /** cuándo decidió el agente (null si aún no hay lote) */
   procesado_en: string | null;
   /** documentos del escenario que esperan "Procesar facturas nuevas" */
@@ -79,15 +83,21 @@ function suma(lote: EntradaRegistro[], d: DecisionAgente): ConteoMonto {
   return { n: de.length, usd_centavos: de.reduce((s, e) => s + (e.monto_usd_centavos ?? 0), 0) };
 }
 
-export async function obtenerBandeja(repo: Repositorio, opciones: { decision?: FiltroDecision; q?: string } = {}): Promise<RespuestaBandeja> {
-  const [{ registro, lote }, esc, reglas, datos, pendientes] = await Promise.all([
+export type OpcionesBandeja = { decision?: FiltroDecision; q?: string; /** "AAAA-MM": solo facturas recibidas ese mes */ mes?: string };
+
+export async function obtenerBandeja(repo: Repositorio, opciones: OpcionesBandeja = {}): Promise<RespuestaBandeja> {
+  const [{ registro, lote: todoElLote }, esc, reglas, datos, pendientes] = await Promise.all([
     entradasDelLote(repo),
     repo.escenario(),
     repo.reglasVigentes(),
     repo.datosComunes(),
     repo.pendientes(),
   ]);
-  const ahora = esc?.config.ahora ?? lote.at(-1)?.momento ?? "";
+  const ahora = esc?.config.ahora ?? todoElLote.at(-1)?.momento ?? "";
+  // Filtro de periodo (#119): KPIs y filas del mes elegido; el presupuesto sigue siendo el del periodo vigente.
+  const meses = [...new Set(todoElLote.map((e) => e.momento.slice(0, 7)))].sort((a, b) => b.localeCompare(a));
+  const mes_filtrado = opciones.mes && meses.includes(opciones.mes) ? opciones.mes : null;
+  const lote = mes_filtrado ? todoElLote.filter((e) => e.momento.startsWith(mes_filtrado)) : todoElLote;
   const tipo = reglas.presupuesto.periodo;
   // El periodo de presupuesto sale del tipo de las reglas vigentes (mensual, quincenal o trimestral), no del escenario.
   const periodo = periodoDe(ahora, tipo);
@@ -148,6 +158,8 @@ export async function obtenerBandeja(repo: Repositorio, opciones: { decision?: F
   return {
     periodo,
     mes: (esc?.config.ahora ?? ahora).slice(0, 7),
+    meses,
+    mes_filtrado,
     procesado_en: lote.length > 0 ? ahora : null,
     por_procesar: pendientes.length,
     moneda_base: monedaBase(reglas),
