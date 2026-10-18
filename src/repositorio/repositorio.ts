@@ -14,6 +14,7 @@ import type {
   TipoEntrada,
 } from "@/dominio/tipos";
 import type { DocGolden } from "@/evaluacion/escenario";
+import type { TasasVigentes } from "@/tasas/tipos";
 
 export type FiltroRegistro = {
   tipo?: TipoEntrada[];
@@ -54,6 +55,11 @@ export interface Repositorio {
   /** Guarda una versión nueva (la siguiente a la vigente) y devuelve su número. */
   guardarReglas(r: Omit<Reglas, "version">): Promise<number>;
   guardarBeneficiario(b: Beneficiario): Promise<void>;
+  /**
+   * Tasas del día que usa el agente (#86) y de dónde salieron. null = tasas fijas del set de prueba (memoria, demo).
+   * Producción: la foto del día de `tasas_dia`, o la última si la fuente falla.
+   */
+  tasasVigentes(): Promise<TasasVigentes | null>;
   /** Reemplaza un beneficiario creado en la app (#107). Lanza si no existe o es uno base del escenario de prueba. */
   actualizarBeneficiario(b: Beneficiario): Promise<void>;
   /**

@@ -20,6 +20,6 @@ export function r08Mensual(ctx: ContextoRegla) {
   const total = acumulado + usd;
   const datos = { acumulado_usd: acumulado, monto_usd: usd, total_usd: total, limite_usd: limite, periodo };
   const signo = total > limite ? ">" : "≤";
-  const texto = `${formatearUsd(acumulado)} + ${formatearUsd(usd)} = ${formatearUsd(total)} ${signo} ${formatearUsd(limite)} USD`;
+  const texto = `${formatearUsd(acumulado)} + ${formatearUsd(usd)} = ${formatearUsd(total)} ${signo} ${formatearUsd(limite)} ${ctx.tasas.base}`;
   return evaluacion("R8", total > limite ? "FALLA" : "CUMPLE", texto, datos);
 }

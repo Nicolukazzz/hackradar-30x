@@ -11,6 +11,6 @@ export function r07Presupuesto(ctx: ContextoRegla) {
   const p = ctx.presupuesto;
   const datos = { monto_usd: usd, disponible_usd: p.disponible, periodo: p.periodo, reservado_usd: p.reservado };
   const signo = usd > p.disponible ? ">" : "≤";
-  const texto = `${formatearUsd(usd)} ${signo} ${p.disponible < 0 ? "-" : ""}${formatearUsd(Math.abs(p.disponible))} USD disponibles al evaluar`;
+  const texto = `${formatearUsd(usd)} ${signo} ${p.disponible < 0 ? "-" : ""}${formatearUsd(Math.abs(p.disponible))} ${ctx.tasas.base} disponibles al evaluar`;
   return evaluacion("R7", usd > p.disponible ? "FALLA" : "CUMPLE", texto, datos);
 }

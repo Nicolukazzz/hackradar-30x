@@ -10,6 +10,6 @@ export function r09Automatico(ctx: ContextoRegla) {
   if (usd === null) return evaluacion("R9", "NO_APLICA", SIN_DATO);
   const limite = ctx.reglas.limites.pago_automatico_usd;
   const datos = { monto_usd: usd, limite_usd: limite };
-  if (usd > limite) return evaluacion("R9", "FALLA", `${formatearUsd(usd)} > ${formatearUsd(limite)} USD`, datos);
-  return evaluacion("R9", "CUMPLE", `${formatearUsd(usd)} ≤ ${formatearUsd(limite)} USD`, datos);
+  if (usd > limite) return evaluacion("R9", "FALLA", `${formatearUsd(usd)} > ${formatearUsd(limite)} ${ctx.tasas.base}`, datos);
+  return evaluacion("R9", "CUMPLE", `${formatearUsd(usd)} ≤ ${formatearUsd(limite)} ${ctx.tasas.base}`, datos);
 }

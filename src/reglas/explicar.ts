@@ -2,7 +2,7 @@
 // Orden: primero lo que frena, después lo que escala; dentro de cada grupo, R1 → R11. Se unen con "Además,".
 
 import { correoDeInvitacion, esRemitenteInvitacion } from "@/dominio/remitente";
-import { formatear, formatearUsd, porcentaje } from "@/dominio/dinero";
+import { formatear, formatearBase, monedaBase, porcentaje } from "@/dominio/dinero";
 import type { Beneficiario, DecisionAgente, DocumentoRecibido, EvaluacionRegla, Extraccion, IdRegla, Reglas } from "@/dominio/tipos";
 
 import { fechaDe, fechaLegible, horaDe } from "./fechas";
@@ -19,7 +19,8 @@ export type EntradaExplicacion = {
   ahora: string;
 };
 
-const usd = (centavos: number) => `USD ${centavos < 0 ? "-" : ""}${formatearUsd(Math.abs(centavos))}`;
+/** Monto en la moneda de las reglas (#86): "USD 3.000,00", "COP 12.600.000". */
+const enBase = (centavos: number, reglas: Pick<Reglas, "moneda">) => formatearBase(centavos, monedaBase(reglas));
 type Dato = EvaluacionRegla["datos"][string] | undefined;
 const texto = (v: Dato) => (v === null || v === undefined ? "" : String(v));
 const numero = (v: Dato) => (typeof v === "number" ? v : 0);
@@ -84,14 +85,14 @@ const FRASES: Record<IdRegla, (f: Frase) => string> = {
     `la cuenta de la factura (•••• ${texto(d.cuenta_factura)}) no es la registrada para ${nombre} (•••• ${texto(d.cuenta_registrada)}).`,
   R5: ({ d, nombre }) =>
     `${nombre} cobra ${texto(d.cobrado)}, pero ${texto(d.referencia)} acordó ${texto(d.acordado)} (${porcentaje(numero(d.diferencia_pct))}; la tolerancia es ${tolerancia(numero(d.tolerancia_pct))}).`,
-  R6: ({ d, sujeto }) => `${sujeto} supera el máximo absoluto por pago de ${usd(numero(d.maximo_usd))}.`,
-  R7: ({ d, monto }) =>
-    `el pago (${monto}) supera el presupuesto disponible de ${usd(numero(d.disponible_usd))}, que ya descuenta lo reservado por escalados.`,
+  R6: ({ d, x, sujeto }) => `${sujeto} supera el máximo absoluto por pago de ${enBase(numero(d.maximo_usd), x.reglas)}.`,
+  R7: ({ d, x, monto }) =>
+    `el pago (${monto}) supera el presupuesto disponible de ${enBase(numero(d.disponible_usd), x.reglas)}, que ya descuenta lo reservado por escalados.`,
   R8: ({ d, x, nombre }) => {
     const periodo = x.reglas.presupuesto.periodo === "mensual" ? "el mes" : "el periodo";
-    return `con este pago ${nombre} llegaría a ${usd(numero(d.total_usd))} en ${periodo}, sobre su límite de ${usd(numero(d.limite_usd))}.`;
+    return `con este pago ${nombre} llegaría a ${enBase(numero(d.total_usd), x.reglas)} en ${periodo}, sobre su límite de ${enBase(numero(d.limite_usd), x.reglas)}.`;
   },
-  R9: ({ d, sujeto }) => `${sujeto} supera el límite de pago automático de ${usd(numero(d.limite_usd))}.`,
+  R9: ({ d, x, sujeto }) => `${sujeto} supera el límite de pago automático de ${enBase(numero(d.limite_usd), x.reglas)}.`,
   R10: ({ d, x, de }) => `el ${CANAL[x.doc.canal]}${de} traía instrucciones para el agente («${texto(d.frase ?? d.fragmento)}»); se ignoraron.`,
   R11: ({ x, nombre }) => {
     const v = x.doc.remitente.valor;
@@ -113,7 +114,7 @@ function fraseRegla(e: EvaluacionRegla, x: EntradaExplicacion, nombre: string, n
   }
   // Sin nombre legible no se escribe "la factura de El beneficiario".
   const de = nombrado || nombre === SIN_NOMBRE ? "" : " de " + nombre;
-  const monto = x.monto_usd_centavos === null ? "el monto" : usd(x.monto_usd_centavos);
+  const monto = x.monto_usd_centavos === null ? "el monto" : enBase(x.monto_usd_centavos, x.reglas);
   const sujeto = nombrado ? monto : "la factura" + de + " (" + monto + ")";
   return FRASES[e.id]({ e, d, x, nombre, de, monto, sujeto });
 }
@@ -132,8 +133,8 @@ function explicarPago(x: EntradaExplicacion, nombre: string): string {
   const cuenta = `La cuenta •••• ${texto(r4?.datos.cuenta_factura)} es la registrada para ${nombre}`;
   const original = x.ext.monto_total.valor;
   const monto = x.monto_usd_centavos ?? 0;
-  const montoTexto = original && original.moneda !== "USD" ? `${formatear(original)} = ${usd(monto)}` : usd(monto);
-  return sinPuntoDoble(`Pagada: ${acuerdo}. ${cuenta}. Bajo el límite automático (${montoTexto} ≤ ${usd(x.reglas.limites.pago_automatico_usd)}).`);
+  const montoTexto = original && original.moneda !== monedaBase(x.reglas) ? `${formatear(original)} = ${enBase(monto, x.reglas)}` : enBase(monto, x.reglas);
+  return sinPuntoDoble(`Pagada: ${acuerdo}. ${cuenta}. Bajo el límite automático (${montoTexto} ≤ ${enBase(x.reglas.limites.pago_automatico_usd, x.reglas)}).`);
 }
 
 export function explicar(x: EntradaExplicacion): string {
@@ -161,8 +162,8 @@ export function explicar(x: EntradaExplicacion): string {
   let cierre = "";
   if (x.decision === "ESCALAR" && x.monto_usd_centavos !== null) {
     cierre = x.reglas.presupuesto.contar_escalado_como_reservado
-      ? ` Se reservan ${usd(x.monto_usd_centavos)} del presupuesto mientras una persona decide.`
-      : ` Monto por decidir: ${usd(x.monto_usd_centavos)}.`;
+      ? ` Se reservan ${enBase(x.monto_usd_centavos, x.reglas)} del presupuesto mientras una persona decide.`
+      : ` Monto por decidir: ${enBase(x.monto_usd_centavos, x.reglas)}.`;
   }
   return sinPuntoDoble(`${prefijo}: ${frases.join(" Además, ")}${cierre}`);
 }
@@ -173,7 +174,7 @@ export function observaciones(monto_usd_centavos: number | null, reglas: Reglas)
   if (monto_usd_centavos === null || monto_usd_centavos > limite) return [];
   const dif = limite - monto_usd_centavos;
   if (dif * 100 > limite) return [];
-  return [dif === 0 ? "El monto es exactamente el límite automático." : `El monto está a ${usd(dif)} del límite automático.`];
+  return [dif === 0 ? "El monto es exactamente el límite automático." : `El monto está a ${enBase(dif, reglas)} del límite automático.`];
 }
 
 export const EXPLICACION_ERROR = "Error interno al evaluar: se escala por seguridad.";

@@ -55,7 +55,7 @@ export const EmpresaSchema = z.strictObject({
 
 export const TablaTasasSchema = z.strictObject({
   periodo: z.string().regex(/^\d{4}-\d{2}$/),
-  base: z.literal("USD"),
+  base: MonedaSchema,
   tasas: z.partialRecord(MonedaSchema, tasa),
 }) satisfies z.ZodType<TablaTasas>;
 
@@ -81,6 +81,7 @@ export const ReglasSchema = z
     extraccion: z.strictObject({ confianza_minima: z.number().min(0).max(1) }),
     aprobacion: z.strictObject({ doble_aprobacion_desde_usd: centavos }),
     activas: z.record(IdReglaSchema, z.boolean()),
+    moneda: MonedaSchema.optional(),
     identidad: z.strictObject({ modo: z.enum(["nombre", "nombre_y_nit", "nit"]) }).optional(),
     requisitos: z.strictObject({ obligatorios: z.array(z.enum(CAMPOS_REQUERIBLES)).max(CAMPOS_REQUERIBLES.length) }).optional(),
   })

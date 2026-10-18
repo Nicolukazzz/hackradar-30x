@@ -21,6 +21,10 @@ import { cargarGolden, type DocGolden } from "@/evaluacion/escenario";
 import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
 import { reglasSinConfigurar } from "@/reglas/sin-configurar";
+import { crearFuenteErApi } from "@/tasas/fuente-er-api";
+import { tasasVigentes as calcularTasasVigentes } from "@/tasas/servicio";
+import { almacenTasasSupabase } from "@/tasas/supabase";
+import type { FuenteTasas, TasasVigentes } from "@/tasas/tipos";
 
 import { coincideFiltro, conVinculosTelegram, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
 import type { CambiosEmpresa, Repositorio, ResumenVersion } from "./repositorio";
@@ -33,6 +37,10 @@ export type ConfigSupabase = {
   dir?: string;
   /** cuentas del equipo que firman (#106); en demo se suman a las de data/aprobadores.json */
   aprobadores?: () => Promise<Aprobador[]>;
+  /** fecha de hoy (AAAA-MM-DD) en la zona de la empresa, para la foto de tasas (#86). Solo producción. */
+  hoy?: (zona: string) => string;
+  /** de dónde salen las tasas del día (#86); por defecto open.er-api.com */
+  fuenteTasas?: FuenteTasas;
 };
 
 const BUCKET = "documentos";
@@ -89,6 +97,18 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
   const refsGolden = new Set(docsDemo.map((d) => d.doc.ref_interna));
   const archivoGolden = new Map(demo ? demo.docs.map((d) => [d.doc.ref_interna, path.join(carpeta, d.esperado.documento)]) : []);
   if (demo) await sembrar(db, demo.datos.reglas.versiones, historialDemo);
+
+  // #86: en producción las tasas son las del día (foto en `tasas_dia`), no las fijas de data/.
+  const tasasDelDia = !demo && config.hoy ? { almacen: almacenTasasSupabase(db), fuente: config.fuenteTasas ?? crearFuenteErApi() } : null;
+  const hoy = config.hoy;
+  async function tasasVigentes(): Promise<TasasVigentes | null> {
+    if (!tasasDelDia || !hoy) return null;
+    const emp = await empresa();
+    return calcularTasasVigentes(emp.moneda_base, hoy(emp.zona_horaria), {
+      ...tasasDelDia,
+      alFallar: (e) => console.error(JSON.stringify({ tasas: "falló la fuente", error: e instanceof Error ? e.message : String(e) })),
+    });
+  }
 
   /** Sin reglas guardadas (producción recién creada): versión 0, todo escala. */
   const vigenteDe = (vs: readonly Reglas[]): Reglas => (vs.length > 0 ? versionVigente(vs) : reglasSinConfigurar());
@@ -166,10 +186,12 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
 
   return {
     async datosComunes() {
-      const [vs, bs, emp, aps] = await Promise.all([versiones(), beneficiarios(), empresa(), aprobadores()]);
-      return { ...comunes, empresa: emp, beneficiarios: bs, aprobadores: aps, reglas: { vigente: vigenteDe(vs), versiones: vs } };
+      const [vs, bs, emp, aps, tv] = await Promise.all([versiones(), beneficiarios(), empresa(), aprobadores(), tasasVigentes()]);
+      const tasas = tv ? { [tv.tabla.periodo]: tv.tabla } : comunes.tasas;
+      return { ...comunes, empresa: emp, beneficiarios: bs, aprobadores: aps, tasas, reglas: { vigente: vigenteDe(vs), versiones: vs } };
     },
     empresa,
+    tasasVigentes,
     async guardarEmpresa(cambios: CambiosEmpresa) {
       const actual = await empresa();
       const { error } = await db

@@ -127,7 +127,7 @@ function aReglas(f: Formulario, base: Reglas): { reglas: Reglas | null; errores:
   const ventana = /^\d+$/.test(f.ventana.trim()) ? Number(f.ventana) : null;
   if (ventana === null || ventana < 1 || ventana > 365) errores.ventana = "Escribe un número de días entre 1 y 365.";
   if (!errores.automatico && !errores.maximo && automatico > maximo)
-    errores.automatico = `No puede superar el máximo absoluto por pago (R6, USD ${escribirUsd(maximo)}).`;
+    errores.automatico = `No puede superar el máximo absoluto por pago (R6, ${base.moneda ?? "USD"} ${escribirUsd(maximo)}).`;
   if (Object.keys(errores).length > 0) return { reglas: null, errores };
   return {
     errores,
@@ -145,6 +145,14 @@ function aReglas(f: Formulario, base: Reglas): { reglas: Reglas | null; errores:
         : { requisitos: { obligatorios: CAMPOS_REQUERIBLES.filter((c) => f.requisitos.includes(c)) } }),
     },
   };
+}
+
+/** Pie de la tabla de tasas: fuente y fecha, o por qué no hay (#86). */
+function textoTasas(origen: { fecha: string | null; fuente: string | null; estado: "hoy" | "anterior" | "ninguna" } | null | undefined): string {
+  if (!origen) return "Tabla fija ficticia del set de prueba, sin datos de mercado reales. Cada decisión guarda la tasa que usó.";
+  if (origen.estado === "ninguna") return "No hay tasas del día: la fuente no respondió y no hay una foto anterior. Las facturas en otras monedas esperan a una persona (R1).";
+  const cuando = origen.estado === "hoy" ? `de hoy (${origen.fecha})` : `del ${origen.fecha}: la fuente no respondió hoy y se usa la última`;
+  return `Tasas ${cuando}, de ${origen.fuente}. Cada decisión guarda la tasa que usó.`;
 }
 
 const mismoConjunto = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x) => b.includes(x));
@@ -189,6 +197,7 @@ export function EditorReglas({
   historial,
   simulacionInicial,
   usoTasas,
+  tasasOrigen,
   aprobadores,
   beneficiarios,
   permisoGuardar,
@@ -199,12 +208,16 @@ export function EditorReglas({
   historial: { version: number; editada_por: string; editada_en: string }[];
   simulacionInicial: ReporteEvaluacion | null;
   usoTasas: UsoTasa[];
+  /** #86: de dónde salieron las tasas; null = tabla fija del set de prueba */
+  tasasOrigen?: { fecha: string | null; fuente: string | null; estado: "hoy" | "anterior" | "ninguna" } | null;
   aprobadores: Aprobador[];
   beneficiarios: FilaBeneficiario[];
 }) {
   const router = useRouter();
   // Solo las monedas que aparecen en el lote; si ninguna, todas (tabla de referencia).
   const tasas = usoTasas.some((u) => u.facturas > 0) ? usoTasas.filter((u) => u.facturas > 0) : usoTasas;
+  // #86: límites y presupuesto están en la moneda de las reglas (la base de la empresa).
+  const base = vigente.moneda ?? "USD";
   const [f, setF] = useState(() => desdeReglas(vigente));
   const [sim, setSim] = useState<Simulacion>(() =>
     simulacionInicial
@@ -398,11 +411,11 @@ export function EditorReglas({
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Tarjeta as="section" aria-labelledby="lim">
-          <TarjetaEncabezado id="lim" titulo="Límites por pago" descripcion="Montos en USD después de convertir con la tasa fija." />
+          <TarjetaEncabezado id="lim" titulo="Límites por pago" descripcion={`Montos en ${base} después de convertir con la tasa ${tasasOrigen ? "del día" : "fija"}.`} />
           <div className="grid gap-4 px-6 pb-6 sm:grid-cols-2">
-            <Campo id="r9" etiqueta="Límite de pago automático · R9" prefijo="USD" valor={f.automatico} error={errores.automatico} onChange={(x) => cambiar("automatico", x)} ayuda="Por encima de este monto, el agente escala a una persona." />
-            <Campo id="r6" etiqueta="Máximo absoluto por pago · R6" prefijo="USD" valor={f.maximo} error={errores.maximo} onChange={(x) => cambiar("maximo", x)} ayuda="Por encima de este monto, el agente frena el pago." />
-            <Campo id="r8" etiqueta="Límite mensual por beneficiario · R8" prefijo="USD" valor={f.mensual} error={errores.mensual} onChange={(x) => cambiar("mensual", x)} ayuda="Valor por defecto; cada beneficiario puede tener el suyo." />
+            <Campo id="r9" etiqueta="Límite de pago automático · R9" prefijo={base} valor={f.automatico} error={errores.automatico} onChange={(x) => cambiar("automatico", x)} ayuda="Por encima de este monto, el agente escala a una persona." />
+            <Campo id="r6" etiqueta="Máximo absoluto por pago · R6" prefijo={base} valor={f.maximo} error={errores.maximo} onChange={(x) => cambiar("maximo", x)} ayuda="Por encima de este monto, el agente frena el pago." />
+            <Campo id="r8" etiqueta="Límite mensual por beneficiario · R8" prefijo={base} valor={f.mensual} error={errores.mensual} onChange={(x) => cambiar("mensual", x)} ayuda="Valor por defecto; cada beneficiario puede tener el suyo." />
             <Campo id="r5" etiqueta="Tolerancia contra lo acordado · R5" sufijo="%" valor={f.tolerancia} error={errores.tolerancia} onChange={(x) => cambiar("tolerancia", x)} ayuda="Diferencia máxima con el contrato u orden de compra." />
           </div>
         </Tarjeta>
@@ -421,7 +434,7 @@ export function EditorReglas({
                   <option value="trimestral">Trimestral</option>
                 </select>
               </div>
-              <Campo id="r7" etiqueta="Presupuesto" prefijo="USD" valor={f.presupuesto} error={errores.presupuesto} onChange={(x) => cambiar("presupuesto", x)} />
+              <Campo id="r7" etiqueta="Presupuesto" prefijo={base} valor={f.presupuesto} error={errores.presupuesto} onChange={(x) => cambiar("presupuesto", x)} />
             </div>
             <label className="flex items-start gap-3 rounded-[10px] bg-superficie-2 px-3.5 py-3 text-sm leading-relaxed">
               <input type="checkbox" checked={f.reservado} onChange={(e) => cambiar("reservado", e.target.checked)} className="mt-1 size-[18px] flex-none accent-primary" />
@@ -433,12 +446,12 @@ export function EditorReglas({
           </div>
           {tasas.length > 0 ? (
             <div className="border-t border-subtle px-6 py-4">
-              <h3 className="mb-2 text-sm font-semibold">Tasas de cambio fijas del periodo</h3>
+              <h3 className="mb-2 text-sm font-semibold">{tasasOrigen ? "Tasas de cambio del día" : "Tasas de cambio fijas del periodo"}</h3>
               <table className="w-full text-left text-sm">
                 <thead className="text-xs text-muted-foreground">
                   <tr>
                     <th scope="col" className="py-1 font-medium">Moneda</th>
-                    <th scope="col" className="py-1 text-right font-medium">1 USD =</th>
+                    <th scope="col" className="py-1 text-right font-medium">1 {base} =</th>
                     <th scope="col" className="py-1 text-right font-medium">Uso en el lote</th>
                   </tr>
                 </thead>
@@ -449,7 +462,7 @@ export function EditorReglas({
                         <span className="font-mono">{u.moneda}</span>
                         {MONEDAS[u.moneda] ? <span className="text-muted-foreground"> · {MONEDAS[u.moneda]}</span> : null}
                       </td>
-                      <td className="py-1.5 text-right font-mono tabular-nums">{formatearTasa(u.moneda, { periodo: "", base: "USD", tasas: { [u.moneda]: u.tasa } })?.slice(u.moneda.length + 1)}</td>
+                      <td className="py-1.5 text-right font-mono tabular-nums">{formatearTasa(u.moneda, { periodo: "", base, tasas: { [u.moneda]: u.tasa } })?.slice(u.moneda.length + 1)}</td>
                       <td className="py-1.5 text-right text-muted-foreground">{u.facturas === 1 ? "1 factura" : `${u.facturas} facturas`}</td>
                     </tr>
                   ))}
@@ -457,7 +470,7 @@ export function EditorReglas({
               </table>
             </div>
           ) : null}
-          <TarjetaPie>Tabla fija ficticia, sin datos de mercado reales. Cada decisión guarda la tasa que usó.</TarjetaPie>
+          <TarjetaPie>{textoTasas(tasasOrigen)}</TarjetaPie>
         </Tarjeta>
 
         <ListaReglas id="esc" titulo="Cuándo escalar a una persona" descripcion="El pago se reserva y espera aprobación." ids={ESCALAN} activas={f.activas} onToggle={(id, x) => cambiar("activas", { ...f.activas, [id]: x })} />
@@ -483,7 +496,7 @@ export function EditorReglas({
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="text-sm font-semibold">{a.nombre}</span>
                   <span className="text-xs text-muted-foreground">
-                    {a.rol} · {a.limite_usd === null ? "aprueba cualquier monto" : `hasta USD ${escribirUsd(a.limite_usd).replace(/,00$/, "")}`}
+                    {a.rol} · {a.limite_usd === null ? "aprueba cualquier monto" : `hasta ${base} ${escribirUsd(a.limite_usd).replace(/,00$/, "")}`}
                   </span>
                 </span>
                 {a.principal ? <span className="rounded-full bg-brand px-2.5 py-0.5 text-xs font-semibold text-brand-foreground">Principal</span> : null}
@@ -491,7 +504,7 @@ export function EditorReglas({
             ))}
           </ul>
           <div className="px-6 pt-4 pb-6">
-            <Campo id="doble" etiqueta="Dos aprobaciones desde" prefijo="USD" valor={f.doble} error={errores.doble} onChange={(x) => cambiar("doble", x)} ayuda="Desde este monto hacen falta dos personas distintas." />
+            <Campo id="doble" etiqueta="Dos aprobaciones desde" prefijo={base} valor={f.doble} error={errores.doble} onChange={(x) => cambiar("doble", x)} ayuda="Desde este monto hacen falta dos personas distintas." />
           </div>
         </Tarjeta>
 
