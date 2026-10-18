@@ -11,7 +11,7 @@ import { extractorReal } from "@/ingesta/pipeline";
 import type { Sesion } from "@/lib/auth/permisos";
 import type { Repositorio } from "@/repositorio/repositorio";
 import { crearRepositorioMemoria } from "@/repositorio/memoria";
-import { catalogoEjemplos, enviarEjemplo } from "@/servicios/facturas-ejemplo";
+import { catalogoConEstado, catalogoEjemplos, enviarEjemplo } from "@/servicios/facturas-ejemplo";
 import { crearProveedor } from "@/servicios/proveedores";
 import { sinVersion } from "@/servicios/reglas";
 
@@ -49,6 +49,15 @@ describe("facturas de ejemplo", () => {
     const r = await enviarEjemplo("06-proveedor-desconocido-delta.pdf", ADMIN, deps());
     expect(r.estado).toBe("FRENAR");
     expect((await repo.documento(r.ref_interna))?.remitente).toEqual({ tipo: "correo", valor: ADMIN.correo });
+  });
+
+  it("el catálogo dice qué ya se envió y en qué quedó (para no reenviarlo sin querer)", async () => {
+    const c = await catalogoConEstado(repo);
+    const enviada = c.find((f) => f.archivo === "andes-fe-2041.pdf");
+    expect(enviada?.enviada).toMatchObject({ estado: "PAGAR" });
+    expect(c.find((f) => f.archivo === "andes-fe-2042.pdf")?.enviada).toBeNull();
+    // La foto de la misma factura es otro archivo: no figura como enviada (por eso su reenvío es la trampa de R2).
+    expect(c.find((f) => f.archivo === "01-duplicado-andes-fe-2041.jpg")?.enviada).toBeNull();
   });
 
   it("no envía nada fuera del catálogo", async () => {

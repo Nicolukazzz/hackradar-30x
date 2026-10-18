@@ -9,8 +9,12 @@ import path from "node:path";
 
 import { z } from "zod";
 
+import { decisionAgente } from "@/aprobaciones/decidir";
+import { sha256 } from "@/ingesta/ingerir";
 import type { Sesion } from "@/lib/auth/permisos";
+import type { Repositorio } from "@/repositorio/repositorio";
 
+import { type EstadoFactura, estadoActual } from "./comun";
 import { type DependenciasSubida, ErrorSubida, type ResultadoSubida, subirDocumento } from "./subida";
 
 /** Carpeta del set, relativa a la raíz del proyecto (viaja con el deploy, como `data/`). */
@@ -44,6 +48,30 @@ export async function catalogoEjemplos(raiz: string = process.cwd()): Promise<Fa
     return [];
   }
   return z.array(EntradaCatalogoSchema).parse(JSON.parse(crudo));
+}
+
+/** Factura del catálogo y, si ya se envió, su primera ref y en qué quedó hoy (decisión humana incluida). */
+export type FacturaEjemploConEstado = FacturaEjemplo & { enviada: { ref_interna: string; estado: EstadoFactura } | null };
+
+/**
+ * Catálogo con lo que ya pasó en esta instalación: así varias personas pueden probar sin reenviar lo mismo (un
+ * reenvío se frena por duplicado, R2). Se reconoce por la huella del archivo, la misma que usa R2.
+ */
+export async function catalogoConEstado(repo: Repositorio, raiz: string = process.cwd()): Promise<FacturaEjemploConEstado[]> {
+  const [catalogo, documentos, registro] = await Promise.all([catalogoEjemplos(raiz), repo.documentos(), repo.registro()]);
+  const primera = new Map<string, { ref: string; recibido: string }>();
+  for (const d of documentos) {
+    const previa = primera.get(d.sha256);
+    if (!previa || d.recibido_en < previa.recibido) primera.set(d.sha256, { ref: d.ref_interna, recibido: d.recibido_en });
+  }
+  return Promise.all(
+    catalogo.map(async (f) => {
+      const bytes = await readFile(/*turbopackIgnore: true*/ path.join(/*turbopackIgnore: true*/ raiz, CARPETA_EJEMPLOS, f.carpeta, f.archivo));
+      const ref = primera.get(sha256(bytes))?.ref;
+      const agente = ref ? decisionAgente(registro, ref) : null;
+      return { ...f, enviada: ref && agente ? { ref_interna: ref, estado: estadoActual(registro, agente).estado } : null };
+    }),
+  );
 }
 
 /**
