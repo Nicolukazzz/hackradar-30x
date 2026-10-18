@@ -36,7 +36,7 @@ export default async function MonedaPage() {
   const base = empresa.moneda_base;
   // Producción: tasas del día. Demo/local: la tabla fija más reciente del set de prueba.
   const tabla = vivas?.tabla ?? Object.values(datos.tasas).sort((a, b) => b.periodo.localeCompare(a.periodo))[0] ?? null;
-  const filas = tabla ? (Object.keys(tabla.tasas) as Moneda[]).filter((m) => m !== base).sort() : [];
+  const filas = tabla ? (Object.keys(tabla.tasas) as Moneda[]).filter((m) => m !== base).sort((a, b) => a.localeCompare(b)) : [];
   let pie = "Tabla fija ficticia del set de prueba (sin datos de mercado). En producción se usan las tasas del día.";
   if (vivas?.estado === "hoy") pie = `Tasas de hoy (${vivas.fecha}), de ${vivas.fuente}. Cada decisión guarda la tasa que usó.`;
   if (vivas?.estado === "anterior") pie = `La fuente no respondió hoy: se usan las del ${vivas.fecha} (${vivas.fuente}).`;

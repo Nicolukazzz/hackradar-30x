@@ -52,7 +52,7 @@ async function planear(repo: Repositorio, equipo: AlmacenEquipo, nueva: Moneda):
   const [empresa, vigentes, datos, miembros] = await Promise.all([repo.empresa(), repo.tasasVigentes(), repo.datosComunes(), equipo.miembros(EMPRESA_ID)]);
   const actual = empresa.moneda_base;
   if (nueva === actual) throw new ErrorMoneda(400, `La moneda base ya es ${actual}.`);
-  if (!vigentes || vigentes.tabla.base !== actual) throw new ErrorMoneda(409, "No hay tasas del día de la moneda actual: no se puede convertir con seguridad. Intenta más tarde.");
+  if (vigentes?.tabla.base !== actual) throw new ErrorMoneda(409, "No hay tasas del día de la moneda actual: no se puede convertir con seguridad. Intenta más tarde.");
   const tasa = vigentes.tabla.tasas[nueva];
   if (!tasa) throw new ErrorMoneda(409, `La fuente de tasas no tiene ${nueva}.`);
 
@@ -120,11 +120,13 @@ export async function cambiarMonedaBase(
   // 2 y 3. Límites de proveedores y de aprobadores.
   return repo.enExclusiva(async () => {
     const datos = await repo.datosComunes();
-    for (const p of plan.proveedores) {
-      const b = datos.beneficiarios.find((x) => x.id === p.id);
-      if (b) await repo.actualizarBeneficiario({ ...b, limite_mensual_usd: p.limite });
-    }
-    for (const a of plan.aprobadores) await equipo.cambiarMiembro(EMPRESA_ID, a.usuario_id, a.rol, a.limite, ahora);
+    await Promise.all(
+      plan.proveedores.map(async (p) => {
+        const b = datos.beneficiarios.find((x) => x.id === p.id);
+        if (b) await repo.actualizarBeneficiario({ ...b, limite_mensual_usd: p.limite });
+      }),
+    );
+    await Promise.all(plan.aprobadores.map((a) => equipo.cambiarMiembro(EMPRESA_ID, a.usuario_id, a.rol, a.limite, ahora)));
     // 4. Al final la empresa: desde aquí las tasas del día salen en la moneda nueva.
     const empresa = await repo.empresa();
     await repo.guardarEmpresa({ nombre: empresa.nombre, jurisdiccion: empresa.jurisdiccion, paises_operacion: empresa.paises_operacion, moneda_base: nueva });

@@ -8,7 +8,7 @@ import type { Moneda } from "@/dominio/tipos";
 // están en esta moneda. La pone el layout del panel; los componentes de servidor la reciben por props.
 const Contexto = createContext<Moneda>("USD");
 
-export function MonedaBaseProvider({ moneda, children }: { moneda: Moneda; children: React.ReactNode }) {
+export function MonedaBaseProvider({ moneda, children }: Readonly<{ moneda: Moneda; children: React.ReactNode }>) {
   return <Contexto value={moneda}>{children}</Contexto>;
 }
 

@@ -13,14 +13,15 @@ type Props = { className?: string } & (
   | { usd: number | null; dinero?: never; sinCodigo?: boolean; moneda?: Moneda }
 );
 
-function texto(p: Props): string | null {
-  const d = p.dinero !== undefined ? p.dinero : p.usd === null ? null : { centavos: p.usd, moneda: p.moneda ?? "USD" };
+function texto(p: Readonly<Props>): string | null {
+  let d: Dinero | null = p.dinero ?? null;
+  if (p.dinero === undefined && p.usd !== null) d = { centavos: p.usd, moneda: p.moneda ?? "USD" };
   if (d === null || !Number.isSafeInteger(d.centavos) || d.centavos < 0) return null;
   const t = formatearBase(d.centavos, d.moneda);
   return p.sinCodigo ? t.slice(d.moneda.length + 1) : t;
 }
 
-export function Monto(props: Props) {
+export function Monto(props: Readonly<Props>) {
   const t = texto(props);
   return (
     <span className={cn("font-mono whitespace-nowrap tabular-nums", props.className)}>

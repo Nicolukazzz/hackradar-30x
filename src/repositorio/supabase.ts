@@ -116,8 +116,8 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
     if (demo) return reglasSinConfigurar();
     // #86: sugeridas en la moneda de la empresa, convertidas con la tasa del día (si no hay, en USD: el motor escala igual).
     const [emp, tv] = await Promise.all([empresa(), tasasVigentes()]);
-    if (emp.moneda_base === "USD" || !tv || tv.tabla.base !== emp.moneda_base || !tv.tabla.tasas.USD) return reglasSinConfigurar();
-    const tabla = tv.tabla;
+    const tabla = tv?.tabla;
+    if (emp.moneda_base === "USD" || tabla?.base !== emp.moneda_base || !tabla.tasas.USD) return reglasSinConfigurar();
     return reglasSinConfigurarEn(emp.moneda_base, (centavos) => aBase({ centavos, moneda: "USD" }, tabla).base_centavos);
   }
   const vigenteDe = async (vs: readonly Reglas[]): Promise<Reglas> => (vs.length > 0 ? versionVigente(vs) : sinGuardar());

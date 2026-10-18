@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 const pct = (parte: number, total: number) => (total <= 0 ? 0 : Math.max(0, (parte / total) * 100));
 
 /** Tarjeta "Presupuesto de {mes}" con barra apilada (§13.1, §6). */
-export function Presupuesto({ datos, mes: mesLote, moneda }: { datos: RespuestaBandeja["presupuesto"]; mes: string; moneda: Moneda }) {
+export function Presupuesto({ datos, mes: mesLote, moneda }: Readonly<{ datos: RespuestaBandeja["presupuesto"]; mes: string; moneda: Moneda }>) {
   const { monto_usd, pagado_antes, pagado_en_lote, reservado, disponible } = datos;
   const tramos = [
     { etiqueta: "Pagado antes del lote", valor: pagado_antes, barra: "bg-punto-neutro", muestra: "bg-punto-neutro" },

@@ -19,7 +19,7 @@ import type { FilaConversion, VistaPreviaMoneda } from "@/servicios/moneda";
 
 type Paso = 1 | 2 | 3;
 
-export function CambiarMoneda({ actual, permiso }: { actual: Moneda; permiso: PermisoUI }) {
+export function CambiarMoneda({ actual, permiso }: Readonly<{ actual: Moneda; permiso: PermisoUI }>) {
   const router = useRouter();
   const opciones = MONEDAS.filter((m) => m !== actual).map((m) => ({ value: m, label: m }));
   const [abierto, setAbierto] = useState(false);
@@ -120,37 +120,45 @@ export function CambiarMoneda({ actual, permiso }: { actual: Moneda; permiso: Pe
             </label>
           ) : null}
 
-          <DialogFooter className="-mx-6 -mb-6 px-6">
-            {paso > 1 ? (
-              <Boton variante="secundaria" onClick={() => setPaso((p) => (p - 1) as Paso)} disabled={ocupado}>
-                Atrás
-              </Boton>
-            ) : null}
-            {paso === 1 ? (
-              <Boton variante="primaria" onClick={verVistaPrevia} disabled={ocupado}>
-                {ocupado ? <Loader2Icon className="animate-spin" aria-hidden /> : null}
-                Ver qué cambia
-              </Boton>
-            ) : null}
-            {paso === 2 ? (
-              <Boton variante="primaria" onClick={() => setPaso(3)}>
-                Continuar
-              </Boton>
-            ) : null}
-            {paso === 3 ? (
-              <Boton variante="primaria" onClick={confirmar} disabled={!entiendo || ocupado}>
-                {ocupado ? <Loader2Icon className="animate-spin" aria-hidden /> : <BanknoteIcon aria-hidden />}
-                {ocupado ? "Cambiando…" : `Cambiar a ${nueva}`}
-              </Boton>
-            ) : null}
-          </DialogFooter>
+          <Pie
+            paso={paso}
+            ocupado={ocupado}
+            nueva={nueva}
+            listo={entiendo}
+            alVolver={() => setPaso((p) => (p - 1) as Paso)}
+            alAvanzar={paso === 1 ? verVistaPrevia : () => setPaso(3)}
+            alConfirmar={confirmar}
+          />
         </DialogContent>
       </Dialog>
     </>
   );
 }
 
-function Tabla({ titulo, filas }: { titulo: string; filas: FilaConversion[] }) {
+function Pie(p: Readonly<{ paso: Paso; ocupado: boolean; nueva: string; listo: boolean; alVolver: () => void; alAvanzar: () => void; alConfirmar: () => void }>) {
+  const icono = p.ocupado ? <Loader2Icon className="animate-spin" aria-hidden /> : <BanknoteIcon aria-hidden />;
+  return (
+    <DialogFooter className="-mx-6 -mb-6 px-6">
+      {p.paso > 1 ? (
+        <Boton variante="secundaria" onClick={p.alVolver} disabled={p.ocupado}>
+          Atrás
+        </Boton>
+      ) : null}
+      {p.paso < 3 ? (
+        <Boton variante="primaria" onClick={p.alAvanzar} disabled={p.ocupado}>
+          {p.paso === 1 ? "Ver qué cambia" : "Continuar"}
+        </Boton>
+      ) : (
+        <Boton variante="primaria" onClick={p.alConfirmar} disabled={!p.listo || p.ocupado}>
+          {icono}
+          {p.ocupado ? "Cambiando…" : `Cambiar a ${p.nueva}`}
+        </Boton>
+      )}
+    </DialogFooter>
+  );
+}
+
+function Tabla({ titulo, filas }: Readonly<{ titulo: string; filas: FilaConversion[] }>) {
   return (
     <section className="flex flex-col gap-1.5">
       <h3 className="text-sm font-semibold">{titulo}</h3>
