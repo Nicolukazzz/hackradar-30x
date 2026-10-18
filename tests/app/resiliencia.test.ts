@@ -96,3 +96,21 @@ describe("las pantallas responden con cualquier factura en el registro", () => {
     );
   }, 120_000);
 });
+
+describe("salud y respaldo", () => {
+  it("/api/salud responde 200 sin tocar la base (healthcheck de Railway) y es pública", async () => {
+    const { GET } = await import("@/app/api/salud/route");
+    const r = GET();
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ ok: true });
+    const { clasificarRuta } = await import("@/lib/auth/rutas");
+    expect(clasificarRuta("/api/salud", false)).toBe("seguir");
+  });
+
+  it("un dato secundario que falla se reemplaza por su respaldo; una redirección de Next pasa igual", async () => {
+    const { conRespaldo } = await import("@/app/_datos/respaldo");
+    expect(await conRespaldo(Promise.reject(new Error("base caída")), 7, "prueba")).toBe(7);
+    const { redirect } = await import("next/navigation");
+    await expect(conRespaldo((async () => redirect("/entrar"))(), 7, "prueba")).rejects.toMatchObject({ digest: expect.stringContaining("/entrar") });
+  });
+});

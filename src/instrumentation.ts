@@ -3,6 +3,7 @@
 
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  (await import("@/lib/proceso")).protegerProceso();
   const { configBuzonDesdeEntorno } = await import("@/canales/correo/buzon");
   const config = configBuzonDesdeEntorno();
   if (!config) return;

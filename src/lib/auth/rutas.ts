@@ -14,8 +14,9 @@ export const PAGINAS_PUBLICAS = ["/entrar", "/sin-permiso", "/unirse", "/vincula
  *   intentos); subir facturas (`/facturas`), la cookie firmada que deja entrar. Mismo origen en las dos.
  * - `/api/canales/telegram/webhook` (#13): sin sesión de usuario; verifica la cabecera X-Telegram-Bot-Api-Secret-Token.
  * - `/api/canales/whatsapp/webhook` (#79): Meta verifica con `hub.verify_token` (GET) y firma cada POST con X-Hub-Signature-256.
+ * - `/api/salud`: healthcheck de Railway; responde `{ ok: true }` sin tocar la base ni devolver datos.
  */
-export const API_PUBLICAS: readonly string[] = ["/api/vincular", "/api/canales/telegram/webhook", "/api/canales/whatsapp/webhook"];
+export const API_PUBLICAS: readonly string[] = ["/api/vincular", "/api/canales/telegram/webhook", "/api/canales/whatsapp/webhook", "/api/salud"];
 
 export type DecisionRuta = "seguir" | "redirigir" | "no_autorizado";
 

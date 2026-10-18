@@ -5,6 +5,7 @@ import Link from "next/link";
 import { EncabezadoPagina, Indicador, Monto, hora } from "@/app/_componentes";
 import { obtenerAprobaciones } from "@/app/_datos/aprobaciones";
 import { obtenerVerificacion } from "@/app/_datos/bandeja";
+import { conRespaldo } from "@/app/_datos/respaldo";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { formatearUsd } from "@/dominio/dinero";
 import { relojSistema } from "@/lib/reloj-sistema";
@@ -30,7 +31,10 @@ function antiguedad(desde: string, ahora: string): { valor: number; unidad: stri
 export default async function PendientesPage({ searchParams }: PageProps<"/pendientes">) {
   const sp = await searchParams;
   const orden = sp.orden === "monto" ? "monto" : "vencimiento";
-  const [a, verificacion] = await Promise.all([obtenerAprobaciones(orden), obtenerVerificacion()]);
+  const [a, verificacion] = await Promise.all([
+    obtenerAprobaciones(orden),
+    conRespaldo(obtenerVerificacion(), { filas: [], novedades: { total: 0, ultima: null } }, "remitentes por verificar"),
+  ]);
   const vencenHoy = a.pendientes.filter((t) => t.asignacion?.urgente);
   const primeraHoy = vencenHoy[0];
   const masAntigua = [...a.pendientes].sort((x, y) => x.recibido_en.localeCompare(y.recibido_en))[0];
