@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, Loader2Icon, MailIcon, MessageCircleIcon, SendIcon, XIcon } from "lucide-react";
+import { CheckIcon, Loader2Icon, MailIcon, MessageCircleIcon, SendIcon, UserPlusIcon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -19,10 +19,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import type { ProveedorPorConfirmar, ResultadoConfiar } from "@/aprobaciones/proveedores-nuevos";
 import type { RemitentePorConfirmar, RespuestaRemitente, ResultadoConfirmar } from "@/aprobaciones/remitentes";
 import type { PermisoUI } from "@/lib/auth/permisos";
 
-// Remitentes por confirmar (2026-10-18): un proveedor de la lista escribió desde un correo, Telegram o WhatsApp que no
+// Por confirmar (2026-10-18). Remitentes: un proveedor de la lista escribió desde un correo, Telegram o WhatsApp que no
 // tiene vinculado. Se responde una sola pregunta por remitente, sin abrir cada factura: «¿es de este proveedor?».
 // Sí → se vincula y sus facturas pendientes se vuelven a evaluar (las que cumplen todo se pagan solas). No → se rechazan.
 
@@ -55,7 +56,7 @@ function Pregunta({ g, confirmar }: { g: RemitentePorConfirmar; confirmar: Permi
   function responder(respuesta: RespuestaRemitente) {
     iniciar(async () => {
       try {
-        const r = await llamar<ResultadoConfirmar>("/api/remitentes/confirmar", "POST", { remitente: g.remitente, beneficiario_id: g.beneficiario_id, respuesta });
+        const r = await llamar<ResultadoConfirmar>("/api/por-confirmar/remitente", "POST", { remitente: g.remitente, beneficiario_id: g.beneficiario_id, respuesta });
         toast.success(respuesta === "si" ? "Remitente confirmado" : "Remitente rechazado", { description: resumen(r, g.beneficiario) });
         router.refresh();
       } catch (e) {
@@ -124,20 +125,114 @@ function Pregunta({ g, confirmar }: { g: RemitentePorConfirmar; confirmar: Permi
   );
 }
 
-export function RemitentesPorConfirmar({ remitentes, confirmar }: { remitentes: RemitentePorConfirmar[]; confirmar: PermisoUI }) {
-  if (remitentes.length === 0) return null;
+function resumenConfiar(r: ResultadoConfiar, nombre: string): string {
+  if (r.respuesta === "no") return `${r.rechazadas === 1 ? "1 factura rechazada" : `${r.rechazadas} facturas rechazadas`}. ${nombre} no se agregó.`;
+  const partes = [
+    r.aprobadas > 0 && `${r.aprobadas} aprobada${r.aprobadas === 1 ? "" : "s"}`,
+    r.primeras_firmas > 0 && `${r.primeras_firmas} con tu firma, falta una segunda`,
+    r.siguen_pendientes - r.primeras_firmas > 0 && `${r.siguen_pendientes - r.primeras_firmas} sigue${r.siguen_pendientes - r.primeras_firmas === 1 ? "" : "n"} pendiente${r.siguen_pendientes - r.primeras_firmas === 1 ? "" : "s"} por otra razón o por tu límite`,
+  ].filter(Boolean);
+  return `${nombre} quedó en tus proveedores. ${partes.join(" · ") || "Sin facturas por aprobar"}.`;
+}
+
+function PreguntaProveedor({ g, confirmar }: { g: ProveedorPorConfirmar; confirmar: PermisoUI }) {
+  const router = useRouter();
+  const [ocupado, iniciar] = useTransition();
+  const [pidiendo, setPidiendo] = useState<RespuestaRemitente | null>(null);
+  const n = g.facturas.length;
+  const solo = g.facturas.filter((f) => f.solo_por_ser_nuevo).length;
+  const moneda = g.facturas[0]?.moneda_base ?? "USD";
+  const total = g.facturas.reduce((s, f) => s + (f.moneda_base === moneda ? (f.monto_usd_centavos ?? 0) : 0), 0);
+
+  function responder(respuesta: RespuestaRemitente) {
+    iniciar(async () => {
+      try {
+        const r = await llamar<ResultadoConfiar>("/api/por-confirmar/proveedor", "POST", { clave: g.clave, respuesta });
+        toast.success(respuesta === "si" ? `Confías en ${g.nombre}` : `No confías en ${g.nombre}`, { description: resumenConfiar(r, g.nombre) });
+        router.refresh();
+      } catch (e) {
+        toast.error("No se guardó la respuesta", { description: e instanceof Error ? e.message : undefined });
+      }
+    });
+  }
+
   return (
-    <section aria-labelledby="remitentes-titulo" className="overflow-hidden rounded-2xl border bg-card">
+    <li className="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-escalada text-escalada-foreground">
+          <UserPlusIcon className="size-4" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[15px] leading-snug">
+            <span className="font-medium">{g.nombre}</span> es un proveedor nuevo. ¿Confiar siempre?
+          </p>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            {n === 1 ? "1 factura espera" : `${n} facturas esperan`} · <Monto usd={total} moneda={moneda} /> ·{" "}
+            {g.facturas.map((f, i) => (
+              <span key={f.ref_interna}>
+                {i > 0 && ", "}
+                <Link href={`/facturas/${f.ref_interna}`} className="font-mono text-link hover:underline">
+                  {f.factura_numero ?? f.ref_interna}
+                </Link>
+              </span>
+            ))}
+          </p>
+          {solo < n && (
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              {n - solo === 1 ? "1 falla" : `${n - solo} fallan`} otras reglas: aunque confíes, {n - solo === 1 ? "seguirá pendiente" : "seguirán pendientes"} por esa razón.
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex shrink-0 gap-2">
+        <Button variant="outline" className="h-11 gap-1.5" disabled={!confirmar.ok || ocupado} onClick={() => setPidiendo("no")}>
+          <XIcon aria-hidden />
+          No
+        </Button>
+        <Button className="h-11 gap-1.5" disabled={!confirmar.ok || ocupado} onClick={() => setPidiendo("si")}>
+          {ocupado ? <Loader2Icon className="animate-spin" aria-hidden /> : <CheckIcon aria-hidden />}
+          Sí, confiar siempre
+        </Button>
+      </div>
+      <AlertDialog open={pidiendo !== null} onOpenChange={(abierto) => !abierto && setPidiendo(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pidiendo === "si" ? `¿Agregar a ${g.nombre} a tus proveedores?` : `¿No confiar en ${g.nombre}?`}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pidiendo === "si"
+                ? `Queda en la lista con la cuenta y el canal de su factura más reciente. ${solo === 0 ? "Ninguna de sus facturas se aprueba ahora: todas fallan otras reglas." : `Se ${solo === 1 ? "aprueba la factura que esperaba" : `aprueban las ${solo} facturas que esperaban`} solo por ser nuevo, con tu límite de aprobación.`} Sus próximas facturas se deciden con las reglas normales. Queda en el registro.`
+                : `No se agrega a la lista y ${n === 1 ? "su factura se rechaza" : `sus ${n} facturas se rechazan`}. Queda en el registro.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="h-11">Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="h-11" onClick={() => pidiendo && responder(pidiendo)}>
+              {pidiendo === "si" ? "Sí, confiar siempre" : "No confiar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </li>
+  );
+}
+
+export function PorConfirmar({ remitentes, proveedores, confirmar }: { remitentes: RemitentePorConfirmar[]; proveedores: ProveedorPorConfirmar[]; confirmar: PermisoUI }) {
+  if (remitentes.length === 0 && proveedores.length === 0) return null;
+  return (
+    <section aria-labelledby="por-confirmar-titulo" className="overflow-hidden rounded-2xl border bg-card">
       <header className="border-b px-5 py-4">
-        <h2 id="remitentes-titulo" className="text-[15px] font-semibold">
-          Remitentes por confirmar
+        <h2 id="por-confirmar-titulo" className="text-[15px] font-semibold">
+          Por confirmar
         </h2>
         <p className="mt-0.5 text-[13px] text-muted-foreground">
-          Proveedores de tu lista escribieron desde un canal que no tienen vinculado. Confirma una vez y no tienes que revisar cada factura.
+          Responde una vez y no tienes que revisar cada factura: lo que esperaba solo por esto se resuelve, lo demás sigue pendiente con su motivo.
           {!confirmar.ok && ` ${confirmar.motivo}`}
         </p>
       </header>
       <ul className="divide-y">
+        {proveedores.map((g) => (
+          <PreguntaProveedor key={g.clave} g={g} confirmar={confirmar} />
+        ))}
         {remitentes.map((g) => (
           <Pregunta key={`${g.remitente.tipo}:${g.remitente.valor}:${g.beneficiario_id}`} g={g} confirmar={confirmar} />
         ))}

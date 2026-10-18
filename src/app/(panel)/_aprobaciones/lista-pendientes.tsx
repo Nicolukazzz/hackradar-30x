@@ -62,7 +62,7 @@ export function ListaPendientes({ pendientes, porVerificar }: Readonly<{ pendien
               {titulo}
             </h2>
             <p className="text-[13px] text-muted-foreground">
-              No se pagan solas. Verifica cada una: si es de alguien nuevo, al aprobar puedes agregarlo a tus proveedores o vincular su correo, y las
+              No se pagan solas. Verifica cada una. Si es de un proveedor o un remitente nuevo, respóndelo una vez en «Por confirmar» y las
               próximas pasan directo.
             </p>
           </div>

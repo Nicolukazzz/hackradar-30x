@@ -16,7 +16,7 @@ const Cuerpo = z.strictObject({
 });
 
 /**
- * POST /api/remitentes/confirmar: «¿este remitente es de este proveedor?». Sí → vincula el canal y vuelve a evaluar sus
+ * POST /api/por-confirmar/remitente: «¿este remitente es de este proveedor?». Sí → vincula el canal y vuelve a evaluar sus
  * facturas pendientes (las que cumplen todo se pagan solas). No → las rechaza. Solo administradores: vincular un canal
  * cambia quién puede cobrar (igual que «Vincular» al aprobar, #110).
  */

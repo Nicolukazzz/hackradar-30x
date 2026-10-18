@@ -2,8 +2,8 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { POST as postConfirmar } from "@/app/api/remitentes/confirmar/route";
-import { GET as getRemitentes } from "@/app/api/remitentes/route";
+import { POST as postConfirmar } from "@/app/api/por-confirmar/remitente/route";
+import { GET as getPorConfirmar } from "@/app/api/por-confirmar/route";
 import { fijarRepositorio } from "@/repositorio";
 import { crearRepositorioMemoria } from "@/repositorio/memoria";
 import { procesarPendientes } from "@/servicios/lote";
@@ -16,7 +16,7 @@ vi.mock("@/lib/auth/auditoria", () => ({ auditar: () => undefined }));
 
 const GMAIL = { tipo: "correo", valor: "pagos-cloudnorte@gmail.example" };
 const confirmar = (cuerpo: unknown) =>
-  postConfirmar(peticion("http://x/api/remitentes/confirmar", { method: "POST", body: JSON.stringify(cuerpo), headers: { "content-type": "application/json" } }), {});
+  postConfirmar(peticion("http://x/api/por-confirmar/remitente", { method: "POST", body: JSON.stringify(cuerpo), headers: { "content-type": "application/json" } }), {});
 
 async function preparar() {
   const repo = await crearRepositorioMemoria("trampas-extra");
@@ -26,11 +26,12 @@ async function preparar() {
   return repo;
 }
 
-describe("/api/remitentes", () => {
+describe("/api/por-confirmar", () => {
   it("GET lista INV-2245; un aprobador no puede confirmar (403); el admin sí (201) y la factura se paga", async () => {
     await preparar();
-    const lista = await (await getRemitentes(peticion("http://x/api/remitentes"), {})).json();
+    const lista = await (await getPorConfirmar(peticion("http://x/api/por-confirmar"), {})).json();
     expect(lista.remitentes).toHaveLength(1);
+    expect(lista.proveedores).toEqual([]);
     comoCuenta("Andrea Paz", "aprobador", 500_000);
     expect((await confirmar({ remitente: GMAIL, beneficiario_id: "ben-cloudnorte", respuesta: "si" })).status).toBe(403);
     comoSesion(CUENTA);

@@ -93,7 +93,8 @@ export async function remitentesPorConfirmar(repo: Repositorio): Promise<Remiten
       recibido_en: e.momento,
       otras_reglas: e.reglas_que_fallaron.filter((r) => r !== "R11"),
     });
-    g.total_usd_centavos += e.monto_usd_centavos ?? 0;
+    // Nunca se suman monedas distintas (#86): solo lo que está en la moneda del grupo.
+    if ((e.moneda_base ?? "USD") === g.moneda_base) g.total_usd_centavos += e.monto_usd_centavos ?? 0;
     grupos.set(k, g);
   }
   const ultima = (g: RemitentePorConfirmar) => g.facturas.reduce((m, f) => (f.recibido_en > m ? f.recibido_en : m), "");
