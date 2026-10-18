@@ -35,8 +35,8 @@ function filas(proveedores: Beneficiario[], enlaces: EnlaceConEstado[]): Fila[] 
   const activos = enlaces.filter((e) => e.estado === "activo");
   const usados = new Set<string>();
   const deLista: Fila[] = proveedores.map((b) => {
-    const correos = b.canales.correos.map((c) => c.toLowerCase());
-    const portal = activos.find((e) => e.beneficiario_id === b.id || correos.includes(e.correo)) ?? null;
+    const correos = new Set(b.canales.correos.map((c) => c.toLowerCase()));
+    const portal = activos.find((e) => e.beneficiario_id === b.id || correos.has(e.correo)) ?? null;
     if (portal) usados.add(portal.id);
     return { tipo: "lista", b, portal };
   });

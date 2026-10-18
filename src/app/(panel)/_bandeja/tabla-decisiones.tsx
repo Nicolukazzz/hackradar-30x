@@ -14,11 +14,14 @@ import { FiltrosBandeja } from "./filtros";
  * causas extra («Además, …») ni la nota de reserva. No se corta por puntos: «S.A.S.» no termina una frase.
  */
 function motivo(f: FilaBandeja): string {
-  const t = f.explicacion
-    .replace(/^(Pagada|Frenada|Escalada|Rechazada):\s*/i, "")
-    .split(/\s+Además,\s+/)[0]!
-    .replace(/\s*(Se reservan|Monto por decidir)\b.*$/, "")
-    .trim();
+  let t = f.explicacion;
+  const dosPuntos = t.indexOf(": ");
+  if (dosPuntos > 0 && dosPuntos < 12) t = t.slice(dosPuntos + 2);
+  for (const corte of [" Además, ", " Se reservan ", " Monto por decidir"]) {
+    const i = t.indexOf(corte);
+    if (i > 0) t = t.slice(0, i);
+  }
+  t = t.trim();
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 

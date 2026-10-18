@@ -95,7 +95,7 @@ export async function obtenerBandeja(repo: Repositorio, opciones: OpcionesBandej
   ]);
   const ahora = esc?.config.ahora ?? todoElLote.at(-1)?.momento ?? "";
   // Filtro de periodo (#119): KPIs y filas del mes elegido; el presupuesto sigue siendo el del periodo vigente.
-  const meses = [...new Set(todoElLote.map((e) => e.momento.slice(0, 7)))].sort().reverse();
+  const meses = [...new Set(todoElLote.map((e) => e.momento.slice(0, 7)))].sort((a, b) => b.localeCompare(a));
   const mes_filtrado = opciones.mes && meses.includes(opciones.mes) ? opciones.mes : null;
   const lote = mes_filtrado ? todoElLote.filter((e) => e.momento.startsWith(mes_filtrado)) : todoElLote;
   const tipo = reglas.presupuesto.periodo;

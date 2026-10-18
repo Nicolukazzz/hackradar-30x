@@ -342,6 +342,8 @@ export function ReglasPorPasos({
   const modo = MODOS_IDENTIDAD.find((m) => m.valor === (vigente.identidad?.modo ?? "nombre"))?.titulo;
   const v = historial.find((h) => h.version === vigente.version);
   const sinConfigurar = vigente.version === 0;
+  const editada = v ? ` · ${fechaCorta(v.editada_en)}, ${v.editada_por.split(" (")[0]}` : "";
+  const subtitulo = sinConfigurar ? "Valores sugeridos. Actívalos para que el agente empiece a decidir." : `Versión ${vigente.version}${editada}`;
 
   async function guardarSugeridas() {
     setGuardandoV1(true);
@@ -367,7 +369,7 @@ export function ReglasPorPasos({
       <header className="flex flex-col gap-1.5">
         <h1 className="text-[30px] leading-tight font-semibold tracking-tight">Reglas de pago</h1>
         <p className="text-[15px] leading-relaxed text-muted-foreground">
-          {sinConfigurar ? "Valores sugeridos. Actívalos para que el agente empiece a decidir." : `Versión ${vigente.version}${v ? ` · ${fechaCorta(v.editada_en)}, ${v.editada_por.replace(/\s*\([^)]*\)\s*$/, "")}` : ""}`}
+          {subtitulo}
         </p>
       </header>
 
@@ -443,7 +445,7 @@ export function ReglasPorPasos({
               <li key={h.version} className="flex items-baseline justify-between gap-3 px-4 py-3 text-sm not-first:border-t not-first:border-subtle">
                 <span className="font-mono font-semibold">v{h.version}</span>
                 <span className="text-right text-xs text-muted-foreground">
-                  {fechaCorta(h.editada_en)} · {h.editada_por.replace(/\s*\([^)]*\)\s*$/, "")}
+                  {fechaCorta(h.editada_en)} · {h.editada_por.split(" (")[0]}
                 </span>
               </li>
             ))}

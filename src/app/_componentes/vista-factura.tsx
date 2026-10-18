@@ -14,16 +14,15 @@ type Estado = "leido" | "dudoso" | "falta" | "opcional";
 
 type Fila = { clave: CampoRequerible | "monto_total" | "subtotal" | "impuestos"; etiqueta: string; campo: Campo<unknown> | undefined; mostrar: (v: unknown) => React.ReactNode };
 
-const texto = (v: unknown) => String(v);
 const fecha = (v: unknown) => fechaCorta(`${String(v)}T12:00:00`);
 const dinero = (v: unknown) => <Monto dinero={v as Dinero} />;
 
 function filas(ext: Extraccion): Fila[] {
   return [
-    { clave: "beneficiario_nombre", etiqueta: "Proveedor", campo: ext.beneficiario_nombre, mostrar: texto },
-    { clave: "identificacion_fiscal", etiqueta: "NIT / identificación", campo: ext.identificacion_fiscal, mostrar: texto },
+    { clave: "beneficiario_nombre", etiqueta: "Proveedor", campo: ext.beneficiario_nombre, mostrar: String },
+    { clave: "identificacion_fiscal", etiqueta: "NIT / identificación", campo: ext.identificacion_fiscal, mostrar: String },
     { clave: "numero", etiqueta: "Número de factura", campo: ext.numero, mostrar: (v) => <span className="font-mono">{String(v)}</span> },
-    { clave: "concepto", etiqueta: "Concepto", campo: ext.concepto, mostrar: texto },
+    { clave: "concepto", etiqueta: "Concepto", campo: ext.concepto, mostrar: String },
     { clave: "fecha_emision", etiqueta: "Fecha de emisión", campo: ext.fecha_emision, mostrar: fecha },
     { clave: "fecha_vencimiento", etiqueta: "Vence", campo: ext.fecha_vencimiento, mostrar: fecha },
     { clave: "cuenta_destino_ultimos4", etiqueta: "Cuenta destino", campo: ext.cuenta_destino_ultimos4, mostrar: (v) => <span className="font-mono">•••• {String(v)}</span> },
