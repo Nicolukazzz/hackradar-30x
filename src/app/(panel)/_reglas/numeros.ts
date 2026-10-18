@@ -1,6 +1,6 @@
 // Entrada y salida de números en formato de la UI (es-CO): "3.000,00" ↔ 300000 centavos.
 
-import { formatearNumero } from "@/dominio/dinero";
+import { formatearUsd } from "@/dominio/dinero";
 
 /**
  * "3.000,00" · "3000" · "3000,5" · "3000.50" → centavos. null si no es un monto válido (vacío, letras, negativo).
@@ -17,7 +17,7 @@ export function leerUsd(texto: string): number | null {
 
 /** 300000 → "3.000,00" */
 export function escribirUsd(centavos: number): string {
-  return formatearNumero(centavos);
+  return formatearUsd(centavos);
 }
 
 /** "2" · "2,5" → 2.5. null si no es un número ≥ 0. */

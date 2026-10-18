@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { formatearNumero } from "@/dominio/dinero";
+import { formatearMonto, formatearUsd } from "@/dominio/dinero";
 import { normalizarTexto } from "@/dominio/normalizar";
 import type { EntradaRegistro } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
@@ -72,9 +72,9 @@ export function registroACsv(entradas: readonly EntradaRegistro[]): string {
       e.ref_interna,
       e.factura_numero,
       e.beneficiario,
-      e.monto_original ? formatearNumero(e.monto_original.centavos, !["COP", "CLP"].includes(e.monto_original.moneda)) : null,
+      e.monto_original ? formatearMonto(e.monto_original) : null,
       e.monto_original?.moneda ?? null,
-      e.monto_usd_centavos === null ? null : formatearNumero(e.monto_usd_centavos),
+      e.monto_usd_centavos === null ? null : formatearUsd(e.monto_usd_centavos),
       e.tasa_usada,
       e.decision,
       e.reglas_que_fallaron.join(" "),
