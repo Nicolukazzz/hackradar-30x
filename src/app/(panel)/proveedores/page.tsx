@@ -7,7 +7,7 @@ import { AsistenteProveedor } from "./_proveedores/asistente-proveedor";
 import { CrearEnlace } from "./_proveedores/crear-enlace";
 import { Directorio } from "./_proveedores/directorio";
 
-export const metadata: Metadata = { title: "Proveedores · Agente de cuentas por pagar" };
+export const metadata: Metadata = { title: "Proveedores" };
 
 // Proveedores (#107, #85, #119): una sola lista con a quién puede pagar el agente y quién tiene acceso al portal para
 // subir facturas. La app no envía correos: el enlace y el código del portal los comparte el admin.

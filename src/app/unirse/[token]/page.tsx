@@ -17,7 +17,7 @@ import { obtenerEmpresa } from "@/app/_datos/empresa";
 import { unirme } from "./acciones";
 import { FormularioCrearCuenta } from "./formulario";
 
-export const metadata: Metadata = { title: "Unirme al equipo · Agente de cuentas por pagar", referrer: "no-referrer" };
+export const metadata: Metadata = { title: "Unirme al equipo", referrer: "no-referrer" };
 
 // Enlace de invitación (#51, #80). Sin sesión: si la invitación trae correo, la persona crea aquí su cuenta; si es
 // anterior a #80 (sin correo), va a /entrar y vuelve. Un enlace inválido, vencido,

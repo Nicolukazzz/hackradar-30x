@@ -15,7 +15,7 @@ import { OrdenAprobaciones } from "../_aprobaciones/orden";
 import { PorQueEsperan } from "../_aprobaciones/por-que-esperan";
 import { PorConfirmar } from "../_aprobaciones/por-confirmar";
 
-export const metadata: Metadata = { title: "Pendientes · Agente de cuentas por pagar" };
+export const metadata: Metadata = { title: "Pendientes" };
 
 // Pendientes (§13.3; antes «Aprobaciones», #131): las facturas que el agente no decidió solo y esperan a una persona.
 // Arriba, lo que ayuda a priorizar: cuántas y por cuánto, qué vence hoy, cuál lleva más tiempo esperando y por qué

@@ -1,11 +1,13 @@
-import { FileTextIcon, ReceiptTextIcon } from "lucide-react";
+import { FileTextIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { fechaHora } from "@/app/_componentes";
+import { FirmaQuadra } from "@/components/quadra";
 import { Badge } from "@/components/ui/badge";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { iniciales } from "@/lib/iniciales";
 import { relojSistema } from "@/lib/reloj-sistema";
 import { cn } from "@/lib/utils";
 import { obtenerRepositorio } from "@/repositorio";
@@ -15,7 +17,7 @@ import { enlaceActivo, misEnvios, type EstadoEnvio } from "@/vinculos/servicio";
 
 import { CuentaProveedor, SubirFacturas } from "./subir";
 
-export const metadata: Metadata = { title: "Ingrese sus facturas · Portal de proveedores", referrer: "no-referrer" };
+export const metadata: Metadata = { title: "Ingrese sus facturas", referrer: "no-referrer" };
 
 // Portal del proveedor (#85), paso 2: subir facturas y ver en qué van. Sin cookie válida vuelve a pedir correo y código.
 
@@ -41,8 +43,11 @@ export default async function PaginaFacturasProveedor({ params }: PageProps<"/vi
       <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto flex h-16 w-full max-w-2xl items-center justify-between gap-4 px-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex size-8 flex-none items-center justify-center rounded-[10px] bg-sidebar text-sidebar-foreground" aria-hidden>
-              <ReceiptTextIcon className="size-4" />
+            <span
+              aria-hidden
+              className="flex size-8 flex-none items-center justify-center rounded-[10px] bg-sidebar text-xs font-semibold text-sidebar-foreground"
+            >
+              {iniciales(datos.empresa.nombre)}
             </span>
             <span className="flex min-w-0 flex-col leading-tight">
               <span className="truncate text-sm font-semibold">{datos.empresa.nombre}</span>
@@ -97,6 +102,10 @@ export default async function PaginaFacturasProveedor({ params }: PageProps<"/vi
           )}
         </section>
       </main>
+
+      <footer className="flex justify-center pb-10">
+        <FirmaQuadra />
+      </footer>
     </div>
   );
 }

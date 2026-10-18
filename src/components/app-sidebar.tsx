@@ -18,12 +18,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { FirmaQuadra } from "@/components/quadra";
 import { NOMBRE_ROL, type Rol } from "@/lib/auth/permisos";
 import { iniciales } from "@/lib/iniciales";
 import { cn } from "@/lib/utils";
 
 // Barra lateral de especificación §13 "Comunes". #83: Reglas y Equipo pasan dentro de Ajustes. #119: arriba va la
-// empresa que usa la app (no un nombre de producto) y abajo solo quién está conectado.
+// empresa que usa la app (no un nombre de producto) y abajo quién está conectado. #152: al pie, la firma de Quadra.
 const navegacion = [
   { titulo: "Bandeja", href: "/", icono: InboxIcon },
   { titulo: "Pendientes", href: "/pendientes", icono: HourglassIcon },
@@ -152,6 +153,7 @@ export function AppSidebar({
             </button>
           </form>
         </div>
+        <FirmaQuadra tono="oscuro" className="self-center pt-1" />
       </SidebarFooter>
     </Sidebar>
   );

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { FirmaQuadra } from "@/components/quadra";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { relojSistema } from "@/lib/reloj-sistema";
 import { obtenerRepositorio } from "@/repositorio";
@@ -42,8 +43,9 @@ export default async function PaginaEntrarProveedor({ params }: PageProps<"/vinc
 
   const empresa = (await (await obtenerRepositorio()).datosComunes()).empresa.nombre;
   return (
-    <main className="flex min-h-svh items-center justify-center bg-background px-4 py-10">
+    <main className="flex min-h-svh flex-col items-center justify-center gap-8 bg-background px-4 py-10">
       <FormularioEntrar token={token} empresa={empresa} />
+      <FirmaQuadra />
     </main>
   );
 }
