@@ -8,7 +8,7 @@ Proyecto aparte de la app (su propio `package.json`): no entra al build de Railw
 cd video
 npm install
 npm run studio          # vista previa interactiva (http://localhost:3000)
-npm run render          # out/pitch.mp4 — las 10 escenas unidas (2:15)
+npm run render          # out/pitch.mp4 — video completo con apertura y voz (2:35)
 npm run render:escenas  # out/escenas/E01-Intro.mp4 … E10-Cierre.mp4
 npm run render:rotulo   # out/rotulo.mov — rótulo del presentador con transparencia (ProRes 4444)
 npm run render:todo     # todo lo anterior
@@ -18,19 +18,20 @@ npm run render:todo     # todo lo anterior
 
 ## Presentador en el círculo
 
-Las escenas WhatsApp, Portal y Por dentro tienen un círculo de cámara abajo a la derecha. Guardar la toma del presentador en `public/camara/whatsapp.mp4`, `public/camara/portal.mp4` y `public/camara/por-dentro.mp4` y volver a exportar: si el archivo existe, se reproduce en el círculo; si no, se ve un marcador.
+Las escenas WhatsApp, Portal y Por dentro tienen un círculo de cámara abajo a la derecha. Guardar la toma del presentador en `public/camara/whatsapp`, `portal` y `por-dentro` (`.mp4` o `.mov`) y volver a exportar: si el archivo existe, se reproduce en el círculo con su audio; si no, se ve un marcador. La apertura a pantalla completa es `public/camara/intro.mov` y la voz en off de las demás escenas va en `public/voz/{canales,llegada,como-funciona,roles,moneda,cierre}.m4a`. Estas carpetas no se versionan (el repo es público): cada quien las copia en su máquina.
 
 ## Composiciones
 
 | Id | Duración | Qué muestra |
 |---|---|---|
-| `Pitch` | 135 s | Las 10 escenas con fundidos de 0,5 s |
+| `Pitch` | 155 s | Apertura del presentador + 10 escenas con fundidos de 0,5 s, con voz |
+| `E00-Presentador` | 14,5 s | Apertura en cámara |
 | `E01-Intro` | 5 s | Quadra y la promesa |
-| `E02-Canales` | 4 s | WhatsApp, portal, correo, Telegram |
+| `E02-Canales` | 5 s | WhatsApp, portal, correo, Telegram |
 | `E03-WhatsApp` | 14 s | Grabación real: el proveedor manda fotos de factura por WhatsApp |
-| `E04-Portal` | 26 s | Grabación real: el admin da acceso (enlace + código) y el proveedor sube 3 facturas |
+| `E04-Portal` | 29 s | Grabación real: el admin da acceso (enlace + código) y el proveedor sube 3 facturas |
 | `E05-Llegada` | 13 s | Animación: la bandeja recibe facturas y cada una queda Pagada / Frenada / Escalada |
-| `E06-ComoFunciona` | 16 s | La IA lee (doble lectura), el algoritmo decide |
+| `E06-ComoFunciona` | 18 s | La IA lee (doble lectura), el algoritmo decide |
 | `E07-PorDentro` | 18 s | Traza de una factura: explicación, instrucción escondida, reglas |
 | `E08-Roles` | 24 s | Vista del tesorero, del aprobador y del administrador |
 | `E09-Moneda` | 12,5 s | Cambio de moneda base con los montos convirtiéndose |

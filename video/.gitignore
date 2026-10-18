@@ -5,3 +5,8 @@ dist
 
 # Ignore the output video from Git but not videos you import into src/.
 out
+
+# Tomas y voz del presentador: personales, no se publican en el repo (es público)
+public/camara/
+public/voz/
+audio-and-intro/

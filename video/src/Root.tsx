@@ -8,6 +8,7 @@ import { Llegada } from "./escenas/Llegada";
 import { Moneda } from "./escenas/Moneda";
 import { PorDentro } from "./escenas/PorDentro";
 import { Portal } from "./escenas/Portal";
+import { Presentador } from "./escenas/Presentador";
 import { Roles } from "./escenas/Roles";
 import { WhatsApp } from "./escenas/WhatsApp";
 import { Pitch } from "./Pitch";
@@ -16,14 +17,15 @@ import { Pitch } from "./Pitch";
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      <Composition id="Pitch" component={Pitch} durationInFrames={4050} fps={30} width={1920} height={1080} />
+      <Composition id="Pitch" component={Pitch} durationInFrames={4650} fps={30} width={1920} height={1080} />
       <Folder name="Escenas">
+        <Composition id="E00-Presentador" component={Presentador} durationInFrames={435} fps={30} width={1920} height={1080} />
         <Composition id="E01-Intro" component={Intro} durationInFrames={150} fps={30} width={1920} height={1080} />
-        <Composition id="E02-Canales" component={Canales} durationInFrames={120} fps={30} width={1920} height={1080} />
+        <Composition id="E02-Canales" component={Canales} durationInFrames={150} fps={30} width={1920} height={1080} />
         <Composition id="E03-WhatsApp" component={WhatsApp} durationInFrames={420} fps={30} width={1920} height={1080} />
-        <Composition id="E04-Portal" component={Portal} durationInFrames={780} fps={30} width={1920} height={1080} />
+        <Composition id="E04-Portal" component={Portal} durationInFrames={870} fps={30} width={1920} height={1080} />
         <Composition id="E05-Llegada" component={Llegada} durationInFrames={390} fps={30} width={1920} height={1080} />
-        <Composition id="E06-ComoFunciona" component={ComoFunciona} durationInFrames={480} fps={30} width={1920} height={1080} />
+        <Composition id="E06-ComoFunciona" component={ComoFunciona} durationInFrames={540} fps={30} width={1920} height={1080} />
         <Composition id="E07-PorDentro" component={PorDentro} durationInFrames={540} fps={30} width={1920} height={1080} />
         <Composition id="E08-Roles" component={Roles} durationInFrames={720} fps={30} width={1920} height={1080} />
         <Composition id="E09-Moneda" component={Moneda} durationInFrames={375} fps={30} width={1920} height={1080} />

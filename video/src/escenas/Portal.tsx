@@ -8,7 +8,7 @@ import { Fondo } from "../componentes/Fondo";
 import { Pasos } from "../componentes/Pasos";
 import { Ventana } from "../componentes/Ventana";
 
-// 4 · Portal del proveedor (26 s), grabado en la app: el admin crea el acceso (enlace + código) y el proveedor entra con
+// 4 · Portal del proveedor (29 s), grabado en la app: el admin crea el acceso (enlace + código) y el proveedor entra con
 // su correo y ese código y sube tres facturas a la vez.
 const W = 1180;
 const H = Math.round((W * 9) / 16) + 40;
@@ -56,13 +56,13 @@ const PortalInner = () => {
           <Clip src="medios/admin-enlace.mp4" desde={0} duracion={13.2} velocidad={1.2} zoom={1.45} cx={0.5} cy={0.5} />
         </Tramo>
       </Sequence>
-      <Sequence name="Proveedor sube facturas" from={11 * fps - 10} durationInFrames={15 * fps + 10} layout="none">
-        <Tramo duracion={15 * fps + 10} etiqueta="Vista del proveedor">
+      <Sequence name="Proveedor sube facturas" from={11 * fps - 10} durationInFrames={18 * fps + 10} layout="none">
+        <Tramo duracion={18 * fps + 10} etiqueta="Vista del proveedor">
           <Sequence durationInFrames={Math.round(10.3 * fps)} layout="none">
             <Clip src="medios/proveedor-portal.mp4" desde={0.5} duracion={16} velocidad={1.55} zoom={1.75} cx={0.5} cy={0.42} />
           </Sequence>
           <Sequence from={Math.round(10.3 * fps)} layout="none">
-            <Clip src="medios/proveedor-portal.mp4" desde={42} duracion={6.5} velocidad={1.3} zoom={1.75} cx={0.5} cy={0.42} />
+            <Clip src="medios/proveedor-portal.mp4" desde={40} duracion={8.7} velocidad={1.1} zoom={1.75} cx={0.5} cy={0.42} />
           </Sequence>
         </Tramo>
       </Sequence>
