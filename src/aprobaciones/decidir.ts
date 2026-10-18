@@ -12,6 +12,10 @@ import { tasasDeLaFactura } from "@/reglas/motor";
 
 import { aplicarCorrecciones, type Correcciones, extraccionVigente, resumenCorrecciones } from "./correcciones";
 
+/**
+ * Petición de decisión humana. Quién decide sale de la sesión; las cuentas que pueden firmar se calculan hoy, no se
+ * guardan.
+ */
 export type EntradaDecision = {
   ref: string;
   accion: "aprobar" | "rechazar";
@@ -31,6 +35,7 @@ export type EntradaDecision = {
   correcciones?: Correcciones;
 };
 
+/** Correo o chat que se puede vincular al proveedor al aprobar (#110). */
 export type CanalAVincular = { tipo: "correo" | "telegram"; valor: string; beneficiario_id: string };
 
 /**
@@ -46,6 +51,7 @@ export function canalAVincular(origen: EntradaRegistro, documento: Pick<Document
   return { tipo: rem.tipo, valor: rem.tipo === "correo" ? rem.valor.toLowerCase() : rem.valor, beneficiario_id };
 }
 
+/** Entrada registrada, si fue la primera de dos firmas y el proveedor agregado (si hubo). */
 export type ResultadoDecision = {
   entrada: EntradaRegistro;
   /** true si fue la primera de dos firmas (queda "1 de 2") */
@@ -53,6 +59,7 @@ export type ResultadoDecision = {
   beneficiario_agregado: Beneficiario | null;
 };
 
+/** Decisión rechazada antes de escribir nada. `estado` es el código HTTP que devuelve la API. */
 export class ErrorDecision extends Error {
   constructor(
     readonly estado: 400 | 403 | 404 | 409,
@@ -63,6 +70,7 @@ export class ErrorDecision extends Error {
   }
 }
 
+/** Largo mínimo del comentario obligatorio de una decisión humana (§10). */
 export const MINIMO_COMENTARIO = 5;
 
 type Firma = { aprobador_id: string; nombre: string; momento: string };

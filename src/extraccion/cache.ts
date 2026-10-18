@@ -14,6 +14,7 @@ import type { DocumentoNormalizado, ExtraccionParcial, NombreCampo } from "./tip
 import { PROMPT_SISTEMA } from "./llm/prompt";
 import { textoCrudo } from "./normalizar";
 
+/** Caché de respuestas del LLM. Una caché que falla al leer devuelve null y la extracción sigue. */
 export interface CacheExtraccion {
   leer(clave: string): Promise<ExtraccionParcial | null>;
   guardar(clave: string, parcial: ExtraccionParcial): Promise<void>;
@@ -49,6 +50,7 @@ export function claveCache(doc: DocumentoNormalizado, faltantes: readonly Nombre
   return h.digest("hex");
 }
 
+/** Caché en `.cache/extraccion/` (CLI de evaluación con `--extraccion real`). Valida cada entrada al leerla. */
 export function cacheEnDisco(dir = path.join(".cache", "extraccion")): CacheExtraccion {
   const ruta = (clave: string) => {
     if (!/^[0-9a-f]{64}$/.test(clave)) throw new Error(`clave de caché inválida: ${clave}`);
@@ -70,6 +72,7 @@ export function cacheEnDisco(dir = path.join(".cache", "extraccion")): CacheExtr
   };
 }
 
+/** Caché en memoria del proceso, para tests. */
 export function cacheEnMemoria(): CacheExtraccion & { tamano(): number } {
   const m = new Map<string, ExtraccionParcial>();
   return {

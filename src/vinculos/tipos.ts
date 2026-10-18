@@ -22,13 +22,16 @@ export type EnlaceProveedor = {
 /** Con el hash del código: solo para verificar en el servidor, nunca sale hacia la pantalla. */
 export type EnlaceConCodigo = EnlaceProveedor & { codigo_hash: string };
 
+/** activo: se puede entrar · vencido: pasaron los 30 días · revocado: un admin lo cerró. */
 export type EstadoEnlace = "activo" | "vencido" | "revocado";
 
+/** Enlace por crear, con los hashes del token y del código. */
 export type NuevoEnlace = Pick<EnlaceProveedor, "nombre" | "correo" | "beneficiario_id" | "creado_por" | "creado_en" | "expira_en"> & {
   token_hash: string;
   codigo_hash: string;
 };
 
+/** Operación del portal rechazada; `estado` es el código HTTP. */
 export class ErrorVinculo extends Error {
   constructor(
     readonly estado: 400 | 401 | 403 | 404 | 409 | 429,
@@ -48,4 +51,5 @@ export const MENSAJE_INVALIDO = "Este enlace ya no sirve: venció o lo revocaron
 /** Mismo texto si falla el correo, el código o los dos: no se dice cuál. */
 export const MENSAJE_NO_COINCIDE = "El correo o el código no coinciden. Revisa los datos que te pasó la empresa.";
 
+/** La sesión del proveedor venció: debe volver a entrar con su correo y código. */
 export const MENSAJE_SIN_ACCESO = "Tu acceso venció. Vuelve a escribir tu correo y tu código.";

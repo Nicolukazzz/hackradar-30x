@@ -7,6 +7,7 @@ import { CATALOGO } from "@/reglas/catalogo";
 
 /** Presupuesto de largo: 280 caracteres con hasta dos causas y 60 más por cada causa extra (una frase corta cada una). */
 export const LARGO_MAXIMO = 280;
+/** Caracteres extra permitidos por cada causa después de la segunda. */
 export const LARGO_POR_CAUSA_EXTRA = 60;
 
 /**
@@ -39,6 +40,10 @@ function menciona(texto: string, id: IdRegla): boolean {
   return [CATALOGO[id].nombre, ...MENCIONES[id]].some((m) => t.includes(normalizarTexto(m)));
 }
 
+/**
+ * Problemas de una explicación para una persona: no nombra cada regla que falló, le faltan cifras, tiene jerga
+ * técnica o es demasiado larga. Vacío = se entiende.
+ */
 export function problemasExplicacion(x: { decision: DecisionAgente; reglas: readonly IdRegla[]; explicacion: string }): string[] {
   const { decision, reglas, explicacion } = x;
   const problemas: string[] = [];

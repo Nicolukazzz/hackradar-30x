@@ -15,6 +15,10 @@ import { crearClienteServidor } from "@/lib/supabase/servidor";
 const esquemaPerfil = z.object({ nombre: z.string(), activo: z.boolean() });
 const esquemaMembresia = z.object({ rol: z.enum(ROLES), limite_aprobacion_usd: z.number().int().positive().nullable() });
 
+/**
+ * Sesión de la petición actual, o null si no hay, el token no es válido o la cuenta está desactivada. Se calcula una
+ * vez por petición.
+ */
 export const obtenerSesion = cache(async (): Promise<Sesion | null> => {
   const supabase = await crearClienteServidor();
   const { data, error } = await supabase.auth.getClaims();

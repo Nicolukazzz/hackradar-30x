@@ -16,10 +16,13 @@ import type { Repositorio } from "@/repositorio/repositorio";
 import { cargarGolden, type DocGolden } from "./escenario";
 import { problemasExplicacion } from "./explicabilidad";
 
+/** golden: extracción esperada, sin LLM · real: el extractor de producción, con caché. */
 export type ModoExtraccion = "golden" | "real";
 
+/** Filas y columnas de la matriz de confusión. */
 export const DECISIONES: readonly DecisionAgente[] = ["PAGAR", "FRENAR", "ESCALAR", "RECHAZADA_NO_FACTURA"];
 
+/** Lo esperado y lo obtenido para un documento, con los problemas de su explicación. */
 export type ResultadoDocumento = {
   /** "documentos/011-omi-3381.eml", relativo a la carpeta del escenario */
   documento: string;
@@ -37,6 +40,7 @@ export type ResultadoDocumento = {
   problemas: string[];
 };
 
+/** Métricas del reto para un escenario (§14). La seguridad manda: un solo pago indebido es falla crítica. */
 export type ReporteEvaluacion = {
   escenario: string;
   modo: ModoExtraccion;
@@ -61,6 +65,7 @@ export type ReporteEvaluacion = {
   documentos: ResultadoDocumento[];
 };
 
+/** Estado inicial del lote a evaluar. */
 export type ContextoEvaluacion = {
   escenario: string;
   modo: ModoExtraccion;
@@ -72,11 +77,15 @@ export type ContextoEvaluacion = {
   motor?: typeof procesarLote;
 };
 
+/** Se pagó algo que no debía pagarse. */
 export const esPagoIndebido = (d: ResultadoDocumento) => d.obtenido === "PAGAR" && d.esperado !== "PAGAR";
+/** Escaló algo que el agente pudo decidir solo. */
 export const esEscaladoInnecesario = (d: ResultadoDocumento) =>
   d.obtenido === "ESCALAR" && (d.esperado === "PAGAR" || d.esperado === "FRENAR");
 
+/** Documentos pagados que no debían pagarse. */
 export const pagosIndebidos = (r: ReporteEvaluacion) => r.documentos.filter(esPagoIndebido);
+/** Documentos escalados que el agente pudo decidir solo. */
 export const escaladosInnecesarios = (r: ReporteEvaluacion) => r.documentos.filter(esEscaladoInnecesario);
 
 function matrizVacia(): ReporteEvaluacion["matriz"] {
@@ -157,6 +166,7 @@ export function evaluarLote(docs: readonly DocGolden[], ctx: ContextoEvaluacion)
   };
 }
 
+/** Modo de extracción y, opcionalmente, reglas sin guardar o el escenario cargado en un repositorio. */
 export type OpcionesEvaluacion = {
   extraccion: ModoExtraccion;
   /** versión no guardada (pantalla Reglas); por defecto la del escenario o la vigente del repositorio */
@@ -223,6 +233,10 @@ async function conExtraccionReal(base: Base, reglas: Reglas, opciones: OpcionesE
   return docs;
 }
 
+/**
+ * Evalúa un escenario completo contra su `esperado.json`. La usan el CLI, el CI y «Simular» en la pantalla de reglas,
+ * así todos muestran los mismos números.
+ */
 export async function evaluarEscenario(id: string, opciones: OpcionesEvaluacion): Promise<ReporteEvaluacion> {
   const base = opciones.repo ? await baseDesdeRepo(id, opciones.repo) : await baseDesdeDisco(id, opciones.dir ?? DIR_DATA_POR_DEFECTO);
   const reglas = opciones.reglas ?? base.reglas;

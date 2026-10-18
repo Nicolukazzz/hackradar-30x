@@ -7,6 +7,10 @@ import { type Extractor, extractorReal } from "@/ingesta/pipeline";
 import type { Repositorio } from "@/repositorio/repositorio";
 import { ahoraHumano } from "@/servicios/comun";
 
+/**
+ * Repositorio, instante actual y extractor real (con el LLM del entorno y caché en disco), iguales para todos los
+ * canales.
+ */
 export async function dependenciasCanal(repo: Repositorio): Promise<{ repo: Repositorio; ahora: string; extractor: Extractor }> {
   return {
     repo,

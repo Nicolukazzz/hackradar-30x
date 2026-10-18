@@ -4,10 +4,12 @@
 
 export const PREFIJO_INVITACION = "invitacion:";
 
+/** Arma el remitente de un envío por invitación. El correo se guarda en minúsculas. */
 export function remitenteInvitacion(id: string, correo: string): string {
   return `${PREFIJO_INVITACION}${id}:${correo.trim().toLowerCase()}`;
 }
 
+/** true si el remitente viene de un enlace de invitación: R11 nunca lo da por verificado. */
 export function esRemitenteInvitacion(valor: string): boolean {
   return valor.trim().toLowerCase().startsWith(PREFIJO_INVITACION);
 }

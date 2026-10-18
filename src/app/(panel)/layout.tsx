@@ -1,3 +1,7 @@
+// Layout del panel: verifica la sesión y la membresía, y monta la barra lateral, la cabecera móvil y la moneda base
+// para los componentes de cliente. No basta como control de acceso: cada pantalla lee sus datos por `_datos`, que
+// vuelve a exigir la sesión.
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -8,6 +12,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { obtenerSesion } from "@/lib/auth/sesion";
 import { obtenerEmpresa } from "@/app/_datos/empresa";
 
+/** Sin sesión va a /entrar; sin membresía, a /sin-permiso. */
 export default async function PanelLayout({ children }: LayoutProps<"/">) {
   // Sin sesión (o cuenta desactivada) → /entrar. Cuenta que no es miembro de la empresa (#51) → /sin-permiso.
   const sesion = await obtenerSesion();

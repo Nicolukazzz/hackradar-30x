@@ -25,6 +25,7 @@ import {
   type EstadoEnlace,
 } from "./tipos";
 
+/** Enlace con su estado calculado al leerlo. */
 export type EnlaceConEstado = EnlaceProveedor & { estado: EstadoEnlace };
 
 /** Lo que ve el proveedor antes de entrar: solo el nombre de la empresa. */
@@ -32,6 +33,7 @@ export type VistaEnlace = { empresa: string };
 
 /** Lo que ve el proveedor de cada factura: sin reglas, límites ni montos de la empresa (como `respuesta.ts`). */
 export type EstadoEnvio = "en_revision" | "aprobada" | "no_se_pagara" | "no_es_factura";
+/** Una factura que subió el proveedor, con el estado y el mensaje que se le muestran. */
 export type Envio = { ref_interna: string; recibido_en: string; nombre_archivo: string; estado: EstadoEnvio; mensaje: string };
 
 const hashCodigo = (codigo: string) => hashValor(`codigo:${codigo}`);
@@ -43,6 +45,7 @@ function validar<T extends z.ZodType>(esquema: T, entrada: unknown): z.output<T>
   return r.data;
 }
 
+/** Enlaces del portal, los más nuevos primero. */
 export async function listarEnlaces(almacen: AlmacenEnlaces, ahora: string): Promise<EnlaceConEstado[]> {
   return (await almacen.listar()).map((e) => ({ ...e, estado: estadoEnlace(e, ahora) }));
 }
@@ -79,6 +82,7 @@ export async function crearEnlace(
   }
 }
 
+/** Revoca un enlace: deja de servir y cierra las sesiones abiertas. 404 si no está activo. */
 export async function revocarEnlace(almacen: AlmacenEnlaces, id: string, ahora: string): Promise<void> {
   if (!z.uuid().safeParse(id).success || !(await almacen.revocar(id, ahora))) throw new ErrorVinculo(404, "No hay un enlace activo con ese id.");
 }
@@ -112,6 +116,7 @@ export async function enlaceActivo(almacen: AlmacenEnlaces, token: string, ahora
   return e && estadoEnlace(e, ahora) === "activo" ? e : null;
 }
 
+/** Lo que el proveedor ve antes de entrar (el nombre de la empresa), o null si el enlace no sirve. */
 export async function vistaEnlace(almacen: AlmacenEnlaces, repo: Repositorio, token: string, ahora: string): Promise<VistaEnlace | null> {
   return (await enlaceActivo(almacen, token, ahora)) ? { empresa: (await repo.datosComunes()).empresa.nombre } : null;
 }

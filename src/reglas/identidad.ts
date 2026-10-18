@@ -5,6 +5,7 @@
 import { normalizarIdentificacion, normalizarNombre } from "@/dominio/normalizar";
 import type { Beneficiario, Extraccion, ModoIdentidad, Reglas } from "@/dominio/tipos";
 
+/** Por qué se encontró (o no) al proveedor. R3 lo convierte en CUMPLE, FALLA o INDETERMINADO. */
 export type MotivoIdentidad =
   /** encontrado según el modo */
   | "ok"
@@ -17,6 +18,7 @@ export type MotivoIdentidad =
   /** nombre_y_nit: el NIT de la factura no es el registrado para ese nombre */
   | "nit_distinto";
 
+/** Resultado de buscar a quien cobra en la lista permitida. */
 export type Identidad = {
   modo: ModoIdentidad;
   motivo: MotivoIdentidad;
@@ -28,8 +30,13 @@ export type Identidad = {
   nit: string | null;
 };
 
+/** Modo de identidad de las reglas. Ausente = por nombre, como el dataset. */
 export const modoIdentidad = (r: Pick<Reglas, "identidad">): ModoIdentidad => r.identidad?.modo ?? "nombre";
 
+/**
+ * Busca al proveedor de la factura según `modo`. El NIT solo cuenta si su confianza alcanza `confianzaMinima`; ante
+ * un dato faltante o dudoso devuelve el motivo y nunca adivina.
+ */
 export function identificar(ext: Extraccion, beneficiarios: readonly Beneficiario[], modo: ModoIdentidad, confianzaMinima: number): Identidad {
   const nombre = ext.beneficiario_nombre.valor ? normalizarNombre(ext.beneficiario_nombre.valor) : "";
   const porNombre = nombre ? (beneficiarios.find((b) => normalizarNombre(b.nombre) === nombre) ?? null) : null;

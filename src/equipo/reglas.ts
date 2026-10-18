@@ -9,6 +9,7 @@ import { ErrorEquipo, MENSAJE_ULTIMO_ADMIN, type EstadoInvitacion, type Invitaci
 
 /** #80: 72 horas. Un enlace que viaja por correo no debería quedar vivo una semana. */
 export const VIGENCIA_DIAS_POR_DEFECTO = 3;
+/** Máximo de días que puede durar una invitación. */
 export const VIGENCIA_DIAS_MAXIMA = 30;
 /** USD 1.000.000 en centavos: tope de cordura para el límite de un aprobador. */
 const LIMITE_MAXIMO_CENTAVOS = 100_000_000;
@@ -20,6 +21,7 @@ function conLimiteCoherente<T extends { rol: Rol; limite_aprobacion_usd?: number
   return { ...v, limite_aprobacion_usd: v.rol === "aprobador" ? (v.limite_aprobacion_usd ?? null) : null };
 }
 
+/** Invitación válida: rol, correo de la persona, límite solo para aprobadores y vigencia de 1 a 30 días. */
 export const EsquemaNuevaInvitacion = z
   .strictObject({
     rol: z.enum(ROLES),
@@ -30,14 +32,18 @@ export const EsquemaNuevaInvitacion = z
   })
   .transform(conLimiteCoherente);
 
+/** Datos de una invitación antes de validar. */
 export type EntradaInvitacion = z.input<typeof EsquemaNuevaInvitacion>;
 
+/** Cambio de rol o límite válido. */
 export const EsquemaCambioMiembro = z
   .strictObject({ rol: z.enum(ROLES), limite_aprobacion_usd: limite.optional() })
   .transform(conLimiteCoherente);
 
+/** Cambio de rol o límite ya validado. */
 export type CambioMiembro = z.output<typeof EsquemaCambioMiembro>;
 
+/** Estado de una invitación en `ahora`: revocada, usada, vencida o activa (en ese orden de prioridad). */
 export function estadoInvitacion(inv: Invitacion, ahora: string): EstadoInvitacion {
   if (inv.revocada_en !== null) return "revocada";
   if (inv.usos >= inv.usos_max) return "usada";

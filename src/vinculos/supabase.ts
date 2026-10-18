@@ -31,6 +31,7 @@ function fallar(error: PostgrestError, que: string): never {
   throw new Error(`Supabase (${que}): ${error.message}`);
 }
 
+/** Almacén de enlaces con la llave secreta de Supabase (solo servidor). */
 export function crearAlmacenEnlacesSupabase(config: { url: string; claveSecreta: string }): AlmacenEnlaces {
   const db: SupabaseClient = createClient(config.url, config.claveSecreta, { auth: { persistSession: false, autoRefreshToken: false } });
 

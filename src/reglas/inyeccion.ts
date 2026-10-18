@@ -102,6 +102,9 @@ function tirasOcultas(texto: string): [number, number][] {
   return tiras;
 }
 
+/**
+ * Una instrucción detectada: el fragmento que coincidió (para citar) y la línea completa (para resaltar en la Traza).
+ */
 export type Hallazgo = {
   /**
    * Texto como lo lee el modelo: el del documento, con los caracteres Tags invisibles decodificados a ASCII.

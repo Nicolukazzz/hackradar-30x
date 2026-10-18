@@ -21,6 +21,10 @@ import { esFechaValida, fechaDe, fechaLegible } from "./fechas";
 import type { Identidad } from "./identidad";
 import type { EstadoPresupuesto } from "./presupuesto";
 
+/**
+ * Todo lo que una regla puede leer (§4.1). Se arma una vez por factura; `historial` incluye las decisiones previas
+ * del mismo lote.
+ */
 export type ContextoRegla = {
   doc: DocumentoRecibido;
   ext: Extraccion;
@@ -41,6 +45,9 @@ export type ContextoRegla = {
 /** Firma común (§4.1): función pura, sin I/O ni reloj. */
 export type Regla = (ctx: ContextoRegla) => EvaluacionRegla;
 
+/**
+ * Campos de §4.3 que R1 exige por defecto. El monto siempre es obligatorio, aunque la empresa cambie sus requisitos.
+ */
 export const CAMPOS_OBLIGATORIOS = [
   "beneficiario_nombre",
   "numero",
@@ -62,6 +69,7 @@ export function obligatoriosDe(reglas: Pick<Reglas, "requisitos">): CampoR1[] {
   return ORDEN_R1.filter((c) => c === "monto_total" || exigidos.includes(c));
 }
 
+/** Nombre legible de cada campo, para los textos de R1 y la Traza. */
 export const ETIQUETA_CAMPO: Record<CampoR1, string> = {
   beneficiario_nombre: "beneficiario",
   numero: "número de factura",
@@ -76,6 +84,7 @@ export const ETIQUETA_CAMPO: Record<CampoR1, string> = {
 
 /** Texto de las reglas que dependen de un campo que R1 marcó. */
 export const SIN_DATO = "sin dato confiable (ver R1)";
+/** Texto de las reglas que no aplican porque R3 falló. */
 export const FUERA_DE_LISTA = "beneficiario fuera de la lista (ver R3)";
 
 /** Monedas que se escriben sin decimales (igual que dinero.ts). */
@@ -91,6 +100,7 @@ export function pctEntero(confianza: number): string {
   return `${Math.floor(confianza * 100)}%`;
 }
 
+/** Campo marcado por R1 y su motivo. Las reglas que dependen de él dan NO_APLICA para no repetir la misma causa. */
 export type Afectacion = { campo: CampoR1; motivo: string };
 
 /**
@@ -189,11 +199,12 @@ function calcularAfectaciones(ctx: ContextoRegla): Afectacion[] {
   return lista;
 }
 
+/** true si R1 marcó `campo` (falta, es dudoso o no valida). */
 export function afectado(ctx: ContextoRegla, campo: CampoR1): boolean {
   return afectaciones(ctx).some((a) => a.campo === campo);
 }
 
-/** Monto en centavos USD si el monto es confiable; null si R1 lo marcó. */
+/** Monto en centavos de la moneda base si es confiable; null si R1 lo marcó (las reglas que lo usan dan NO_APLICA). */
 export function montoUsd(ctx: ContextoRegla): number | null {
   const total = ctx.ext.monto_total.valor;
   if (!total || afectado(ctx, "monto_total")) return null;
@@ -205,7 +216,7 @@ export function r3Falla(ctx: ContextoRegla): boolean {
   return ctx.beneficiario?.estado !== "activo";
 }
 
-/** La empresa no exige la cuenta en la factura (#109): si no viene, se paga a la registrada. */
+/** true si la empresa exige la cuenta en la factura (#109). Si no la exige y no viene, se paga a la registrada. */
 export function cuentaExigida(ctx: ContextoRegla): boolean {
   return obligatoriosDe(ctx.reglas).includes("cuenta_destino_ultimos4");
 }
@@ -215,6 +226,7 @@ export function desactivada(ctx: ContextoRegla, id: IdRegla): boolean {
   return (id === "R5" || id === "R8") && ctx.reglas.activas[id] === false;
 }
 
+/** Comparación de una regla desactivada por la empresa. */
 export function textoDesactivada(ctx: ContextoRegla): string {
   return `Regla desactivada en v${ctx.reglas.version}`;
 }

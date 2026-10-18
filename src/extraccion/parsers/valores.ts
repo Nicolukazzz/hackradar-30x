@@ -24,6 +24,7 @@ export function numeroADecimal(texto: string): string | null {
   return decimal ? `${entero}.${decimal[1]}` : entero;
 }
 
+/** true si el código está entre las monedas soportadas. */
 export function esMoneda(texto: string): texto is Moneda {
   return (MONEDAS as readonly string[]).includes(texto);
 }

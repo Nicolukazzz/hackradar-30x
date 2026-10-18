@@ -12,6 +12,7 @@ const MIME: Record<string, string> = {
   ".xml": "application/xml",
 };
 
+/** MIME por extensión; desconocida = `application/octet-stream`. */
 export function mimeDeArchivo(nombre: string): string {
   return MIME[path.extname(nombre).toLowerCase()] ?? "application/octet-stream";
 }

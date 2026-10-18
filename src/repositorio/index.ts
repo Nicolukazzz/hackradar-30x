@@ -44,6 +44,10 @@ async function aprobadoresDelEquipoActual(): Promise<Aprobador[]> {
   return aprobadoresDelEquipo(await (await obtenerAlmacenEquipo()).miembros(EMPRESA_ID));
 }
 
+/**
+ * Repositorio del proceso, creado una sola vez según `REPOSITORIO` y `ESCENARIO`. Si la creación falla, el próximo
+ * pedido reintenta.
+ */
 export function obtenerRepositorio(): Promise<Repositorio> {
   const g = globalThis as Global;
   g[CLAVE] ??= crear().catch((e: unknown) => {

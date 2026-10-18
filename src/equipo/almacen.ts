@@ -5,6 +5,10 @@ import type { Rol } from "@/lib/auth/permisos";
 
 import type { Invitacion, Miembro, NuevaInvitacion, ResultadoAceptar } from "./tipos";
 
+/**
+ * Persistencia de miembros e invitaciones de una empresa. Las reglas que no pueden fallar (último admin, aceptar una
+ * sola vez) se cumplen dentro del almacén, de forma atómica.
+ */
 export interface AlmacenEquipo {
   miembros(empresa_id: string): Promise<Miembro[]>;
   /** Las más nuevas primero: todas las que siguen vigentes (sin tope, para poder revocarlas) + las 50 más recientes. */

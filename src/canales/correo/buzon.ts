@@ -6,6 +6,7 @@ import nodemailer, { type Transporter } from "nodemailer";
 
 import type { Respuesta } from "./recibir";
 
+/** Credenciales del buzón: usuario de Gmail, clave de aplicación y host IMAP. */
 export type ConfigBuzon = { usuario: string; clave: string; imapHost: string };
 
 /** Etiqueta de Gmail que marca lo ya procesado. No se usa \Seen: una persona puede leer el buzón sin que se pierdan facturas. */
@@ -72,6 +73,10 @@ export function crearTransporte(config: ConfigBuzon): Transporter {
   return nodemailer.createTransport({ host: "smtp.gmail.com", port: 465, secure: true, pool: true, auth: { user: config.usuario, pass: config.clave } });
 }
 
+/**
+ * Responde al proveedor por SMTP en el mismo hilo, marcada como respuesta automática (sin bucles con otros
+ * contestadores).
+ */
 export async function enviarRespuesta(transporte: Transporter, config: ConfigBuzon, r: Respuesta): Promise<void> {
   await transporte.sendMail({
     from: config.usuario,

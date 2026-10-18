@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { puede, type Permiso, type Sesion } from "@/lib/auth/permisos";
 import { obtenerSesion } from "@/lib/auth/sesion";
 
+/** Sesión de quien mira, o redirige: sin sesión a /entrar, sin el permiso a /sin-permiso. */
 export async function exigirMiembro(permiso: Permiso = "ver"): Promise<Sesion> {
   const sesion = await obtenerSesion();
   if (!sesion) redirect("/entrar");

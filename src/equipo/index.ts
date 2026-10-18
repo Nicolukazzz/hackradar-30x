@@ -14,6 +14,7 @@ async function crear(): Promise<AlmacenEquipo> {
   return crearAlmacenEquipoSupabase({ url, claveSecreta });
 }
 
+/** Almacén del equipo del proceso (Supabase), creado una sola vez. */
 export function obtenerAlmacenEquipo(): Promise<AlmacenEquipo> {
   const g = globalThis as Global;
   g[CLAVE] ??= crear().catch((e: unknown) => {

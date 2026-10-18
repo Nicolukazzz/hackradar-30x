@@ -5,6 +5,10 @@ import { describirCambio, type CambiosEmpresaParciales } from "@/empresa/datos";
 import type { Aprobador, Empresa, EntradaRegistro } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
 
+/**
+ * Guarda los datos de la empresa y, si algo cambió, escribe una entrada CAMBIO_EMPRESA con una frase que dice qué
+ * cambió.
+ */
 export async function guardarEmpresa(
   repo: Repositorio,
   cambios: CambiosEmpresaParciales,

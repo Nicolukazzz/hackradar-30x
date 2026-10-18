@@ -5,6 +5,7 @@ import { formatearUsd } from "@/dominio/dinero";
 import { evaluacion } from "./catalogo";
 import { type ContextoRegla, montoUsd, SIN_DATO } from "./contexto";
 
+/** FALLA (escala) si el monto supera el límite de pago automático: sobre ese monto siempre decide una persona. */
 export function r09Automatico(ctx: ContextoRegla) {
   const usd = montoUsd(ctx);
   if (usd === null) return evaluacion("R9", "NO_APLICA", SIN_DATO);

@@ -13,6 +13,7 @@ export const MODELO_ANTHROPIC_POR_DEFECTO = "claude-haiku-5-5";
 const TIEMPO_MAXIMO_MS = 60_000;
 const IMAGENES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp"]);
 
+/** Llave, modelo y cliente inyectable (tests). */
 export type OpcionesAnthropic = { apiKey: string; modelo?: string; cliente?: Pick<Anthropic, "messages"> };
 
 /** Documento (PDF) e imágenes primero, después el texto con los campos pedidos. */
@@ -28,6 +29,7 @@ function contenido(doc: DocumentoNormalizado, texto: string): Anthropic.ContentB
   return [...archivos, { type: "text", text: texto }];
 }
 
+/** Lector Claude Haiku. Devuelve un parcial validado o lanza `ErrorLLM` si el error es pasajero. */
 export function crearAnthropic(op: OpcionesAnthropic): ProveedorLLM {
   const modelo = op.modelo || MODELO_ANTHROPIC_POR_DEFECTO;
   // Sin reintentos del SDK: la cadena de proveedores pasa al siguiente lector (Groq) si este falla.

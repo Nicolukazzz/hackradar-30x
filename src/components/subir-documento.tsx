@@ -47,6 +47,10 @@ export function enviarArchivo(url: string, archivo: File, alAvanzar: (pct: numbe
   });
 }
 
+/**
+ * Zona para subir una factura con progreso y resultado del agente. `url` cambia el destino (panel o portal del
+ * proveedor).
+ */
 export function SubirDocumento({
   alTerminar,
   className,

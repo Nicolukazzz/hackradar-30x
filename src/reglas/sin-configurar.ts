@@ -4,11 +4,13 @@
 
 import { ID_REGLAS, type IdRegla, type Moneda, type Reglas } from "@/dominio/tipos";
 
+/** Versión de las reglas que nunca se guarda: significa «la empresa aún no configuró nada». */
 export const VERSION_SIN_CONFIGURAR = 0;
 
 /** Dólares → centavos (los límites se guardan en centavos). */
 const usd = (dolares: number) => dolares * 100;
 
+/** Reglas sugeridas en USD, versión 0. Con ellas el motor evalúa y explica, pero siempre escala. */
 export function reglasSinConfigurar(): Reglas {
   return {
     version: VERSION_SIN_CONFIGURAR,
@@ -51,4 +53,5 @@ export function reglasSinConfigurarEn(moneda: Moneda, desdeUsd: (centavos: numbe
   };
 }
 
+/** true si son las reglas sin configurar (versión 0): el motor escala toda factura. */
 export const sinConfigurar = (r: Pick<Reglas, "version">): boolean => r.version === VERSION_SIN_CONFIGURAR;

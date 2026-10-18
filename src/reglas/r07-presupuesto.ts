@@ -5,6 +5,10 @@ import { formatearUsd } from "@/dominio/dinero";
 import { evaluacion } from "./catalogo";
 import { type ContextoRegla, montoUsd, SIN_DATO } from "./contexto";
 
+/**
+ * FALLA (frena) si el monto supera lo disponible del periodo al momento de evaluar: el presupuesto ya descuenta lo
+ * pagado en el lote y lo reservado por escalados.
+ */
 export function r07Presupuesto(ctx: ContextoRegla) {
   const usd = montoUsd(ctx);
   if (usd === null) return evaluacion("R7", "NO_APLICA", SIN_DATO);

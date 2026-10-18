@@ -30,6 +30,7 @@ function comparaciones(resultado: ResultadoMotor): string[] {
     .map((e) => chip(e.id, e.comparacion));
 }
 
+/** Resultado del motor y su contexto, más el id y el momento de la entrada. */
 export type NuevaEntradaAgente = {
   resultado: ResultadoMotor;
   doc: DocumentoRecibido;
@@ -39,6 +40,10 @@ export type NuevaEntradaAgente = {
   momento: string;
 };
 
+/**
+ * Arma la DECISION_AGENTE del registro con la traza completa y la extracción. No la guarda: eso lo hace el
+ * repositorio.
+ */
 export function crearEntradaAgente({ resultado, doc, ext, reglas, id, momento }: NuevaEntradaAgente): EntradaRegistro {
   return {
     id,

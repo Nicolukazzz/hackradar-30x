@@ -9,7 +9,9 @@ import { MAX_BYTES } from "./limites";
 export { MAX_BYTES };
 const LARGO_NOMBRE = 120;
 
+/** Archivo aceptado, con su tipo real (por contenido) y la extensión con la que se guarda. */
 export type ArchivoValido = { ok: true; formato: Extract<Formato, "pdf" | "imagen" | "xml">; mime: string; extension: string };
+/** Archivo rechazado: código HTTP y mensaje para la persona que lo subió. */
 export type ArchivoInvalido = { ok: false; estado: 400 | 413 | 415 | 422; mensaje: string };
 
 const empieza = (b: Uint8Array, firma: readonly number[], desde = 0) => firma.every((x, i) => b[desde + i] === x);
@@ -38,6 +40,10 @@ function esXml(b: Uint8Array): boolean {
 /** Texto latin1 del PDF (sin decodificar streams) para buscar marcas de la estructura. */
 const crudo = (b: Uint8Array) => Buffer.from(b.buffer, b.byteOffset, b.byteLength).toString("latin1");
 
+/**
+ * Acepta PDF (sin cifrar y con páginas), PNG, JPG o XML de hasta 10 MB, decidiendo el tipo por los primeros bytes.
+ * Rechaza HTML y SVG aunque parezcan XML.
+ */
 export function validarArchivo(bytes: Uint8Array): ArchivoValido | ArchivoInvalido {
   if (bytes.byteLength === 0) return { ok: false, estado: 400, mensaje: "El archivo está vacío." };
   if (bytes.byteLength > MAX_BYTES) return { ok: false, estado: 413, mensaje: "El archivo supera los 10 MB." };

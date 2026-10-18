@@ -5,6 +5,7 @@ import type { DecisionAgente, EvaluacionRegla, IdRegla } from "@/dominio/tipos";
 /** Para PAGAR estas reglas deben dar CUMPLE (nunca NO_APLICA): invariantes 1 y 2 de §5. */
 const DEBEN_CUMPLIR_PARA_PAGAR: readonly IdRegla[] = ["R1", "R3", "R4", "R6", "R7", "R9", "R11"];
 
+/** Decisión de las reglas de pago y las reglas que fallaron (FALLA o INDETERMINADO), en orden R1→R11. */
 export type Combinacion = { decision: Exclude<DecisionAgente, "RECHAZADA_NO_FACTURA">; reglas_que_fallaron: IdRegla[] };
 
 /**

@@ -21,7 +21,9 @@ export const PAISES = {
   ZA: "Sudáfrica",
 } as const;
 
+/** Código ISO de un país que la empresa puede declarar. */
 export type CodigoPais = keyof typeof PAISES;
+/** Países que se pueden elegir en Ajustes, en el orden de la lista. */
 export const CODIGOS_PAIS = Object.keys(PAISES) as CodigoPais[];
 
 const texto = (max: number, campo: string) =>
@@ -43,8 +45,10 @@ export const EsquemaCambiosEmpresa = z
   .partial()
   .refine((c) => Object.keys(c).length > 0, "No hay nada que cambiar.");
 
+/** Cambios validados de la empresa; al menos uno. */
 export type CambiosEmpresaParciales = z.infer<typeof EsquemaCambiosEmpresa>;
 
+/** Nombres de los países separados por coma (un código desconocido se deja tal cual). */
 export function nombrePaises(codigos: readonly string[]): string {
   return codigos.map((c) => PAISES[c as CodigoPais] ?? c).join(", ");
 }

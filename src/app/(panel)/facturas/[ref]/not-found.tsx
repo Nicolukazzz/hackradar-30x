@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
+/** No hay ninguna factura con esa ref interna. */
 export default function FacturaNoEncontrada() {
   return (
     <Empty className="flex-none rounded-2xl border bg-card py-20">

@@ -3,6 +3,7 @@
 
 import { MomentoSchema } from "./esquemas";
 
+/** Fuente de la hora actual (ISO con zona). Se inyecta para que motor, evaluación y tests sean deterministas. */
 export type Reloj = { ahora(): string };
 
 /** Reloj detenido en `iso` (tests y escenarios: `ahora` de escenario.json). Misma validación que los datos. */

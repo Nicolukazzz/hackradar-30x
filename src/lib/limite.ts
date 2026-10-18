@@ -3,6 +3,9 @@
 
 export type Limitador = { permitir(clave: string): boolean };
 
+/**
+ * Limitador de frecuencia: `permitir(clave)` acepta hasta `maximo` usos por `ventanaMs`. `ahora` se inyecta en tests.
+ */
 export function crearLimitador({ maximo, ventanaMs, ahora = Date.now }: { maximo: number; ventanaMs: number; ahora?: () => number }): Limitador {
   const golpes = new Map<string, number[]>();
   return {

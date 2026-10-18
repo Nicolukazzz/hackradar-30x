@@ -44,8 +44,10 @@ export const REGLAS: readonly Regla[] = [
   r07Presupuesto, r08Mensual, r09Automatico, r10Instrucciones, r11Remitente,
 ];
 
+/** Lo que el motor necesita de los datos comunes. Sin empresa ni versiones de reglas: llegan aparte. */
 export type DatosMotor = Pick<DatosComunes, "beneficiarios" | "aprobadores" | "tasas" | "tasas_diarias">;
 
+/** Una factura lista para decidir, con el estado del presupuesto y el historial al momento de evaluarla. */
 export type EntradaMotor = {
   doc: DocumentoRecibido;
   ext: Extraccion;
@@ -138,6 +140,10 @@ function correr(regla: Regla, id: EvaluacionRegla["id"], ctx: ContextoRegla): Ev
   }
 }
 
+/**
+ * Decide una factura: corre R1–R11 (cada una aislada), combina (§5), asigna aprobador si escala y redacta la
+ * explicación. Nunca lanza: ante cualquier error devuelve ESCALAR con todas las reglas en INDETERMINADO.
+ */
 export function evaluarFactura(input: EntradaMotor): ResultadoMotor {
   try {
     return evaluarSinProteccion(input);
@@ -209,6 +215,7 @@ function evaluarSinProteccion(input: EntradaMotor): ResultadoMotor {
   };
 }
 
+/** Estado inicial de un lote: datos, reglas vigentes, registro previo e instante `ahora`. */
 export type ContextoLote = {
   datos: DatosMotor;
   reglas: Reglas;

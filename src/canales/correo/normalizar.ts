@@ -7,8 +7,10 @@ import { simpleParser } from "mailparser";
 import type { DocumentoEntrante } from "@/dominio/tipos";
 import { validarArchivo } from "@/ingesta/validar-archivo";
 
+/** Resultado de DMARC según nuestro servidor de correo: solo «pasa» deja verificar el remitente. */
 export type Autenticacion = "pasa" | "falla" | "sin_dato";
 
+/** Correo listo para la ingesta, con lo necesario para decidir si se procesa y cómo responder. */
 export type CorreoEntrante = {
   entrada: DocumentoEntrante;
   autenticacion: Autenticacion;
@@ -78,6 +80,11 @@ function motivoAutomatico(cabecera: (k: string) => string, de: string, propio: s
   return null;
 }
 
+/**
+ * `.eml` crudo → documento para la ingesta. El remitente es el `From` si nuestro servidor certificó DMARC; si no,
+ * queda con prefijo `no-verificado:` y R11 escala. Detecta correos automáticos (rebotes, respuestas automáticas) para
+ * no procesarlos.
+ */
 export async function correoAEntrada(
   eml: Buffer,
   opciones: {

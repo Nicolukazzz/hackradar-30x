@@ -10,6 +10,10 @@ const DONDE_MENSAJE = { correo: "en el cuerpo del correo", telegram: "en el mens
 /** Texto de a lo sumo `max` caracteres, con "…" si se cortó. */
 const recortar = (t: string, max: number) => (t.length > max ? `${t.slice(0, max - 1)}…` : t);
 
+/**
+ * FALLA (escala) si el detector determinista encuentra instrucciones dirigidas al agente en el asunto, el mensaje o
+ * el documento, o si el extractor reportó alguna. Separa lo hallado en el mensaje de lo hallado en el documento.
+ */
 export function r10Instrucciones(ctx: ContextoRegla) {
   const { doc, ext } = ctx;
   const mensaje = [doc.asunto, doc.texto_mensaje].filter(Boolean).join("\n");

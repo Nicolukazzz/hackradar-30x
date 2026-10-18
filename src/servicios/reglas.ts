@@ -11,8 +11,10 @@ const SET_DE_PRUEBA = "lote-demo-oct";
 /** Moneda de las tasas y montos del set de prueba. */
 const MONEDA_SET_DE_PRUEBA: Moneda = "USD";
 
+/** Una tasa y cuántas facturas del periodo la usaron. */
 export type UsoTasa = { moneda: Moneda; tasa: string; facturas: number };
 
+/** Lo que muestra la pantalla de reglas: versión vigente, historial y datos de apoyo. */
 export type RespuestaReglas = {
   vigente: Reglas;
   historial: ResumenVersion[];
@@ -25,6 +27,7 @@ export type RespuestaReglas = {
   tasas_origen: { fecha: string | null; fuente: string | null; estado: "hoy" | "anterior" | "ninguna" } | null;
 };
 
+/** Guardado rechazado; si fue por la simulación, trae el reporte para mostrarlo. */
 export class ErrorReglas extends Error {
   constructor(
     readonly estado: 400 | 403 | 409,
@@ -43,6 +46,7 @@ export function sinVersion(r: Reglas): Omit<Reglas, "version"> {
   return copia as Omit<Reglas, "version">;
 }
 
+/** Reglas vigentes, historial de versiones y tasas con su origen. */
 export async function obtenerReglas(repo: Repositorio): Promise<RespuestaReglas> {
   const [datos, vigente, historial, esc, registro, vivas] = await Promise.all([
     repo.datosComunes(),

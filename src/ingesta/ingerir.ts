@@ -11,6 +11,7 @@ import type { Reloj } from "@/dominio/reloj";
 import type { Beneficiario, DocumentoEntrante, DocumentoRecibido, Formato, Remitente } from "@/dominio/tipos";
 import type { ArchivoGuardado, Repositorio } from "@/repositorio/repositorio";
 
+/** Repositorio donde se guarda el documento y reloj para el año de la ref. */
 export type DependenciasIngesta = {
   repo: Repositorio;
   /** año de la ref interna: la ref se asigna al recibir (§16 punto 5) */
@@ -64,6 +65,7 @@ export async function bytesPrincipales(entrada: DocumentoEntrante, dirBase?: str
   return leerAdjunto(principal, { dirBase });
 }
 
+/** Huella hex del contenido: identifica el mismo archivo aunque cambie de nombre (R2). */
 export const sha256 = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 
 /** Arma el DocumentoRecibido sin tocar el repositorio (lo usa también el modo golden de la evaluación). */
@@ -84,6 +86,10 @@ export async function recibir(
   return { doc, bytes };
 }
 
+/**
+ * Recibe un documento de cualquier canal: lo valida, le asigna la siguiente ref `INT-AAAA-NNNNNN`, calcula su huella,
+ * resuelve el remitente y guarda documento y archivo original. No extrae ni decide.
+ */
 export async function ingerir(entrada: DocumentoEntrante, deps: DependenciasIngesta): Promise<DocumentoRecibido> {
   const parseada = DocumentoEntranteSchema.parse(entrada);
   // Espacios o saltos de línea que agregue un canal no cambian quién es el remitente (ni para R11).

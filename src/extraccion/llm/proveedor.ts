@@ -19,6 +19,7 @@ function esPasajero(e: unknown): boolean {
   return e instanceof ErrorLLM && (e.estado === null || e.estado === 429 || e.estado >= 500);
 }
 
+/** Intentos y espera entre reintentos; `esperar` se inyecta en tests. */
 export type OpcionesReintento = { intentos?: number; esperaMs?: number; esperar?: (ms: number) => Promise<void> };
 
 /**

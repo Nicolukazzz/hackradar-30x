@@ -6,6 +6,10 @@ import type { DecisionAgente, EntradaRegistro, Reglas, TablaTasas, TipoPeriodo }
 
 import { facturasVigentes, totalEn } from "./libro";
 
+/**
+ * Presupuesto del periodo en centavos de la moneda base. `disponible` ya descuenta lo reservado si
+ * `contar_reservado`.
+ */
 export type EstadoPresupuesto = {
   /** "2026-10" (ver periodoDe) */
   periodo: string;

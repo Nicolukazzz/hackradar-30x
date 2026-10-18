@@ -5,12 +5,14 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 const GRAPH = "https://graph.facebook.com/v25.0";
 const TIEMPO_MAXIMO_MS = 20_000;
 
+/** Lo que se usa de la Cloud API: enviar un texto y descargar un archivo. */
 export interface ClienteWhatsapp {
   enviarMensaje(numero: string, texto: string): Promise<void>;
   /** Bytes del archivo (GET /{media_id} → url → descarga). Lanza si no existe o pesa más que `maximo`. */
   descargarArchivo(media_id: string, maximo: number): Promise<Buffer>;
 }
 
+/** Cliente con `fetch` y tiempo máximo por llamada. Lanza si la API responde error. */
 export function crearClienteWhatsapp(token: string, phone_id: string, f: typeof fetch = fetch): ClienteWhatsapp {
   const auth = { authorization: `Bearer ${token}` };
   return {

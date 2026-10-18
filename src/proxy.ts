@@ -41,6 +41,7 @@ export async function proxy(request: NextRequest) {
   }
 }
 
+/** Corre en todo salvo archivos estáticos e imágenes. */
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };

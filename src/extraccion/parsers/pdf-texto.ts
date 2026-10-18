@@ -6,6 +6,7 @@ import { getDocumentProxy } from "unpdf";
 import type { ExtraccionParcial } from "../tipos";
 import { parsearLineas } from "./etiquetas";
 
+/** Por debajo de esta cantidad de texto, el PDF se considera escaneado y lo lee el LLM. */
 export const MINIMO_CARACTERES_PDF = 50;
 
 type Trozo = { x: number; y: number; ancho: number; texto: string };
@@ -58,10 +59,12 @@ export async function textoDePdf(bytes: Uint8Array): Promise<string[]> {
   }
 }
 
+/** true si el PDF casi no tiene capa de texto. */
 export function esPdfEscaneado(lineas: string[]): boolean {
   return lineas.join("").replace(/\s/g, "").length < MINIMO_CARACTERES_PDF;
 }
 
+/** Lee los campos de las líneas de un PDF con texto. */
 export function parsearPdf(lineas: string[]): ExtraccionParcial {
   return parsearLineas(lineas, "documento");
 }

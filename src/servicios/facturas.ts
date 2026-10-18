@@ -14,6 +14,7 @@ import type { Repositorio } from "@/repositorio/repositorio";
 
 import { estadoActual, nombrePais, registroEnBaseDeHoy, type EstadoFactura } from "./comun";
 
+/** Un paso de la línea de tiempo de la Traza. `momento: null` = aún no ocurre. */
 export type HitoLineaTiempo = {
   momento: string | null;
   titulo: string;
@@ -21,6 +22,7 @@ export type HitoLineaTiempo = {
   tono: "neutro" | "pagada" | "frenada" | "escalada" | "humana" | "pendiente";
 };
 
+/** A quién le toca una escalada y para cuándo (§10). */
 export type AsignacionEscalada = {
   aprobador: Pick<Aprobador, "id" | "nombre" | "rol" | "iniciales">;
   responder_antes_de: string;
@@ -28,8 +30,10 @@ export type AsignacionEscalada = {
   urgente: boolean;
 };
 
+/** Conteo de resultados de las reglas para el resumen de la Traza. */
 export type ResumenReglas = { version: number; cumplen: number; no_aplican: number; frenan: number; escalan: number };
 
+/** Todo lo que muestra la Traza de una factura. */
 export type RespuestaFactura = {
   entrada: EntradaRegistro;
   documento: (Omit<DocumentoRecibido, "adjuntos"> & { adjuntos: { nombre: string; mime: string }[] }) | null;

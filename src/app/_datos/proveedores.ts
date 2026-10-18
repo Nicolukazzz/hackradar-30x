@@ -13,6 +13,7 @@ import { exigirMiembro } from "./sesion";
 
 export type { EnlaceConEstado } from "@/vinculos/servicio";
 
+/** Lista permitida, accesos al portal y si quien mira puede crear o cambiar (solo admin). */
 export async function obtenerProveedores(): Promise<{ proveedores: Beneficiario[]; enlaces: EnlaceConEstado[]; crear: PermisoUI }> {
   const sesion = await exigirMiembro();
   const [proveedores, enlaces] = await Promise.all([

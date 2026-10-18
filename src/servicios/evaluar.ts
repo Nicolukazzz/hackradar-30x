@@ -8,6 +8,9 @@ import type { Repositorio } from "@/repositorio/repositorio";
 
 import { ahoraHumano } from "./comun";
 
+/**
+ * Decide una extracción con las reglas y el presupuesto de hoy, sin escribir en el registro (API para otros agentes).
+ */
 export async function evaluarSinRegistrar(repo: Repositorio, ext: Extraccion, beneficiario_id?: string): Promise<ResultadoMotor> {
   const [datos, reglas, historial, ahora] = await Promise.all([repo.datosComunes(), repo.reglasVigentes(), repo.registro(), ahoraHumano(repo)]);
   // Llega por API, no por un canal: remitente "interno" (R11 lo acepta solo si el beneficiario está en la lista).

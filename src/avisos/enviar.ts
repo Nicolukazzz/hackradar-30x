@@ -10,8 +10,10 @@ import { armarAviso, destinatarios } from "./aviso";
 /** Avisa una entrada del registro. Ignora lo que no sea ESCALAR. No lanza. */
 export type Avisador = (entrada: EntradaRegistro, decidido_en?: string) => Promise<void>;
 
+/** Correo del aviso. Los aprobadores van en copia oculta: no ven los correos de los demás. */
 export type CorreoAviso = { bcc: string[]; asunto: string; texto: string };
 
+/** Cómo obtener aprobadores y miembros, armar el enlace y enviar por cada canal (null = canal apagado). */
 export type DependenciasAvisador = {
   aprobadores: () => Promise<readonly Aprobador[]>;
   /** miembros de la empresa (#51); de aquí salen los correos */
@@ -27,6 +29,7 @@ export type DependenciasAvisador = {
 const registrarPorDefecto = (datos: Record<string, unknown>) => console.error(JSON.stringify({ aviso: "escalada", ...datos }));
 const mensaje = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
+/** Avisador que manda el correo y el mensaje de Teams en paralelo. Un canal que falla solo deja log; nunca lanza. */
 export function crearAvisador(d: DependenciasAvisador): Avisador {
   const registrar = d.registrar ?? registrarPorDefecto;
   return async (entrada, decidido_en = entrada.momento) => {

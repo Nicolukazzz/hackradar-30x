@@ -10,6 +10,7 @@ import { normalizarIdentificacion, normalizarNombre, slug, sinPuntoDoble } from 
 import type { Acuerdo, Aprobador, Beneficiario, EntradaRegistro } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
 
+/** Alta o edición rechazada; `estado` es el código HTTP (409 si el nombre, NIT o correo ya es de otro proveedor). */
 export class ErrorProveedor extends Error {
   constructor(
     readonly estado: 400 | 403 | 404 | 409,
@@ -46,6 +47,7 @@ export const EntradaProveedorSchema = z.strictObject({
     .nullable(),
   estado: z.enum(["activo", "inactivo"]),
 });
+/** Datos del asistente de proveedor, ya validados. */
 export type EntradaProveedor = z.infer<typeof EntradaProveedorSchema>;
 
 const PALABRAS_VACIAS = new Set(["de", "del", "la", "el", "los", "las", "y", "para", "por", "en", "mensual", "servicio", "servicios"]);
@@ -144,11 +146,13 @@ async function registrar(repo: Repositorio, b: Beneficiario, explicacion: string
   return entrada;
 }
 
+/** Lista permitida, ordenada por nombre. */
 export async function listarProveedores(repo: Repositorio): Promise<Beneficiario[]> {
   const { beneficiarios } = await repo.datosComunes();
   return [...beneficiarios].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 }
 
+/** Valida y agrega un proveedor, y registra el alta como CAMBIO_BENEFICIARIOS. */
 export function crearProveedor(repo: Repositorio, crudo: unknown, autor: Aprobador, ahora: string): Promise<Beneficiario> {
   const e = leer(crudo);
   return repo.enExclusiva(async () => {
@@ -162,6 +166,7 @@ export function crearProveedor(repo: Repositorio, crudo: unknown, autor: Aprobad
   });
 }
 
+/** Valida y reemplaza un proveedor creado en la app, y registra qué cambió. */
 export function editarProveedor(repo: Repositorio, id: string, crudo: unknown, autor: Aprobador, ahora: string): Promise<Beneficiario> {
   const e = leer(crudo);
   return repo.enExclusiva(async () => {

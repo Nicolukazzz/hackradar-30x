@@ -32,6 +32,11 @@ function datoDudoso(ctx: ContextoRegla): string | null {
   return null;
 }
 
+/**
+ * CUMPLE si quien cobra está activo en la lista, reconocido según el modo de identidad. FALLA (frena) si no está o su
+ * NIT no corresponde; escala si llegó por el portal o una invitación; INDETERMINADO si el nombre o NIT no se leyó con
+ * confianza.
+ */
 export function r03Beneficiario(ctx: ContextoRegla) {
   const { beneficiario, ext, total_permitidos, identidad } = ctx;
   const nombre = ext.beneficiario_nombre.valor ?? "El beneficiario (ilegible)";

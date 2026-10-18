@@ -11,6 +11,7 @@ import {
 
 import { escribirDecimal, escribirUsd, leerDecimal, leerUsd } from "./numeros";
 
+/** Texto de cada dato que la empresa puede exigir en la factura. */
 export const ETIQUETA_REQUISITO: Record<CampoRequerible, string> = {
   beneficiario_nombre: "Nombre de quien cobra",
   numero: "Número de factura",
@@ -22,12 +23,14 @@ export const ETIQUETA_REQUISITO: Record<CampoRequerible, string> = {
   identificacion_fiscal: "NIT o identificación fiscal",
 };
 
+/** Opciones de «Cómo reconoce al proveedor», con su explicación. */
 export const MODOS_IDENTIDAD: { valor: ModoIdentidad; titulo: string; descripcion: string }[] = [
   { valor: "nombre", titulo: "Por nombre", descripcion: "El nombre de la factura igual al registrado (sin tildes, mayúsculas ni S.A.S.)." },
   { valor: "nombre_y_nit", titulo: "Nombre y NIT", descripcion: "Los dos deben ser del mismo proveedor. Lo más estricto." },
   { valor: "nit", titulo: "Solo NIT", descripcion: "La identificación fiscal manda, aunque el nombre esté escrito distinto." },
 ];
 
+/** Las reglas como las edita la pantalla: montos y porcentajes en texto. */
 export type Formulario = {
   automatico: string;
   maximo: string;
@@ -43,8 +46,10 @@ export type Formulario = {
   requisitos: CampoRequerible[];
 };
 
+/** Mensaje de error por campo del formulario. */
 export type Errores = Partial<Record<keyof Formulario, string>>;
 
+/** Reglas → valores del formulario, con los montos escritos en formato local. */
 export function desdeReglas(r: Reglas): Formulario {
   return {
     automatico: escribirUsd(r.limites.pago_automatico_usd),
@@ -112,6 +117,7 @@ function mismoValor(a: unknown, b: unknown): boolean {
   return ka.length === kb.length && ka.every((k) => mismoValor((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
 }
 
+/** true si dos versiones tienen los mismos valores (ignora número, autor y fecha). */
 export const iguales = (a: Reglas, b: Reglas) => mismoValor({ ...a, version: 0, editada_por: "", editada_en: "" }, { ...b, version: 0, editada_por: "", editada_en: "" });
 
 /** Huella estable (claves ordenadas) para saber qué valores se simularon. */

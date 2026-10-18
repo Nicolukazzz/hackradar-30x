@@ -31,6 +31,7 @@ import type { FuenteHistorica, FuenteTasas, TasasVigentes } from "@/tasas/tipos"
 import { coincideFiltro, conVinculosTelegram, conVinculosWhatsapp, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
 import type { CambiosEmpresa, Repositorio, ResumenVersion } from "./repositorio";
 
+/** Conexión al proyecto (solo servidor) y escenario de demo; sin escenario es producción. */
 export type ConfigSupabase = {
   url: string;
   claveSecreta: string;
@@ -86,6 +87,10 @@ async function todas<T>(pedir: (desde: number, hasta: number) => PromiseLike<{ d
 
 const fila = (e: EntradaRegistro) => ({ id: e.id, ref_interna: e.ref_interna, tipo: e.tipo, decision: e.decision, entrada: e });
 
+/**
+ * Repositorio sobre Supabase. El registro es append-only también en la base (solo INSERT y SELECT, más un trigger que
+ * rechaza cambios). Lee paginado para no perder filas; siembra el escenario de demo una sola vez.
+ */
 export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<Repositorio> {
   const db = createClient(config.url, config.claveSecreta, { auth: { persistSession: false, autoRefreshToken: false } });
   const dir = config.dir ?? DIR_DATA_POR_DEFECTO;

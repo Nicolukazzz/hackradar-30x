@@ -16,8 +16,10 @@ import { procesarLote } from "@/reglas/motor";
 
 import { decidir, decisionAgente, ErrorDecision, estadoHumano } from "./decidir";
 
+/** Canales cuyo remitente se puede vincular. El portal no entra: su acceso ya lo crea un admin. */
 export type TipoRemitente = "correo" | "telegram" | "whatsapp";
 
+/** Factura pendiente que llegó desde un remitente sin vincular. */
 export type FacturaDelRemitente = {
   ref_interna: string;
   factura_numero: string | null;
@@ -28,6 +30,7 @@ export type FacturaDelRemitente = {
   otras_reglas: string[];
 };
 
+/** Pregunta «¿este remitente es de este proveedor?» con las facturas que esperan la respuesta. */
 export type RemitentePorConfirmar = {
   remitente: { tipo: TipoRemitente; valor: string };
   beneficiario_id: string;
@@ -37,8 +40,10 @@ export type RemitentePorConfirmar = {
   moneda_base: Moneda;
 };
 
+/** sí: vincula el canal y reevalúa · no: rechaza las facturas. */
 export type RespuestaRemitente = "si" | "no";
 
+/** Respuesta de un admin sobre un remitente. */
 export type EntradaConfirmar = {
   remitente: { tipo: TipoRemitente; valor: string };
   beneficiario_id: string;
@@ -49,6 +54,7 @@ export type EntradaConfirmar = {
   cuentas?: readonly Aprobador[];
 };
 
+/** Qué pasó con cada factura del remitente después de responder. */
 export type ResultadoConfirmar = {
   respuesta: RespuestaRemitente;
   /** decisiones nuevas: reevaluaciones del agente (sí) o rechazos humanos (no) */

@@ -10,12 +10,18 @@ import type { Repositorio } from "@/repositorio/repositorio";
 
 import { correoAEntrada } from "./normalizar";
 
+/** Correo de respuesta al proveedor. */
 export type Respuesta = { para: string; asunto: string; texto: string; en_respuesta_a: string | null };
 
+/**
+ * Decisión y respuesta, o el motivo por el que el correo se ignoró. No hay respuesta si el remitente no está
+ * verificado.
+ */
 export type ResultadoCorreo =
   | { ignorado: null; entrada: EntradaRegistro; respuesta: Respuesta | null }
   | { ignorado: string };
 
+/** Repositorio, instante, extractor y qué tan confiables son las cabeceras del correo. */
 export type DependenciasCorreo = {
   repo: Repositorio;
   ahora: string;
@@ -28,6 +34,10 @@ export type DependenciasCorreo = {
   buzonPropio?: string | null;
 };
 
+/**
+ * Un correo de punta a punta: lo normaliza, lo ingiere, lo decide y arma la respuesta. A un remitente no verificado
+ * no se le responde (podría ser la víctima de una suplantación).
+ */
 export async function recibirCorreo(eml: Buffer, deps: DependenciasCorreo): Promise<ResultadoCorreo> {
   const correo = await correoAEntrada(eml, {
     recibido_en: deps.ahora,

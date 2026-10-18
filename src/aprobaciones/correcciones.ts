@@ -11,6 +11,10 @@ const Texto = z.string().trim().min(1).max(200);
 const Fecha = z.iso.date();
 const DineroSchema = z.strictObject({ centavos: z.number().int().positive().max(1e15), moneda: z.enum(MONEDAS) });
 
+/**
+ * Datos que una persona puede corregir al decidir. Todos opcionales; los que vienen deben ser válidos (monto
+ * positivo, cuenta de 4 dígitos, fechas AAAA-MM-DD).
+ */
 export const CorreccionesSchema = z
   .strictObject({
     beneficiario_nombre: Texto,
@@ -27,9 +31,12 @@ export const CorreccionesSchema = z
   })
   .partial();
 
+/** Correcciones validadas que viajan con la decisión humana. */
 export type Correcciones = z.infer<typeof CorreccionesSchema>;
+/** Campo de la extracción que se puede corregir. */
 export type CampoCorregible = keyof Correcciones;
 
+/** Nombre legible de cada campo corregible, para la explicación de la decisión. */
 export const ETIQUETA_CAMPO: Record<CampoCorregible, string> = {
   beneficiario_nombre: "proveedor",
   identificacion_fiscal: "identificación fiscal",

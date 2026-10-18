@@ -67,6 +67,10 @@ function BadgePendientes({ pendientes }: { pendientes: Promise<number | null> })
   );
 }
 
+/**
+ * Barra lateral del panel: la empresa arriba, la navegación con el conteo de pendientes (llega por streaming) y la
+ * cuenta conectada abajo.
+ */
 export function AppSidebar({
   usuario,
   empresa,

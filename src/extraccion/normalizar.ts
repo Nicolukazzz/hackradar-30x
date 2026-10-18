@@ -11,6 +11,7 @@ import { esPdfEscaneado, textoDePdf } from "./parsers/pdf-texto";
 import { esXmlFactura } from "./parsers/xml-factura";
 import type { ArchivoVisual, DocumentoNormalizado } from "./tipos";
 
+/** Opciones de lectura de adjuntos. */
 export type OpcionesNormalizar = {
   /** carpeta contra la que se resuelven las `ruta` de los adjuntos (la del escenario en el dataset) */
   dirBase?: string;
@@ -46,6 +47,10 @@ function tipoDe(a: { nombre: string; mime: string }): "pdf" | "imagen" | "eml" |
   return "otro";
 }
 
+/**
+ * Abre el documento: correo anidado, PDF con texto (por líneas), PDF escaneado o imagen (para el LLM) y XML de
+ * factura. Un adjunto que no se puede leer se anota en `errores` y no detiene el resto.
+ */
 export async function normalizarDocumento(doc: DocumentoRecibido, opciones: OpcionesNormalizar = {}): Promise<DocumentoNormalizado> {
   const n: DocumentoNormalizado = {
     formato: doc.formato,

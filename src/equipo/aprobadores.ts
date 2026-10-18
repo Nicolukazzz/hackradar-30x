@@ -7,6 +7,7 @@ import { NOMBRE_ROL, type Rol } from "@/lib/auth/permisos";
 import { firmantes } from "./servicio";
 import type { Miembro } from "./tipos";
 
+/** Miembro del equipo con permiso de aprobar, con su límite en la moneda base. */
 export type CuentaAprobadora = { usuario_id: string; nombre: string; correo: string; rol: Rol; limite_aprobacion_usd: number | null };
 
 /** El admin es el aprobador principal sin límite (guarda reglas); el aprobador firma hasta su límite. */

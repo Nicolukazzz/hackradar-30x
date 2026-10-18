@@ -5,6 +5,7 @@
 
 let instalado = false;
 
+/** Registra rechazos y excepciones sin capturar en vez de terminar el proceso. Idempotente. */
 export function protegerProceso(): void {
   if (instalado) return;
   instalado = true;

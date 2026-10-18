@@ -9,6 +9,7 @@ import type { AlmacenTasas, FotoTasas } from "./tipos";
 type Fila = { fecha: string; base: string; tasas: Partial<Record<Moneda, string>>; fuente: string };
 const foto = (f: Fila): FotoTasas => ({ fecha: f.fecha, base: f.base as Moneda, tasas: f.tasas, fuente: f.fuente });
 
+/** Fotos de tasas en la tabla `tasas_dia`: una por moneda base y día. */
 export function almacenTasasSupabase(db: SupabaseClient): AlmacenTasas {
   return {
     async todas(base) {
