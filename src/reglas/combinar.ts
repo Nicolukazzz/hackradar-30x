@@ -17,7 +17,9 @@ export function combinar(evaluaciones: readonly EvaluacionRegla[], monto_usd_cen
   if (evaluaciones.some((e) => e.si_falla === "FRENAR" && e.resultado === "FALLA")) return { decision: "FRENAR", reglas_que_fallaron };
   if (reglas_que_fallaron.length > 0) return { decision: "ESCALAR", reglas_que_fallaron };
 
-  const cumple = (id: IdRegla) => evaluaciones.some((e) => e.id === id && e.resultado === "CUMPLE");
+  // #109: R4 puede no aplicar solo si la empresa no exige la cuenta y la factura no trae ninguna (se paga a la registrada).
+  const cuentaNoExigida = (e: EvaluacionRegla) => e.id === "R4" && e.resultado === "NO_APLICA" && e.datos.cuenta_no_exigida === true;
+  const cumple = (id: IdRegla) => evaluaciones.some((e) => e.id === id && (e.resultado === "CUMPLE" || cuentaNoExigida(e)));
   const completas = evaluaciones.length === 11 && DEBEN_CUMPLIR_PARA_PAGAR.every(cumple);
   if (!completas || monto_usd_centavos === null) return { decision: "ESCALAR", reglas_que_fallaron };
   return { decision: "PAGAR", reglas_que_fallaron };

@@ -5,6 +5,7 @@
 import { z } from "zod";
 
 import {
+  CAMPOS_REQUERIBLES,
   ID_REGLAS,
   MONEDAS,
   REGLAS_EDITABLES,
@@ -81,6 +82,7 @@ export const ReglasSchema = z
     aprobacion: z.strictObject({ doble_aprobacion_desde_usd: centavos }),
     activas: z.record(IdReglaSchema, z.boolean()),
     identidad: z.strictObject({ modo: z.enum(["nombre", "nombre_y_nit", "nit"]) }).optional(),
+    requisitos: z.strictObject({ obligatorios: z.array(z.enum(CAMPOS_REQUERIBLES)).max(CAMPOS_REQUERIBLES.length) }).optional(),
   })
   .refine((r) => r.limites.pago_automatico_usd <= r.limites.maximo_absoluto_usd, {
     message: "el límite de pago automático (R9) no puede superar el máximo absoluto (R6)",

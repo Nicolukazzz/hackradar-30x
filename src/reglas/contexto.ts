@@ -4,6 +4,7 @@
 import { aUsd, formatearNumero } from "@/dominio/dinero";
 import type {
   Beneficiario,
+  CampoRequerible,
   Dinero,
   DocumentoRecibido,
   EntradaRegistro,
@@ -14,6 +15,7 @@ import type {
   Reglas,
   TablaTasas,
 } from "@/dominio/tipos";
+import { REQUERIDOS_POR_DEFECTO } from "@/dominio/tipos";
 
 import { esFechaValida, fechaDe, fechaLegible } from "./fechas";
 import type { Identidad } from "./identidad";
@@ -50,7 +52,17 @@ export const CAMPOS_OBLIGATORIOS = [
 ] as const;
 export type CampoObligatorio = (typeof CAMPOS_OBLIGATORIOS)[number];
 
-export const ETIQUETA_CAMPO: Record<CampoObligatorio, string> = {
+/** Campos que R1 revisa, en el orden en que los nombra. */
+export type CampoR1 = CampoObligatorio | CampoRequerible;
+const ORDEN_R1: readonly CampoR1[] = [...CAMPOS_OBLIGATORIOS, "referencia_acuerdo", "identificacion_fiscal"];
+
+/** Campos que la factura debe traer para que R1 cumpla, monto incluido. */
+export function obligatoriosDe(reglas: Pick<Reglas, "requisitos">): CampoR1[] {
+  const exigidos: readonly string[] = reglas.requisitos?.obligatorios ?? REQUERIDOS_POR_DEFECTO;
+  return ORDEN_R1.filter((c) => c === "monto_total" || exigidos.includes(c));
+}
+
+export const ETIQUETA_CAMPO: Record<CampoR1, string> = {
   beneficiario_nombre: "beneficiario",
   numero: "número de factura",
   monto_total: "monto total",
@@ -58,6 +70,8 @@ export const ETIQUETA_CAMPO: Record<CampoObligatorio, string> = {
   fecha_vencimiento: "fecha de vencimiento",
   cuenta_destino_ultimos4: "cuenta destino",
   concepto: "concepto",
+  referencia_acuerdo: "referencia al acuerdo",
+  identificacion_fiscal: "identificación fiscal",
 };
 
 /** Texto de las reglas que dependen de un campo que R1 marcó. */
@@ -77,7 +91,7 @@ export function pctEntero(confianza: number): string {
   return `${Math.floor(confianza * 100)}%`;
 }
 
-export type Afectacion = { campo: CampoObligatorio; motivo: string };
+export type Afectacion = { campo: CampoR1; motivo: string };
 
 /**
  * R1 (§4.3): campos faltantes, de baja confianza o que participan en una validación fallida.
@@ -99,11 +113,17 @@ export function bajaConfianza(confianza: number, minima: number): boolean {
   return Number.isNaN(confianza) || confianza < minima;
 }
 
-function motivoCampo(ctx: ContextoRegla, campo: CampoObligatorio): string | null {
+/**
+ * Falta o baja confianza. Un campo que la empresa no exige (#109) puede faltar; pero si viene con baja confianza y es de
+ * los de siempre (una cuenta leída a medias puede ser un intento de desviar el pago), igual se marca.
+ */
+function motivoCampo(ctx: ContextoRegla, campo: CampoR1, exigido: boolean): string | null {
   const c = ctx.ext[campo];
   const minima = ctx.reglas.extraccion.confianza_minima;
-  if (c.valor === null || (typeof c.valor === "string" && c.valor.trim() === "")) return `falta ${ETIQUETA_CAMPO[campo]}`;
-  if (bajaConfianza(c.confianza, minima)) return `confianza de ${ETIQUETA_CAMPO[campo]} ${pctEntero(c.confianza)} < ${pctEntero(minima)}`;
+  const vacio = !c || c.valor === null || (typeof c.valor === "string" && c.valor.trim() === "");
+  if (vacio) return exigido ? `falta ${ETIQUETA_CAMPO[campo]}` : null;
+  const revisar = exigido || (CAMPOS_OBLIGATORIOS as readonly string[]).includes(campo);
+  if (revisar && bajaConfianza(c.confianza, minima)) return `confianza de ${ETIQUETA_CAMPO[campo]} ${pctEntero(c.confianza)} < ${pctEntero(minima)}`;
   return null;
 }
 
@@ -156,8 +176,9 @@ const VALIDACIONES: readonly [CampoObligatorio, (ctx: ContextoRegla) => string |
 
 function calcularAfectaciones(ctx: ContextoRegla): Afectacion[] {
   const lista: Afectacion[] = [];
-  for (const campo of CAMPOS_OBLIGATORIOS) {
-    const motivo = motivoCampo(ctx, campo);
+  const exigidos = obligatoriosDe(ctx.reglas);
+  for (const campo of ORDEN_R1) {
+    const motivo = motivoCampo(ctx, campo, exigidos.includes(campo));
     if (motivo) lista.push({ campo, motivo });
   }
   for (const [campo, validar] of VALIDACIONES) {
@@ -168,7 +189,7 @@ function calcularAfectaciones(ctx: ContextoRegla): Afectacion[] {
   return lista;
 }
 
-export function afectado(ctx: ContextoRegla, campo: CampoObligatorio): boolean {
+export function afectado(ctx: ContextoRegla, campo: CampoR1): boolean {
   return afectaciones(ctx).some((a) => a.campo === campo);
 }
 
@@ -182,6 +203,11 @@ export function montoUsd(ctx: ContextoRegla): number | null {
 /** R3 falla: el beneficiario no está en la lista o está inactivo. */
 export function r3Falla(ctx: ContextoRegla): boolean {
   return ctx.beneficiario?.estado !== "activo";
+}
+
+/** La empresa no exige la cuenta en la factura (#109): si no viene, se paga a la registrada. */
+export function cuentaExigida(ctx: ContextoRegla): boolean {
+  return obligatoriosDe(ctx.reglas).includes("cuenta_destino_ultimos4");
 }
 
 /** Solo R5 y R8 se pueden desactivar (§4.2): el resto se evalúa siempre aunque `activas` diga false. */

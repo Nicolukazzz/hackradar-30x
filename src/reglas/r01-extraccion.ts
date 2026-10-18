@@ -1,7 +1,7 @@
 // R1 Extracción completa y confiable (§4.3). Si falla, escala.
 
 import { evaluacion } from "./catalogo";
-import { afectaciones, bajaConfianza, CAMPOS_OBLIGATORIOS, type ContextoRegla, pctEntero } from "./contexto";
+import { afectaciones, bajaConfianza, type ContextoRegla, obligatoriosDe, pctEntero } from "./contexto";
 
 export function r01Extraccion(ctx: ContextoRegla) {
   const { ext, reglas } = ctx;
@@ -30,7 +30,7 @@ export function r01Extraccion(ctx: ContextoRegla) {
       campos_afectados: [...new Set(lista.map((a) => a.campo))].join(","),
     });
   }
-  const confianza = Math.min(ext.es_factura.confianza, ...CAMPOS_OBLIGATORIOS.map((c) => ext[c].confianza));
+  const confianza = Math.min(ext.es_factura.confianza, ...obligatoriosDe(reglas).map((c) => ext[c]?.confianza ?? 0));
   return evaluacion("R1", "CUMPLE", `confianza mínima ${pctEntero(confianza)} ≥ ${pctEntero(minima)}`, {
     ...datos,
     confianza_minima_leida: confianza,

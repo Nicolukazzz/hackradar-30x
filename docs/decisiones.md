@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 ```
 
 ---
+## 2026-10-17 — Requisitos de factura configurables; el monto siempre obligatorio (#109)
+- Estado: propuesta
+- Decisión: `Reglas.requisitos?: { obligatorios: CampoRequerible[] }` (beneficiario, número, fechas, cuenta, concepto, referencia al acuerdo, identificación fiscal); ausente = los de §4.3. **El monto con moneda siempre es obligatorio** (el equipo pidió «todo configurable»; sin monto no hay R6/R7/R9). R1 exige solo lo marcado; un campo de los de siempre que llega con baja confianza sigue fallando aunque no se exija (una cuenta leída a medias puede ser un desvío) y las validaciones (fechas, suma, monto > 0) aplican a todo lo que llega. Si la cuenta no se exige y la factura no trae ninguna, R4 da NO_APLICA «se paga a la registrada» con `cuenta_no_exigida: true`, y es el único NO_APLICA que la guarda de PAGAR acepta en R4 (invariante 1 de §5 ajustado); si trae otra cuenta, R4 falla igual. Reglas de pago: tarjeta «Qué debe traer la factura · R1» con casillas (monto fijo) y aviso al desmarcar la cuenta. Invariante nuevo con fast-check: con cualquier combinación de requisitos y campos faltantes, nunca PAGAR sin monto, sin lo exigido ni a una cuenta distinta de la registrada.
+- Por qué: cada empresa recibe facturas distintas (personas naturales sin número, cuentas de cobro sin vencimiento); exigir siempre lo mismo escalaba facturas válidas.
+- Quién: J
+
 ## 2026-10-17 — Identidad del proveedor configurable: nombre, nombre + NIT o solo NIT (#108)
 - Estado: propuesta
 - Decisión: `Reglas.identidad?: { modo: "nombre" | "nombre_y_nit" | "nit" }` (ausente = nombre, como el dataset), editable en Reglas de pago («Cómo se reconoce a quien cobra · R3»). `Extraccion.identificacion_fiscal?` (opcional): el parser la toma por etiqueta (NIT, RUT, RFC, CUIT, CNPJ, CPF, RUC, EIN/TIN, Tax ID, VAT No) ignorando el bloque del cliente («Facturar a», «Cliente», «Bill to»… y 3 renglones), confianza 0,5 si quedan varias distintas; el LLM la pide como opcional («de quien cobra, no del cliente»). `src/reglas/identidad.ts` busca al proveedor según el modo (NIT comparado sin puntos ni guiones, solo si su confianza ≥ mínima) y el motor usa ese resultado como `beneficiario`. R3: NIT distinto al registrado → FALLA; la factura no trae NIT confiable o el proveedor no tiene NIT registrado (modo nombre_y_nit) → INDETERMINADO (escala), nunca se adivina; explicación con los dos NIT. Al aprobar con «Agregar a la lista» se guarda el NIT leído si fue confiable.
