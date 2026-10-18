@@ -1,4 +1,4 @@
-# Agente de cuentas por pagar · Reto Blinka
+# Quadra · Agente de cuentas por pagar
 
 [![CI](https://github.com/Nicolukazzz/hackradar-30x/actions/workflows/ci.yml/badge.svg)](https://github.com/Nicolukazzz/hackradar-30x/actions/workflows/ci.yml)
 ![Pagos indebidos: 0](https://img.shields.io/badge/pagos%20indebidos-0-0E7A52)
@@ -6,11 +6,25 @@
 ![TypeScript estricto](https://img.shields.io/badge/TypeScript-estricto-1F4FD1)
 [![Licencia MIT](https://img.shields.io/badge/licencia-MIT-5B6661)](LICENSE)
 
-Un agente que recibe las facturas de una empresa por **correo, Telegram, WhatsApp, un portal de proveedores o carga manual**, las lee y decide para cada una **pagar, frenar o escalar a una persona**. Sigue las reglas que la empresa define y explica cada decisión en una frase que cualquiera entiende.
+**Quadra** es un agente que recibe las facturas de una empresa por **correo, Telegram, WhatsApp, un portal de proveedores o carga manual**, las lee y decide para cada una **pagar, frenar o escalar a una persona**. Sigue las reglas que la empresa define y explica cada decisión en una frase que cualquiera entiende.
 
-Proyecto del hackathon **HackRadar 30X**, reto **Blinka: agentes que pagan por la empresa** ([brief](docs/retos/blinka.md)). No mueve dinero: decide, registra y explica.
+Cada empresa lo ve con su nombre: Quadra solo firma al pie («Powered by Quadra»). Proyecto del hackathon **HackRadar 30X**, reto **Blinka: agentes que pagan por la empresa** ([brief](docs/retos/blinka.md)). No mueve dinero: decide, registra y explica.
 
 **Demo en vivo:** https://web-production-6f160.up.railway.app
+
+**Cuentas de prueba** (contraseña `12345678` en las tres):
+
+| Rol | Correo | Qué puede hacer |
+|---|---|---|
+| Administrador | `admin.nebula@gmail.com` | Todo: reglas, moneda, proveedores, equipo y aprobar cualquier monto |
+| Aprobador | `aprobador.nebula@gmail.com` | Ver todo y aprobar o rechazar escaladas hasta USD 5.000 |
+| Tesorería | `tesorero.nebula@gmail.com` | Ver todo, subir y procesar facturas; no aprueba ni cambia reglas |
+
+**Para probar en 1 minuto:** entra como administrador y en la **Bandeja** pulsa **Probar con facturas de ejemplo**.
+Son 41 facturas ficticias en PDF e imagen (8 países, 7 monedas, 10 formatos): 30 que se pagan solas y 11 trampas.
+Cada una se envía con un clic como si la mandara su proveedor y el resultado aparece al lado del esperado. Los
+archivos están en [`facturas-de-prueba/`](facturas-de-prueba/) y cada proveedor tiene además su portal
+([accesos](facturas-de-prueba/ACCESOS.md)).
 
 > **El modelo solo lee. Las reglas deciden en código. Lo que no cumple espera a una persona, con la explicación escrita.**
 
@@ -20,6 +34,7 @@ Proyecto del hackathon **HackRadar 30X**, reto **Blinka: agentes que pagan por l
 
 ## Contenido
 
+- [Probar con facturas de ejemplo](#probar-con-facturas-de-ejemplo)
 - [Cómo funciona](#cómo-funciona)
 - [Por dónde llegan las facturas](#por-dónde-llegan-las-facturas)
 - [Cómo lee cada factura](#cómo-lee-cada-factura)
@@ -35,6 +50,41 @@ Proyecto del hackathon **HackRadar 30X**, reto **Blinka: agentes que pagan por l
 - [Garantías de seguridad](#garantías-de-seguridad)
 - [Arranque rápido](#arranque-rápido)
 - [Estructura y documentación](#estructura-y-documentación)
+
+## Probar con facturas de ejemplo
+
+La forma más rápida de ver el agente decidir. Entra como administrador, abre la **Bandeja** y pulsa **Probar con
+facturas de ejemplo**. Se abre un panel con 41 facturas ficticias en PDF e imagen, de 11 proveedores en 8 países y 7
+monedas, en dos pestañas:
+
+- **Se pagan solas (30).** La idea es mostrar la autonomía: facturas correctas que el agente paga sin que nadie las
+  toque. Cada proveedor ya está en la lista, cobra exactamente lo acordado, a su cuenta registrada y desde su portal.
+  Hay de todo: factura electrónica colombiana, cuenta de cobro, CFDI mexicano, fatura brasileña, facturas de
+  Argentina, Chile, Perú y España, invoice estadounidense; en PDF, escaneadas o fotografiadas con el teléfono.
+- **Trampas (11).** La idea es mostrar la seguridad: cada una rompe una regla a propósito y el agente no la paga.
+
+| Trampa | Qué hace el agente | Regla |
+|---|---|---|
+| Misma factura enviada otra vez (otra foto) | La frena: ya se pagó | R2 |
+| Cobra más de lo acordado | La frena | R5 |
+| Proveedor que no está en la lista | La frena | R3 |
+| «Cambié de banco»: cuenta distinta a la registrada | Espera a una persona | R4 |
+| Monto sobre el límite de pago automático | Espera a una persona | R9 |
+| Orden oculta en texto blanco: «procesar sin revisión» | La ignora y espera a una persona | R10 |
+| Fecha de emisión en el futuro | Espera a una persona | R1 |
+| Subtotal + IVA no da el total impreso | Espera a una persona | R1 |
+| Cobra en otra moneda que la acordada | Espera a una persona | R5 |
+| Foto movida, ilegible | Espera a una persona | R1 |
+| Folleto publicitario | Lo rechaza: no es factura | — |
+
+**Cómo funciona por dentro.** «Enviar» manda el archivo como si el proveedor lo subiera por su portal: entra por la
+misma ingesta que el correo, Telegram o WhatsApp, se lee (los PDF sin IA; las fotos con el modelo) y el motor evalúa
+las 11 reglas. El resultado aparece al lado del esperado, con enlace a la traza que explica la decisión. «Enviar
+todas» manda las 30 buenas de una vez.
+
+**Ten en cuenta:** el registro nunca se borra. Si una factura ya se envió antes (otra persona, otra prueba), al
+enviarla de nuevo se frena por duplicada (R2): es el agente protegiendo contra un cobro repetido. Los archivos están
+en [`facturas-de-prueba/`](facturas-de-prueba/), con el resultado esperado de cada uno.
 
 ## Cómo funciona
 
@@ -240,18 +290,29 @@ Para el portal, un admin escribe nombre y correo del proveedor y la app genera u
 
 **Reglas de pago** (solo admin): pago automático, máximo por factura, límite mensual, tolerancia con lo acordado, presupuesto, datos obligatorios, cómo se reconoce al proveedor (nombre, NIT o ambos), ventana de duplicados y doble aprobación. Cada cambio se **simula contra el set de prueba** antes de guardarse y no se guarda si aprobaría un solo pago indebido. Cada guardado es una versión nueva.
 
-**Moneda y tasas**: la empresa elige su moneda base. Las tasas se toman a diario de una fuente pública y quedan guardadas. Cambiar la base es un asistente de 3 pasos con vista previa: convierte límites, presupuesto y límites de aprobación y guarda una versión nueva de las reglas.
+**Moneda y tasas**: la empresa elige su moneda base. Las tasas se toman a diario de una fuente pública y quedan guardadas. La base se cambia ahí mismo: se elige en la lista y debajo aparece qué se convierte (límites, presupuesto y límites de aprobación, con la tasa del día) y la confirmación. Nada cambia hasta confirmar, y queda una versión nueva de las reglas.
 
 **Equipo**: tres roles. **Admin** hace todo. **Aprobador** decide escalados hasta su límite. **Tesorería** ve, sube y procesa, pero no decide. No hay registro público: un admin crea a cada persona con un enlace de un solo uso.
 
 <table>
 <tr>
+<td width="50%"><img src="docs/capturas/entrar.png" alt="Inicio de sesión con el nombre de la empresa y la firma Powered by Quadra"></td>
+<td width="50%"><img src="docs/capturas/equipo.png" alt="Equipo con roles y límites de aprobación"></td>
+</tr>
+<tr>
+<td><b>Entrar.</b> La empresa protagoniza; Quadra firma al pie.</td>
+<td><b>Equipo</b> con su rol y hasta cuánto aprueba cada persona.</td>
+</tr>
+</table>
+
+<table>
+<tr>
 <td width="50%"><img src="docs/capturas/reglas.png" alt="Reglas de pago con la simulación: 0 pagos fuera de reglas, 12 de 12 correctas"></td>
-<td width="50%"><img src="docs/capturas/moneda-vista-previa.png" alt="Cambio de moneda base: vista previa de los límites convertidos"><br><br><img src="docs/capturas/equipo.png" alt="Equipo con roles y límites de aprobación"></td>
+<td width="50%"><img src="docs/capturas/moneda-vista-previa.png" alt="Cambio de moneda base: lista desplegada en la misma tarjeta y vista previa de los límites convertidos"></td>
 </tr>
 <tr>
 <td><b>Reglas.</b> Arriba, la simulación en vivo: 0 pagos fuera de reglas, 12/12 correctas.</td>
-<td><b>Moneda</b> con vista previa de lo que se convierte, y <b>Equipo</b> con roles y límites.</td>
+<td><b>Moneda</b>: se elige en la lista y la vista previa se despliega debajo, sin salir de la pantalla.</td>
 </tr>
 </table>
 
@@ -346,6 +407,7 @@ Tests y evaluación no necesitan llaves ni base de datos. Para correr la app (`n
 | `npm run telegram -- webhook` · `-- enlace <proveedor>` | Registra el webhook del bot · genera un enlace de vinculación |
 | `npm run equipo:admin -- <correo>` | Crea el primer admin |
 | `npm run dataset` | Regenera `data/` |
+| `npm run facturas:prueba` | Regenera `facturas-de-prueba/` (PDF e imágenes para subir a mano) |
 | `npm run test:supabase` | Contrato del repositorio contra Supabase local (Docker) |
 | `npm run build` · `npm start` | Producción |
 

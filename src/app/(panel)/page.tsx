@@ -5,11 +5,15 @@ import { Boton, EncabezadoPagina, Indicador, Monto } from "@/app/_componentes";
 import { obtenerBandeja, obtenerVerificacion, type FiltroDecision } from "@/app/_datos/bandeja";
 import { obtenerCriteriosExtraccion } from "@/app/_datos/registro";
 import { conRespaldo } from "@/app/_datos/respaldo";
+import { demoActiva } from "@/app/api/_identidad";
 import { REQUERIDOS_POR_DEFECTO } from "@/dominio/tipos";
+import { puede } from "@/lib/auth/permisos";
+import { obtenerSesion } from "@/lib/auth/sesion";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
 import { AutoActualizar } from "./_bandeja/auto-actualizar";
 import { CargarFactura } from "./_bandeja/cargar-factura";
+import { FacturasEjemplo } from "./_bandeja/facturas-ejemplo";
 import { BandejaEnVivo } from "./_bandeja/en-vivo";
 import { ListaFacturas } from "./_bandeja/lista-facturas";
 import { Presupuesto } from "./_bandeja/presupuesto";
@@ -32,6 +36,9 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
     conRespaldo(obtenerCriteriosExtraccion(), { requeridos: [...REQUERIDOS_POR_DEFECTO], confianza_minima: 0.9 }, "criterios de extracción"),
   ]);
   const { resumen: r } = b;
+  // #162: el set de ejemplo envía facturas a nombre de sus proveedores; solo un admin en modo demo puede usarlo.
+  const sesion = await obtenerSesion();
+  const ejemplos = demoActiva() && sesion !== null && puede(sesion, "administrar");
   const hayFacturas = b.meses.length > 0;
   const moneda = b.moneda_base;
 
@@ -46,6 +53,7 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
         <DownloadIcon aria-hidden />
         Exportar
       </Boton>
+      {ejemplos ? <FacturasEjemplo /> : null}
       <CargarFactura />
     </>
   );
