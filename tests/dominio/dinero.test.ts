@@ -98,8 +98,11 @@ describe("formatos es-CO", () => {
     expect(() => diferenciaPct(1, 0)).toThrow(RangeError);
   });
 
-  it("una moneda sin decimales con centavos es un error (igual que dinero.py), no se redondea en silencio", () => {
-    expect(() => formatear({ centavos: 441176550, moneda: "COP" })).toThrow("monto con centavos en moneda sin decimales");
+  it("una moneda sin decimales con centavos muestra los centavos (factura real), no rompe ni redondea", () => {
+    expect(formatear({ centavos: 441176550, moneda: "COP" })).toBe("COP 4.411.765,50");
+    expect(formatear({ centavos: 31657796, moneda: "COP" })).toBe("COP 316.577,96");
+    expect(formatear({ centavos: 840000000, moneda: "COP" })).toBe("COP 8.400.000");
+    expect(() => formatearNumero(441176550, false)).toThrow("monto con centavos en moneda sin decimales");
   });
 
   it("formatearTasa redondea half-up como el generador (18.505 → 18,51)", () => {

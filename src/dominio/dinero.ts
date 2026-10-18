@@ -68,9 +68,12 @@ export function formatearNumero(centavos: number, decimales = true): string {
   return `${enteros},${(centavos % 100).toString().padStart(2, "0")}`;
 }
 
-/** "USD 7.444,05" · "COP 8.400.000" · "MXN 38.000,00" */
+/**
+ * "USD 7.444,05" · "COP 8.400.000" · "MXN 38.000,00". COP/CLP sin decimales salvo que el monto los traiga: una factura
+ * real puede cobrar "COP 316.577,96" y la pantalla tiene que mostrarla tal cual, no romperse ni redondear.
+ */
 export function formatear(d: Dinero): string {
-  return `${d.moneda} ${formatearNumero(d.centavos, !SIN_DECIMALES.has(d.moneda))}`;
+  return `${d.moneda} ${formatearNumero(d.centavos, !SIN_DECIMALES.has(d.moneda) || d.centavos % 100 !== 0)}`;
 }
 
 /** Monto en la moneda base con su código, también negativo: "USD 7.444,05" · "COP -1.250.000,50" (#86). */
