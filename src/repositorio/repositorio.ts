@@ -24,7 +24,7 @@ export type FiltroRegistro = {
 };
 
 /** Lo que se edita en Ajustes → Datos de la empresa (#84). */
-export type CambiosEmpresa = Pick<Empresa, "nombre" | "jurisdiccion" | "paises_operacion">;
+export type CambiosEmpresa = Pick<Empresa, "nombre" | "jurisdiccion" | "paises_operacion"> & Partial<Pick<Empresa, "moneda_base">>;
 
 export type ResumenVersion = { version: number; editada_por: string; editada_en: string };
 

@@ -49,7 +49,7 @@ export const EmpresaSchema = z.strictObject({
   nombre: texto,
   jurisdiccion: texto,
   paises_operacion: z.array(z.string().length(2)).min(1),
-  moneda_base: z.literal("USD"),
+  moneda_base: MonedaSchema,
   zona_horaria: texto,
 }) satisfies z.ZodType<Empresa>;
 
@@ -252,6 +252,7 @@ export const EntradaRegistroSchema = z.strictObject({
   entrada_origen: z.string().nullable(),
   extraccion: ExtraccionSchema.nullable(),
   sha256: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
+  moneda_base: MonedaSchema.optional(),
 }) satisfies z.ZodType<EntradaRegistro>;
 
 export const ExtraccionPlanaSchema = z.strictObject({

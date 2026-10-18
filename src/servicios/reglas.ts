@@ -53,7 +53,7 @@ export async function obtenerReglas(repo: Repositorio): Promise<RespuestaReglas>
   const tasas = vivas ? vivas.tabla : esc ? (datos.tasas[esc.config.periodo] ?? null) : null;
   const periodo = esc?.config.periodo;
   const uso_tasas: UsoTasa[] = Object.entries(tasas?.tasas ?? {})
-    .filter(([m]) => m !== "USD")
+    .filter(([m]) => m !== tasas?.base)
     .map(([m, tasa]) => ({
       moneda: m as Moneda,
       tasa: tasa ?? "",

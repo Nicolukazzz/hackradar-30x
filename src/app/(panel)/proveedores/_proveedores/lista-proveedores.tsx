@@ -19,8 +19,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatear, formatearUsd } from "@/dominio/dinero";
+import { formatear, formatearBase } from "@/dominio/dinero";
 import type { Beneficiario } from "@/dominio/tipos";
+import { useMonedaBase } from "@/app/_componentes/moneda-base";
 import type { PermisoUI } from "@/lib/auth/permisos";
 import { cn } from "@/lib/utils";
 
@@ -88,6 +89,7 @@ function CambiarEstado({ b }: { b: Beneficiario }) {
 }
 
 export function ListaProveedores({ proveedores, permiso }: { proveedores: Beneficiario[]; permiso: PermisoUI }) {
+  const base = useMonedaBase();
   return (
     <div className="overflow-x-auto border-t">
       <Table>
@@ -145,7 +147,7 @@ export function ListaProveedores({ proveedores, permiso }: { proveedores: Benefi
                     <span className="text-[13px] text-muted-foreground">Sin acuerdo</span>
                   )}
                 </TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{b.limite_mensual_usd === null ? <span className="font-sans text-[13px] text-muted-foreground">El de las reglas</span> : formatearUsd(b.limite_mensual_usd)}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{b.limite_mensual_usd === null ? <span className="font-sans text-[13px] text-muted-foreground">El de las reglas</span> : formatearBase(b.limite_mensual_usd, base)}</TableCell>
                 <TableCell>
                   <Badge className={b.estado === "activo" ? "bg-pagada text-pagada-foreground" : "bg-muted text-muted-foreground"}>{b.estado === "activo" ? "Activo" : "Inactivo"}</Badge>
                 </TableCell>

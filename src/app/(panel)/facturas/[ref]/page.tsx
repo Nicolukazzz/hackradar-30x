@@ -71,15 +71,15 @@ function PorQue({ f }: { f: RespuestaFactura }) {
               {f.asignacion.urgente ? `Hoy, ${hora(f.asignacion.responder_antes_de)}` : fechaHora(f.asignacion.responder_antes_de)}
             </Dato>
             <Dato etiqueta="Reservado">
-              <Monto usd={f.reservado_usd} />
+              <Monto usd={f.reservado_usd} moneda={e.moneda_base} />
             </Dato>
           </>
         ) : (
           <>
-            <Dato etiqueta="Monto en USD">
-              <Monto usd={e.monto_usd_centavos} />
+            <Dato etiqueta={`Monto en ${e.moneda_base ?? "USD"}`}>
+              <Monto usd={e.monto_usd_centavos} moneda={e.moneda_base} />
             </Dato>
-            <Dato etiqueta="Tasa usada">{e.tasa_usada ? <span className="font-mono">{e.tasa_usada}</span> : "No aplica (USD)"}</Dato>
+            <Dato etiqueta="Tasa usada">{e.tasa_usada ? <span className="font-mono">{e.tasa_usada}</span> : `No aplica (${e.moneda_base ?? "USD"})`}</Dato>
             <Dato etiqueta="Estado">
               <PildoraDecision decision={f.estado} />
             </Dato>
@@ -134,6 +134,7 @@ async function DecisionHumana({ f }: { f: RespuestaFactura }) {
             factura={e.factura_numero}
             beneficiario={e.beneficiario}
             montoUsd={e.monto_usd_centavos}
+            moneda={e.moneda_base ?? "USD"}
             // Agregar a la lista permitida cambia las reglas: solo `editar_reglas` (el servidor responde 403 si no).
             puedeAgregarALista={e.reglas_que_fallaron.includes("R3") && permisoPara(sesion, "editar_reglas").ok}
             // #110: vincular el correo o chat desde el que escribió un proveedor conocido (también solo administradores).

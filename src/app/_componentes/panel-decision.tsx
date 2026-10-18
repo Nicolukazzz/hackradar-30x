@@ -7,9 +7,11 @@ import { toast } from "sonner";
 
 import { MINIMO_COMENTARIO } from "@/aprobaciones/decidir";
 import { formatearUsd } from "@/dominio/dinero";
+import type { Moneda } from "@/dominio/tipos";
 import { cn } from "@/lib/utils";
 
 import { Boton } from "./boton";
+import { useMonedaBase } from "./moneda-base";
 
 // Decisión humana sobre una factura escalada (§10, §13.2 y §13.3). Dos pasos: elegir y confirmar.
 // "Deshacer" vuelve atrás ANTES de confirmar; una vez registrada, la decisión no se borra (registro append-only).
@@ -34,6 +36,8 @@ export type PropsPanelDecision = {
   /** #110: canal (correo o chat) que se puede vincular al proveedor al aprobar; null si no aplica */
   canalAVincular?: { tipo: "correo" | "telegram"; valor: string } | null;
   requiereDobleAprobacion: boolean;
+  /** moneda de `montoUsd` (#86) */
+  moneda?: Moneda;
   /** `cubre`: el límite de quien firmó primero alcanza el monto (§10) */
   firmas: { aprobador_id: string; nombre: string; cubre: boolean }[];
   actual: AprobadorCorto | null;
@@ -55,7 +59,9 @@ export function PanelDecision(p: PropsPanelDecision) {
   const [tocado, setTocado] = useState(false);
   const [enviando, iniciar] = useTransition();
 
-  const usd = p.montoUsd === null ? null : `USD ${formatearUsd(p.montoUsd)}`;
+  const moneda = useMonedaBase();
+  // #86: el monto está en la moneda con la que se decidió la factura (la de la entrada); por defecto, la base de hoy.
+  const usd = p.montoUsd === null ? null : `${p.moneda ?? moneda} ${formatearUsd(p.montoUsd)}`;
   const comentarioOk = comentario.trim().length >= MINIMO;
   const firmaPropia = p.firmas.some((f) => f.aprobador_id === p.actual?.id);
   const superaLimite =

@@ -7,11 +7,12 @@ import { toast } from "sonner";
 
 import { Boton } from "@/app/_componentes";
 import { SelectorOpciones, type Opcion } from "@/app/_componentes/invitacion";
+import { useMonedaBase } from "@/app/_componentes/moneda-base";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { MONEDAS, type Beneficiario } from "@/dominio/tipos";
+import { MONEDAS, type Beneficiario, type Moneda } from "@/dominio/tipos";
 import type { PermisoUI } from "@/lib/auth/permisos";
 
 import { llamar, usdACentavos } from "../../ajustes/equipo/_equipo/api";
@@ -59,7 +60,7 @@ function aTexto(centavos: number | null): string {
   return resto ? `${entero},${String(resto).padStart(2, "0")}` : entero;
 }
 
-function desde(b: Beneficiario | null): Formulario {
+function desde(b: Beneficiario | null, base: Moneda): Formulario {
   const linea = b?.acuerdo?.lineas[0];
   return {
     nombre: b?.nombre ?? "",
@@ -74,7 +75,7 @@ function desde(b: Beneficiario | null): Formulario {
     referencia: b?.acuerdo?.referencia ?? "",
     concepto: linea?.concepto ?? "",
     monto: linea ? aTexto(linea.monto.centavos) : "",
-    moneda: linea?.monto.moneda ?? "USD",
+    moneda: linea?.monto.moneda ?? base,
   };
 }
 
@@ -142,16 +143,17 @@ const TITULOS: Record<Paso, { titulo: string; descripcion: string }> = {
 
 export function AsistenteProveedor({ permiso, proveedor }: { permiso: PermisoUI; proveedor?: Beneficiario }) {
   const router = useRouter();
+  const base = useMonedaBase();
   const editar = Boolean(proveedor);
   const [abierto, setAbierto] = useState(false);
   const [paso, setPaso] = useState<Paso>(1);
-  const [f, setF] = useState<Formulario>(() => desde(proveedor ?? null));
+  const [f, setF] = useState<Formulario>(() => desde(proveedor ?? null, base));
   const [ocupado, iniciar] = useTransition();
   const e = errores(f);
   const cambiar = (campo: keyof Formulario) => (valor: string) => setF((x) => ({ ...x, [campo]: valor }));
 
   function abrir() {
-    setF(desde(proveedor ?? null));
+    setF(desde(proveedor ?? null, base));
     setPaso(1);
     setAbierto(true);
   }
@@ -247,7 +249,7 @@ export function AsistenteProveedor({ permiso, proveedor }: { permiso: PermisoUI;
             {paso === 3 ? (
               <>
                 <Campo id="prov-correos" etiqueta="Correos de facturación" valor={f.correos} onCambio={cambiar("correos")} placeholder="facturacion@proveedor.com" autoFocus ayuda="Opcional. Varios separados por coma." />
-                <Campo id="prov-limite" etiqueta="Límite mensual (USD)" valor={f.limite} onCambio={cambiar("limite")} placeholder="Vacío = el de las reglas" mono inputMode="decimal" ayuda="Opcional. Sobre este total en el mes, sus facturas se escalan (R8)." />
+                <Campo id="prov-limite" etiqueta={`Límite mensual (${base})`} valor={f.limite} onCambio={cambiar("limite")} placeholder="Vacío = el de las reglas" mono inputMode="decimal" ayuda="Opcional. Sobre este total en el mes, sus facturas se escalan (R8)." />
               </>
             ) : null}
             {paso === 4 ? (

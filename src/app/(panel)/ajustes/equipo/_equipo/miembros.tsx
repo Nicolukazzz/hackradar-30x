@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Boton, fechaCorta } from "@/app/_componentes";
+import { useMonedaBase } from "@/app/_componentes/moneda-base";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,19 +25,21 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatearUsd } from "@/dominio/dinero";
+import type { Moneda } from "@/dominio/tipos";
 import type { Miembro } from "@/equipo/tipos";
 import { NOMBRE_ROL, type Rol } from "@/lib/auth/permisos";
 
 import { llamar, usdACentavos } from "./api";
 import { ElegirRol } from "./elegir-rol";
 
-function textoLimite(m: Pick<Miembro, "rol" | "limite_aprobacion_usd">): string {
+function textoLimite(m: Pick<Miembro, "rol" | "limite_aprobacion_usd">, moneda: Moneda): string {
   if (m.rol === "tesoreria") return "No aprueba";
   if (m.rol === "admin" || m.limite_aprobacion_usd === null) return "Sin límite";
-  return `USD ${formatearUsd(m.limite_aprobacion_usd)}`;
+  return `${moneda} ${formatearUsd(m.limite_aprobacion_usd)}`;
 }
 
 function Editar({ miembro, alTerminar }: { miembro: Miembro; alTerminar: () => void }) {
+  const moneda = useMonedaBase();
   const [abierto, setAbierto] = useState(false);
   const [rol, setRol] = useState<Rol>(miembro.rol);
   const [limite, setLimite] = useState(miembro.limite_aprobacion_usd === null ? "" : formatearUsd(miembro.limite_aprobacion_usd));
@@ -71,7 +74,7 @@ function Editar({ miembro, alTerminar }: { miembro: Miembro; alTerminar: () => v
           <ElegirRol valor={rol} onCambio={setRol} nombre={`rol-${miembro.usuario_id}`} />
           {rol === "aprobador" ? (
             <Field data-invalid={invalido || undefined}>
-              <FieldLabel htmlFor={`limite-${miembro.usuario_id}`}>Límite por pago (USD)</FieldLabel>
+              <FieldLabel htmlFor={`limite-${miembro.usuario_id}`}>Límite por pago ({moneda})</FieldLabel>
               <Input
                 id={`limite-${miembro.usuario_id}`}
                 inputMode="decimal"
@@ -155,6 +158,7 @@ function Quitar({ miembro, esYo, alTerminar }: { miembro: Miembro; esYo: boolean
 
 export function Miembros({ miembros, yo }: { miembros: Miembro[]; yo: string }) {
   const router = useRouter();
+  const moneda = useMonedaBase();
   const refrescar = () => router.refresh();
 
   return (
@@ -182,7 +186,7 @@ export function Miembros({ miembros, yo }: { miembros: Miembro[]; yo: string }) 
                 <span className="text-xs break-all whitespace-normal text-muted-foreground">{m.correo}</span>
                 {/* En móvil, rol y límite van aquí y sus columnas se ocultan: las acciones quedan a la vista. */}
                 <span className="mt-1 text-xs text-muted-foreground md:hidden">
-                  {NOMBRE_ROL[m.rol]} · {textoLimite(m)}
+                  {NOMBRE_ROL[m.rol]} · {textoLimite(m, moneda)}
                 </span>
                 {!m.activo ? <span className="text-xs text-frenada-foreground">Cuenta desactivada</span> : null}
               </span>
@@ -190,7 +194,7 @@ export function Miembros({ miembros, yo }: { miembros: Miembro[]; yo: string }) 
             <TableCell className="hidden md:table-cell">
               <Badge variant={m.rol === "admin" ? "default" : "secondary"}>{NOMBRE_ROL[m.rol]}</Badge>
             </TableCell>
-            <TableCell className="hidden font-mono text-[13px] tabular-nums md:table-cell">{textoLimite(m)}</TableCell>
+            <TableCell className="hidden font-mono text-[13px] tabular-nums md:table-cell">{textoLimite(m, moneda)}</TableCell>
             <TableCell className="hidden text-muted-foreground md:table-cell">{fechaCorta(m.desde)}</TableCell>
             <TableCell className="pr-4 md:pr-6">
               <span className="flex justify-end gap-1">

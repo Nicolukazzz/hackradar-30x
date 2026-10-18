@@ -175,9 +175,9 @@ export function TarjetaAprobacion({
           </h2>
           <span className="text-[13px] text-muted-foreground">{t.beneficiario_detalle}</span>
           <span className="mt-1.5 text-[26px] leading-tight font-semibold">
-            <Monto usd={t.monto_usd_centavos} />
+            <Monto usd={t.monto_usd_centavos} moneda={t.moneda_base} />
           </span>
-          {t.monto_original && t.monto_original.moneda !== "USD" ? (
+          {t.monto_original && t.monto_original.moneda !== t.moneda_base ? (
             <span className="text-xs text-muted-foreground">
               <Monto dinero={t.monto_original} />
               {t.tasa_usada ? ` · tasa ${t.tasa_usada}` : ""}
@@ -317,7 +317,7 @@ export function TarjetaAprobacion({
                 {paso.accion === "aprobar" ? (
                   <>
                     <CheckIcon aria-hidden />
-                    Aprobar <Monto usd={t.monto_usd_centavos} />
+                    Aprobar <Monto usd={t.monto_usd_centavos} moneda={t.moneda_base} />
                   </>
                 ) : (
                   <>

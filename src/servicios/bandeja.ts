@@ -1,7 +1,8 @@
 // GET /api/bandeja (§12, pantalla §13.1): KPIs, presupuesto del periodo y filas del lote.
 
 import { normalizarNombre, normalizarTexto } from "@/dominio/normalizar";
-import type { Canal, DecisionAgente, Dinero, EntradaRegistro, Formato, IdRegla } from "@/dominio/tipos";
+import { monedaBase } from "@/dominio/dinero";
+import type { Canal, DecisionAgente, Dinero, EntradaRegistro, Formato, IdRegla, Moneda } from "@/dominio/tipos";
 import { facturasVigentes, periodoDe, totalEn } from "@/reglas/libro";
 import type { Repositorio } from "@/repositorio/repositorio";
 
@@ -20,6 +21,8 @@ export type FilaBandeja = {
   beneficiario_detalle: string;
   monto_original: Dinero | null;
   monto_usd_centavos: number | null;
+  /** #86: moneda de `monto_usd_centavos` (la base con la que se decidió) */
+  moneda_base: Moneda;
   /** lo que decidió el agente */
   decision: DecisionAgente;
   /** lo que ve la persona hoy: la decisión del agente o la resolución humana */
@@ -40,6 +43,8 @@ export type RespuestaBandeja = {
   procesado_en: string | null;
   /** documentos del escenario que esperan "Procesar facturas nuevas" */
   por_procesar: number;
+  /** #86: moneda de los totales (KPIs, presupuesto): la de las reglas vigentes */
+  moneda_base: Moneda;
   kpis: {
     total: number;
     /** con respuesta esperada en el set de prueba */
@@ -89,7 +94,14 @@ export async function obtenerBandeja(repo: Repositorio, opciones: { decision?: F
 
   // Presupuesto (§6): lo pagado antes del lote sale del historial importado; el resto, del lote y sus resoluciones.
   const importadas = new Set(registro.slice(0, esc?.entradas_importadas ?? 0).map((e) => e.id));
-  const vigentes = facturasVigentes(registro);
+  // #86: montos de decisiones tomadas con otra moneda base, convertidos a la de hoy (si no hay tasa, sin convertir).
+  const tasas = datos.tasas[ahora.slice(0, 7)];
+  let vigentes;
+  try {
+    vigentes = facturasVigentes(registro, tasas);
+  } catch {
+    vigentes = facturasVigentes(registro);
+  }
   const antes = vigentes.filter((f) => importadas.has(f.id));
   const delLote = vigentes.filter((f) => !importadas.has(f.id));
   const pagado_antes = totalEn(antes, periodo, tipo, "pagada");
@@ -118,6 +130,7 @@ export async function obtenerBandeja(repo: Repositorio, opciones: { decision?: F
       beneficiario_detalle: descripcionBeneficiario(b, null),
       monto_original: e.monto_original,
       monto_usd_centavos: e.monto_usd_centavos,
+      moneda_base: e.moneda_base ?? "USD",
       decision: e.decision as DecisionAgente,
       estado: estadoActual(registro, e).estado,
       explicacion: e.explicacion,
@@ -137,6 +150,7 @@ export async function obtenerBandeja(repo: Repositorio, opciones: { decision?: F
     mes: (esc?.config.ahora ?? ahora).slice(0, 7),
     procesado_en: lote.length > 0 ? ahora : null,
     por_procesar: pendientes.length,
+    moneda_base: monedaBase(reglas),
     kpis: {
       total: lote.length,
       con_esperado: conEsperado.length,

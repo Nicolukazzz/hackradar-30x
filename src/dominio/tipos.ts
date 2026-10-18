@@ -16,7 +16,8 @@ export type Empresa = {
   nombre: string;
   jurisdiccion: string;
   paises_operacion: string[];
-  moneda_base: "USD";
+  /** #86: la elige la empresa en Ajustes → Moneda y tasas (el dataset usa USD) */
+  moneda_base: Moneda;
   zona_horaria: string;
 };
 
@@ -261,6 +262,8 @@ export type EntradaRegistro = {
   entrada_origen: string | null;
   extraccion: Extraccion | null;
   sha256: string | null;
+  /** #86: moneda base en la que está `monto_usd_centavos` (ausente = USD, como el dataset) */
+  moneda_base?: Moneda;
 };
 
 // ---------------------------------------------------------------------------

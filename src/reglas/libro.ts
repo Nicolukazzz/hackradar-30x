@@ -2,8 +2,9 @@
 // R2 (duplicados), R8 (mensual por beneficiario) y el presupuesto (§6) leen de aquí,
 // así el historial importado y las decisiones del lote se tratan igual.
 
+import { aBase } from "@/dominio/dinero";
 import { normalizarNombre, normalizarNumeroFactura } from "@/dominio/normalizar";
-import type { EntradaRegistro, TipoPeriodo } from "@/dominio/tipos";
+import type { EntradaRegistro, TablaTasas, TipoPeriodo } from "@/dominio/tipos";
 
 export type EstadoFactura = "pagada" | "reservada";
 
@@ -27,14 +28,25 @@ export type FacturaVigente = {
  * PAGAR → pagada. ESCALAR → reservada hasta que una persona resuelve:
  * APROBADA_HUMANO → pagada, RECHAZADA_HUMANO → deja de contar. La primera de dos firmas (decision null) no resuelve.
  */
-export function facturasVigentes(historial: readonly EntradaRegistro[]): FacturaVigente[] {
+export function facturasVigentes(historial: readonly EntradaRegistro[], tasas?: TablaTasas): FacturaVigente[] {
   const resolucion = resoluciones(historial);
   const vigentes: FacturaVigente[] = [];
   for (const e of historial) {
     const estado = estadoDe(e, resolucion);
-    if (estado) vigentes.push(aVigente(e, estado));
+    if (estado) vigentes.push(aVigente(e, estado, tasas));
   }
   return vigentes;
+}
+
+/**
+ * #86: monto de una entrada en la moneda base de `tasas`. Una decisión tomada con otra base (antes de cambiarla) se
+ * convierte con la tasa del día; si no hay tasa, lanza: el motor lo atrapa y escala (nunca suma monedas distintas).
+ */
+function enBase(e: EntradaRegistro, tasas: TablaTasas | undefined): number {
+  const monto = e.monto_usd_centavos ?? 0;
+  const de = e.moneda_base ?? "USD";
+  if (!tasas || de === tasas.base || monto === 0) return monto;
+  return aBase({ centavos: monto, moneda: de }, tasas).base_centavos;
 }
 
 export type Resolucion = "APROBADA_HUMANO" | "RECHAZADA_HUMANO";
@@ -58,7 +70,7 @@ function estadoDe(e: EntradaRegistro, resolucion: Map<string, Resolucion>): Esta
   return r === "APROBADA_HUMANO" ? "pagada" : null;
 }
 
-function aVigente(e: EntradaRegistro, estado: EstadoFactura): FacturaVigente {
+function aVigente(e: EntradaRegistro, estado: EstadoFactura, tasas: TablaTasas | undefined): FacturaVigente {
   return {
     id: e.id,
     momento: e.momento,
@@ -68,7 +80,7 @@ function aVigente(e: EntradaRegistro, estado: EstadoFactura): FacturaVigente {
     numero: e.factura_numero,
     numero_normalizado: e.factura_numero ? normalizarNumeroFactura(e.factura_numero) : null,
     fecha_emision: e.extraccion?.fecha_emision.valor ?? null,
-    usd_centavos: e.monto_usd_centavos ?? 0,
+    usd_centavos: enBase(e, tasas),
     sha256: e.sha256,
     hito: e.extraccion?.hito_numero?.valor ?? null,
     estado,

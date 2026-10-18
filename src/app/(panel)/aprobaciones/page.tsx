@@ -41,7 +41,7 @@ export default async function AprobacionesPage({ searchParams }: PageProps<"/apr
 
       <section aria-label="Resumen" className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] sm:gap-3.5">
         <Kpi etiqueta="Por decidir" valor={a.pendientes.length} />
-        <Kpi etiqueta="Reservado del presupuesto" valor={<Monto usd={a.reservado_usd} className="text-[22px] sm:text-[26px]" />} />
+        <Kpi etiqueta="Reservado del presupuesto" valor={<Monto usd={a.reservado_usd} moneda={a.moneda_base} className="text-[22px] sm:text-[26px]" />} />
         <Kpi
           className="col-span-2 sm:col-span-1"
           tono={primeraHoy ? "escalada" : "normal"}
@@ -93,7 +93,7 @@ export default async function AprobacionesPage({ searchParams }: PageProps<"/apr
       )}
 
       <p className="max-w-[760px] text-[13px] leading-relaxed text-muted-foreground">
-        Montos desde <Monto usd={a.doble_aprobacion_desde_usd} /> requieren dos aprobaciones de personas distintas. Un pago aprobado aquí se registra
+        Montos desde <Monto usd={a.doble_aprobacion_desde_usd} moneda={a.moneda_base} /> requieren dos aprobaciones de personas distintas. Un pago aprobado aquí se registra
         como «Aprobada por persona», con el nombre de quien aprobó, su comentario y la traza original del agente.
       </p>
     </>
