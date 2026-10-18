@@ -101,7 +101,7 @@ function PorQue({ f }: { f: RespuestaFactura }) {
   );
 }
 
-async function DecisionHumana({ f }: { f: RespuestaFactura }) {
+async function DecisionHumana({ f, verificar = false }: { f: RespuestaFactura; verificar?: boolean }) {
   const e = f.entrada;
   const pendiente = f.estado === "ESCALAR";
   // Todas las decisiones humanas, también la primera de dos firmas (decision null): su comentario es parte de la traza.
@@ -149,6 +149,7 @@ async function DecisionHumana({ f }: { f: RespuestaFactura }) {
             puedeAgregarALista={e.reglas_que_fallaron.includes("R3") && permisoPara(sesion, "editar_reglas").ok}
             // #110: vincular el correo o chat desde el que escribió un proveedor conocido (también solo administradores).
             canalAVincular={permisoPara(sesion, "editar_reglas").ok ? canalAVincular(e, f.documento) : null}
+            marcarCasilla={verificar}
             motivoSinPermiso={permiso.ok ? undefined : permiso.motivo}
             requiereDobleAprobacion={f.requiere_doble_aprobacion}
             firmas={f.firmas}
@@ -165,8 +166,10 @@ async function DecisionHumana({ f }: { f: RespuestaFactura }) {
   );
 }
 
-export default async function TrazaPage({ params }: PageProps<"/facturas/[ref]">) {
+export default async function TrazaPage({ params, searchParams }: PageProps<"/facturas/[ref]">) {
   const { ref } = await params;
+  // Desde «Por verificar» (Bandeja): la casilla de agregar a la lista o vincular el canal llega marcada.
+  const verificar = (await searchParams).verificar === "1";
   const f = await obtenerFactura(ref);
   if (!f) notFound();
   const e = f.entrada;
@@ -227,7 +230,7 @@ export default async function TrazaPage({ params }: PageProps<"/facturas/[ref]">
         <div className="flex min-w-0 flex-col gap-6">
           <DatosExtraidos f={f} />
           <TrazaReglas f={f} />
-          <DecisionHumana f={f} />
+          <DecisionHumana f={f} verificar={verificar} />
         </div>
       </div>
     </>

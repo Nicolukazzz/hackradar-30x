@@ -1,11 +1,13 @@
 import { DownloadIcon, InboxIcon, ShieldIcon } from "lucide-react";
 
 import { Boton, Kpi, Monto, diaMes, hora, mesAnio, porcentajeUi } from "@/app/_componentes";
-import { obtenerBandeja, puedeReiniciarDemo, type FiltroDecision } from "@/app/_datos/bandeja";
+import { obtenerBandeja, obtenerVerificacion, puedeReiniciarDemo, type FiltroDecision } from "@/app/_datos/bandeja";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
 import { BotonProcesar } from "./_bandeja/boton-procesar";
 import { BotonReiniciar } from "./_bandeja/boton-reiniciar";
+import { BandejaEnVivo } from "./_bandeja/en-vivo";
+import { PorVerificarCaja } from "./_bandeja/por-verificar";
 import { Presupuesto } from "./_bandeja/presupuesto";
 import { RecibirFactura } from "./_bandeja/recibir-factura";
 import { TablaDecisiones } from "./_bandeja/tabla-decisiones";
@@ -19,7 +21,9 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
   const decisionPedida = typeof sp.decision === "string" ? sp.decision : "todas";
   const decision = (FILTROS as readonly string[]).includes(decisionPedida) ? (decisionPedida as FiltroDecision) : "todas";
   const q = typeof sp.q === "string" ? sp.q.slice(0, 100) : "";
-  const [b, reiniciable] = await Promise.all([obtenerBandeja({ decision, q }), puedeReiniciarDemo()]);
+  const [b, reiniciable, verificacion] = await Promise.all([obtenerBandeja({ decision, q }), puedeReiniciarDemo(), obtenerVerificacion()]);
+  // Se actualiza sola y avisa cuando el agente decide una factura nueva.
+  const enVivo = <BandejaEnVivo inicial={verificacion.novedades} />;
   const { kpis } = b;
 
   const acciones = (
@@ -49,6 +53,8 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
           </div>
           {acciones}
         </header>
+        {enVivo}
+        <PorVerificarCaja filas={verificacion.filas} />
         <Empty className="flex-none rounded-2xl border bg-card py-20">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -87,6 +93,9 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
         </div>
         {acciones}
       </header>
+      {enVivo}
+
+      <PorVerificarCaja filas={verificacion.filas} />
 
       <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(190px,1fr))] sm:gap-3.5">
         <Kpi

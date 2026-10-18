@@ -36,6 +36,8 @@ export type PropsPanelDecision = {
   /** #110: canal (correo o chat) que se puede vincular al proveedor al aprobar; null si no aplica */
   canalAVincular?: { tipo: "correo" | "telegram"; valor: string } | null;
   requiereDobleAprobacion: boolean;
+  /** llega desde «Por verificar»: la casilla de agregar o vincular empieza marcada */
+  marcarCasilla?: boolean;
   /** moneda de `montoUsd` (#86) */
   moneda?: Moneda;
   /** `cubre`: el límite de quien firmó primero alcanza el monto (§10) */
@@ -53,7 +55,7 @@ export function PanelDecision(p: PropsPanelDecision) {
   const idBase = useId();
   const idComentario = p.idComentario ?? `${idBase}-comentario`;
   const [comentario, setComentario] = useState("");
-  const [agregar, setAgregar] = useState(false);
+  const [agregar, setAgregar] = useState(p.marcarCasilla ?? false);
   const [accion, setAccion] = useState<Accion | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tocado, setTocado] = useState(false);
