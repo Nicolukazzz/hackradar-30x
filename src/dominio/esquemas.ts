@@ -70,7 +70,8 @@ export const ReglasSchema = z
       pago_automatico_usd: centavos,
       maximo_absoluto_usd: centavos,
       mensual_por_beneficiario_default_usd: centavos,
-      tolerancia_acordado_pct: z.number().nonnegative(),
+      // Tope de seguridad: con más de 50 % «cuadra con lo acordado» dejaría de frenar casi cualquier cobro inflado.
+      tolerancia_acordado_pct: z.number().nonnegative().max(50, "la tolerancia de lo acordado (R5) no puede pasar de 50 %"),
     }),
     presupuesto: z.strictObject({ periodo: tipoPeriodo, monto_usd: centavos, contar_escalado_como_reservado: z.boolean() }),
     duplicados: z.strictObject({
@@ -78,7 +79,8 @@ export const ReglasSchema = z
       tolerancia_monto_pct: z.number().nonnegative(),
       tolerancia_fecha_dias: z.int().nonnegative(),
     }),
-    extraccion: z.strictObject({ confianza_minima: z.number().min(0).max(1) }),
+    // Piso de seguridad: con menos de 50 % R1 dejaría pasar datos que el agente no leyó con seguridad.
+    extraccion: z.strictObject({ confianza_minima: z.number().min(0.5, "la confianza mínima de lectura (R1) no puede ser menor a 50 %").max(1) }),
     aprobacion: z.strictObject({ doble_aprobacion_desde_usd: centavos }),
     activas: z.record(IdReglaSchema, z.boolean()),
     moneda: MonedaSchema.optional(),

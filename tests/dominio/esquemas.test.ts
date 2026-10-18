@@ -109,6 +109,14 @@ describe("ReglasSchema", () => {
   it("es estricto: un campo de más es error", () => {
     expect(ReglasSchema.safeParse({ ...reglasBase(), extra: 1 }).success).toBe(false);
   });
+
+  it("guardas de seguridad: confianza mínima ≥ 50 % y tolerancia de lo acordado ≤ 50 %", () => {
+    const base = reglasBase();
+    expect(ReglasSchema.safeParse({ ...base, extraccion: { confianza_minima: 0 } }).success).toBe(false);
+    expect(ReglasSchema.safeParse({ ...base, extraccion: { confianza_minima: 0.5 } }).success).toBe(true);
+    expect(ReglasSchema.safeParse({ ...base, limites: { ...base.limites, tolerancia_acordado_pct: 51 } }).success).toBe(false);
+    expect(ReglasSchema.safeParse({ ...base, limites: { ...base.limites, tolerancia_acordado_pct: 50 } }).success).toBe(true);
+  });
 });
 
 describe("BeneficiariosSchema", () => {
