@@ -12,7 +12,8 @@ import { obtenerRepositorio } from "@/repositorio";
 // GET: verificación de Meta al registrar el webhook (hub.verify_token = WHATSAPP_VERIFY_TOKEN → devuelve hub.challenge).
 // POST: cada mensaje al número. Se verifica X-Hub-Signature-256 con WHATSAPP_APP_SECRET sobre el cuerpo crudo, se
 // responde 200 de inmediato y se procesa después (`after`): Meta reintenta si tarda, y una factura reintentada
-// llegaría como duplicada. Por lo mismo, cada id de mensaje se procesa una sola vez.
+// llegaría como duplicada. Por lo mismo, cada id de mensaje se procesa una sola vez. Cada mensaje deja una línea
+// en el log y se le contesta al proveedor con la ref y el estado (`formato.ts`).
 
 const porNumero = crearLimitador({ maximo: 20, ventanaMs: 60_000 });
 const vistos = new Set<string>();
@@ -63,6 +64,8 @@ export async function POST(req: Request): Promise<Response> {
   after(async () => {
     const whatsapp = crearClienteWhatsapp(token, phone);
     for (const m of mensajes) {
+      // Solo los últimos 4 dígitos del número en el log.
+      const quien = `…${m.from.slice(-4)}`;
       try {
         const r = await recibirWhatsapp(m, {
           ...(await dependenciasCanal(await obtenerRepositorio())),
@@ -71,8 +74,9 @@ export async function POST(req: Request): Promise<Response> {
           confiarNumero: true,
         });
         if (r.respuesta) await whatsapp.enviarMensaje(r.numero, r.respuesta);
+        console.info(`whatsapp: ${m.type} de ${quien} → ${r.entrada ? `${r.entrada.ref_interna} ${r.entrada.decision ?? ""}` : `sin documento (${r.ignorado ?? "no parece factura"})`}`);
       } catch (e) {
-        console.error("whatsapp:", e instanceof Error ? e.message : e);
+        console.error(`whatsapp: ${m.type} de ${quien} falló:`, e instanceof Error ? e.message : e);
       }
     }
   });

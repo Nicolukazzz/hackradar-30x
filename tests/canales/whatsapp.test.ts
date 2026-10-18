@@ -48,6 +48,11 @@ describe("seguridad (R11)", () => {
     expect(r.entrada?.decision).toBe("ESCALAR");
     expect(r.entrada?.reglas_que_fallaron).toContain("R11");
     expect(r.respuesta).not.toMatch(/R\d|límite/);
+    // R11: no se confirma el número de factura (posible suplantación) y se explica cómo vincular el número.
+    expect(r.respuesta).not.toContain("JPO-10");
+    expect(r.respuesta).toContain("En revisión");
+    expect(r.respuesta).toContain("vincular este número de WhatsApp");
+    expect(r.respuesta).not.toMatch(/(^|\s)_\S/); // sin cursiva
   });
 
   it("vincular con enlace: la siguiente factura por ese número cumple R11; el enlace no sirve dos veces", async () => {
@@ -58,21 +63,21 @@ describe("seguridad (R11)", () => {
 
     const r = await recibirWhatsapp(texto(textoJpo10, "wamid.2"), deps);
     expect(r.entrada?.decision).toBe("PAGAR");
-    expect(r.respuesta).toMatch(/^Recibimos tu factura JPO-10\. Ref INT-2026-\d{6}\. Estado: aprobada para pago\.$/);
+    expect(r.respuesta).toMatch(/^✅ \*Factura recibida\*\n\n📄 Factura: \*JPO-10\*\n🔖 Referencia: ```INT-2026-\d{6}```\n📌 Estado: \*Aprobada para pago 🟢\*/);
 
     const otra = await recibirWhatsapp({ ...texto(`vincular ${token}`), from: "573009998877" }, deps);
-    expect(otra.respuesta).toMatch(/ya no sirve/);
+    expect(otra.respuesta).toMatch(/Enlace no válido/);
   });
 
   it("un token de Telegram (otra clave) no vincula por WhatsApp", async () => {
     const token = crearTokenVinculo("ben-juan-pablo-ortiz", AHORA, "secreto-de-telegram");
-    expect((await recibirWhatsapp(texto(`VINCULAR ${token}`), deps)).respuesta).toMatch(/ya no sirve/);
+    expect((await recibirWhatsapp(texto(`VINCULAR ${token}`), deps)).respuesta).toMatch(/Enlace no válido/);
   });
 
   it("/simular sin confiar en el número: queda no verificado y VINCULAR no vale", async () => {
     const token = crearTokenVinculo("ben-juan-pablo-ortiz", AHORA, SECRETO);
     const d = { ...deps, confiarNumero: false };
-    expect((await recibirWhatsapp(texto(`VINCULAR ${token}`), d)).respuesta).toMatch(/ya no sirve/);
+    expect((await recibirWhatsapp(texto(`VINCULAR ${token}`), d)).respuesta).toMatch(/Enlace no válido/);
     const r = await recibirWhatsapp(texto(textoJpo10), d);
     expect((await repo.documento(r.entrada!.ref_interna))?.remitente.valor).toBe(`no-verificado:${NUMERO}`);
     expect(r.entrada?.decision).toBe("ESCALAR");

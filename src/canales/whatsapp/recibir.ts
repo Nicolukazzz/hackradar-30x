@@ -8,13 +8,13 @@ import type { DocumentoEntrante, EntradaRegistro, Idioma } from "@/dominio/tipos
 import { ingerir } from "@/ingesta/ingerir";
 import { MAX_BYTES } from "@/ingesta/limites";
 import { type Extractor, procesarDocumento } from "@/ingesta/pipeline";
-import { textoRespuesta } from "@/ingesta/respuesta";
 import { sanearNombre, validarArchivo } from "@/ingesta/validar-archivo";
 import type { Repositorio } from "@/repositorio/repositorio";
 
 import { pareceFactura } from "../telegram/recibir";
 import { huellaToken, leerTokenVinculo } from "../telegram/vinculo";
 import type { ClienteWhatsapp } from "./cliente";
+import { mensajeFactura } from "./formato";
 
 const Media = z.object({ id: z.string().min(1).max(300), mime_type: z.string().max(100).optional(), caption: z.string().max(1024).optional() });
 
@@ -61,13 +61,22 @@ export type DependenciasWhatsapp = {
 export type ResultadoWhatsapp = { numero: string; respuesta: string | null; entrada?: EntradaRegistro; ignorado?: string };
 
 const TEXTOS = {
-  ayuda:
-    "Hola. Envíame aquí tu factura o cuenta de cobro: foto, PDF o el texto con número, valor y cuenta. Te respondo con la referencia y el estado. Para consultar una: ESTADO INT-2026-000123.",
-  vinculado: (n: string) => `Listo, ${n}. Este número quedó vinculado: ya puedes enviarme tus facturas aquí.`,
-  enlace_invalido: "Este enlace de vinculación ya no sirve (venció o ya se usó). Pide uno nuevo a tu contacto en el equipo de finanzas.",
-  sin_ref: "No encontramos esa referencia en este número. Escríbela así: ESTADO INT-2026-000123.",
-  archivo: "No pude leer ese archivo. Envía la factura como PDF, foto (PNG o JPG) o XML de hasta 10 MB.",
-  tipo: "Por ahora solo leo fotos, PDF o texto. Envía la factura en uno de esos formatos.",
+  ayuda: [
+    "👋 *Hola, soy el asistente de cuentas por pagar*",
+    "",
+    "Envíame aquí tu factura o cuenta de cobro:",
+    "📄 PDF",
+    "📷 Foto (PNG o JPG)",
+    "✍️ Texto con número, valor y cuenta",
+    "",
+    "Te respondo con la referencia y el estado.",
+    "Para consultar una: *ESTADO INT-2026-000123*",
+  ].join("\n"),
+  vinculado: (n: string) => `🔗 *Número vinculado*\n\nListo, ${n}. Ya puedes enviarme tus facturas por aquí.`,
+  enlace_invalido: "⚠️ *Enlace no válido*\n\nEste enlace de vinculación venció o ya se usó. Pide uno nuevo a tu contacto en el equipo de finanzas.",
+  sin_ref: "🔎 *Referencia no encontrada*\n\nNo encontramos esa referencia en este número. Escríbela así: *ESTADO INT-2026-000123*",
+  archivo: "⚠️ *No pude leer el archivo*\n\nEnvía la factura como PDF, foto (PNG o JPG) o XML de hasta 10 MB.",
+  tipo: "⚠️ *Formato no soportado*\n\nPor ahora leo PDF, fotos o texto. Envía la factura en uno de esos formatos.",
 };
 
 async function vincular(token: string, numero: string, deps: DependenciasWhatsapp): Promise<string> {
@@ -117,9 +126,9 @@ async function estado(ref: string, numero: string, deps: DependenciasWhatsapp): 
   if (!agente) return TEXTOS.sin_ref;
   const idioma: Idioma = agente.extraccion?.idioma ?? "es";
   const final = registro.findLast((e) => e.tipo === "DECISION_HUMANA" && e.decision !== null);
-  if (final?.decision === "APROBADA_HUMANO") return textoRespuesta({ ...agente, decision: "PAGAR", reglas_que_fallaron: [] }, idioma);
-  if (final?.decision === "RECHAZADA_HUMANO") return textoRespuesta({ ...agente, decision: "FRENAR", reglas_que_fallaron: [] }, idioma);
-  return textoRespuesta(agente, idioma);
+  if (final?.decision === "APROBADA_HUMANO") return mensajeFactura({ ...agente, decision: "PAGAR", reglas_que_fallaron: [] }, idioma);
+  if (final?.decision === "RECHAZADA_HUMANO") return mensajeFactura({ ...agente, decision: "FRENAR", reglas_que_fallaron: [] }, idioma);
+  return mensajeFactura(agente, idioma);
 }
 
 export async function recibirWhatsapp(m: MensajeWhatsapp, deps: DependenciasWhatsapp): Promise<ResultadoWhatsapp> {
@@ -160,5 +169,5 @@ export async function recibirWhatsapp(m: MensajeWhatsapp, deps: DependenciasWhat
   };
   const doc = await ingerir(entrante, { repo: deps.repo, reloj: { ahora: () => deps.ahora }, original });
   const entrada = await procesarDocumento(doc.ref_interna, { repo: deps.repo, ahora: deps.ahora, extractor: deps.extractor });
-  return { numero, entrada, respuesta: textoRespuesta(entrada, entrada.extraccion?.idioma ?? "es") };
+  return { numero, entrada, respuesta: mensajeFactura(entrada, entrada.extraccion?.idioma ?? "es") };
 }
