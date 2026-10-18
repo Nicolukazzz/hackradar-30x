@@ -7,7 +7,7 @@ import { exigirMiembro } from "@/app/_datos/sesion";
 import { iniciales } from "@/lib/iniciales";
 import { NOMBRE_ROL, puede } from "@/lib/auth/permisos";
 
-export const metadata: Metadata = { title: "Ajustes · Agente de cuentas por pagar" };
+export const metadata: Metadata = { title: "Ajustes" };
 
 // Ajustes (#83), estilo iPhone: grupos de filas; cada una abre su pantalla por pasos.
 

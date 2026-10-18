@@ -6,12 +6,18 @@ import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
 
-const DESCRIPCION = "Decide qué facturas pagar, frenar o escalar, dentro de las reglas de la empresa.";
+const DESCRIPCION = "Quadra decide qué facturas pagar, frenar o escalar, dentro de las reglas de la empresa.";
 
-// El título lleva el nombre de la empresa (#84), que se edita en Ajustes.
+// La pestaña nombra a la empresa (#84, se edita en Ajustes), no al producto (#152): «Pendientes · {empresa}».
+// Cada página pone solo su parte; la plantilla agrega la empresa. Sin empresa legible, «Quadra».
 export async function generateMetadata(): Promise<Metadata> {
   const empresa = await obtenerEmpresa();
-  return { title: empresa ? `Agente de cuentas por pagar · ${empresa.nombre}` : "Agente de cuentas por pagar", description: DESCRIPCION };
+  const nombre = empresa?.nombre ?? "Quadra";
+  return {
+    title: { default: empresa ? `${nombre} · Cuentas por pagar` : nombre, template: `%s · ${nombre}` },
+    applicationName: "Quadra",
+    description: DESCRIPCION,
+  };
 }
 
 // Color de la barra del navegador móvil = cabecera oscura del panel (§15 tinta).

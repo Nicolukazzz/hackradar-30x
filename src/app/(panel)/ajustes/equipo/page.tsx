@@ -14,7 +14,7 @@ import { Invitaciones } from "./_equipo/invitaciones";
 import { CrearEmpleado } from "./_equipo/invitar";
 import { Miembros } from "./_equipo/miembros";
 
-export const metadata: Metadata = { title: "Equipo · Agente de cuentas por pagar" };
+export const metadata: Metadata = { title: "Equipo" };
 
 // Equipo (#51): quién entra al panel y qué puede hacer. Solo administradores.
 export default async function EquipoPage() {

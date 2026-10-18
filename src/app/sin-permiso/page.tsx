@@ -9,7 +9,7 @@ import { NOMBRE_ROL } from "@/lib/auth/permisos";
 import { obtenerSesion } from "@/lib/auth/sesion";
 import { obtenerEmpresa } from "@/app/_datos/empresa";
 
-export const metadata: Metadata = { title: "Sin permiso · Agente de cuentas por pagar" };
+export const metadata: Metadata = { title: "Sin permiso" };
 
 // Tres casos (#51): sin sesión válida (salió o su cuenta fue desactivada), cuenta que aún no pertenece a la
 // empresa (le falta una invitación), o rol que no alcanza para la sección que abrió.
