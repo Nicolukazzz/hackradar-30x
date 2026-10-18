@@ -20,10 +20,10 @@ const conAutomatico = (r: Reglas, usd: number): Reglas => ({ ...r, limites: { ..
 const json = (url: string, body: unknown) => peticion(url, { method: "POST", body: JSON.stringify(body) });
 
 describe("reglas: simular y guardar (§13.4, §14)", () => {
-  it("v7 sobre el lote demo: 12/12, 0 pagos fuera de reglas, autonomía 8/12", async () => {
+  it("v7 sobre el lote demo: 12/12, 0 pagos fuera de reglas, autonomía 10/12", async () => {
     const repo = await repoProcesado();
     const r = await simularReglas(repo, await repo.reglasVigentes());
-    expect(r).toMatchObject({ total: 12, coinciden: 12, pagos_indebidos: 0, autonomas: 8, escalados_innecesarios: 0, reglas_correctas: 12 });
+    expect(r).toMatchObject({ total: 12, coinciden: 12, pagos_indebidos: 0, autonomas: 10, escalados_innecesarios: 0, reglas_correctas: 12 });
   });
 
   it("bajar el límite automático a USD 2.000 cambia la simulación (F-0093 escala) sin pagos indebidos", async () => {

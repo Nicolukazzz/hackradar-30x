@@ -9,7 +9,7 @@ import { obtenerBandeja } from "@/servicios/bandeja";
 
 import { EMPRESA_ID } from "@/equipo/tipos";
 
-import { CUENTA, comoCuenta, comoSesion, entradaDe, equipoActual, escaladaSintetica, peticion, repoProcesado } from "./ayuda";
+import { CUENTA, comoCuenta, comoSesion, entradaDe, equipoActual, escaladaPorInvitacion, escaladaSintetica, peticion, repoProcesado } from "./ayuda";
 
 
 vi.mock("server-only", () => ({}));
@@ -32,12 +32,12 @@ async function falla(p: Promise<unknown>, estado: number, texto?: string) {
 }
 
 describe("GET /api/aprobaciones (§13.3)", () => {
-  it("4 pendientes, F-0101 primero (vence hoy), reservado USD 9.278,65", async () => {
+  it("2 pendientes, F-0101 primero (vence hoy), reservado USD 5.148,65 (TD-001 y OMI-3381 se frenan por R3)", async () => {
     await repoProcesado();
     const r = await (await getAprobaciones(peticion("http://x/api/aprobaciones"))).json();
-    expect(r.pendientes.map((p: { factura_numero: string }) => p.factura_numero)).toEqual(["F-0101", "OMI-3381", "LF-2026-10", "TD-001"]);
-    expect(r.reservado_usd).toBe(927865);
-    expect(r.pendientes[1]).toMatchObject({ reglas_ok: 8, reglas_total: 11, puede_agregar_a_lista: true, asignacion: { aprobador: { id: "lm" } } });
+    expect(r.pendientes.map((p: { factura_numero: string }) => p.factura_numero)).toEqual(["F-0101", "LF-2026-10"]);
+    expect(r.reservado_usd).toBe(514865);
+    expect(r.pendientes[1]).toMatchObject({ reglas_ok: 10, reglas_total: 11, puede_agregar_a_lista: false, asignacion: { aprobador: { id: "lm" } } });
     const porMonto = await (await getAprobaciones(peticion("http://x/api/aprobaciones?orden=monto"))).json();
     expect(porMonto.pendientes[0].factura_numero).toBe("LF-2026-10");
   });
@@ -54,9 +54,9 @@ describe("decidir() — reglas de §10", () => {
     expect(await repo.registro()).toHaveLength(largo + 1);
     expect(await entradaDe(repo, "LF-2026-10")).toEqual(antes);
     const b = await obtenerBandeja(repo);
-    expect(b.presupuesto).toMatchObject({ pagado_en_lote: 744405 + 450000, reservado: 927865 - 450000, disponible: 227730 });
+    expect(b.presupuesto).toMatchObject({ pagado_en_lote: 744405 + 450000, reservado: 514865 - 450000, disponible: 640730 });
     expect(b.filas.find((f) => f.factura_numero === "LF-2026-10")?.estado).toBe("APROBADA_HUMANO");
-    expect((await obtenerAprobaciones(repo)).pendientes).toHaveLength(3);
+    expect((await obtenerAprobaciones(repo)).pendientes).toHaveLength(1);
     // ya decidida: no se repite
     await falla(decidir({ ref: antes.ref_interna, accion: "rechazar", comentario: "Otra vez no", aprobador_id: "lm" }, { repo, ahora: AHORA }), 409, "ya fue aprobada");
   });
@@ -94,9 +94,9 @@ describe("decidir() — reglas de §10", () => {
     expect(p2).toMatchObject({ parcial: false, entrada: { decision: "APROBADA_HUMANO" } });
   });
 
-  it("agregar a la lista (TD-001, falló R3): crea el beneficiario con la cuenta y el canal de la factura y escribe CAMBIO_BENEFICIARIOS", async () => {
+  it("agregar a la lista (invitado al portal, falló R3): crea el beneficiario con la cuenta y el canal de la factura y escribe CAMBIO_BENEFICIARIOS", async () => {
     const repo = await repoProcesado();
-    const td = await entradaDe(repo, "TD-001");
+    const td = await escaladaPorInvitacion(repo);
     const r = await decidir({ ref: td.ref_interna, accion: "aprobar", comentario: "Proveedor validado por compras", aprobador_id: "lm", agregar_a_lista: true }, { repo, ahora: AHORA });
     expect(r.beneficiario_agregado).toMatchObject({ nombre: "Tecnologías Delta SpA", cuenta: { ultimos4: "3390" }, canales: { correos: ["ventas@tecnologiasdelta.example"] } });
     const cambios = await repo.registro({ tipo: ["CAMBIO_BENEFICIARIOS"] });
@@ -178,9 +178,9 @@ describe("POST /api/aprobaciones/:ref — roles (#51)", () => {
     expect((await post(grande, { accion: "rechazar", comentario: "No corresponde" })).status).toBe(201);
   });
 
-  it("agregar a la lista permitida (TD-001, R3) es solo de admin: un aprobador recibe 403 y no se escribe nada", async () => {
+  it("agregar a la lista permitida (invitado, R3) es solo de admin: un aprobador recibe 403 y no se escribe nada", async () => {
     const repo = await repoProcesado();
-    const td = await entradaDe(repo, "TD-001");
+    const td = await escaladaPorInvitacion(repo);
     comoCuenta("Andrea Paz", "aprobador", 500_000);
     const r = await post(td.ref_interna, { accion: "aprobar", comentario: "Proveedor validado", agregar_a_lista: true });
     expect(r.status).toBe(403);

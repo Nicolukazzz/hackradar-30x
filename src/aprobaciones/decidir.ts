@@ -311,7 +311,7 @@ function nitConfiable(ext: Extraccion | null): string | null {
 }
 
 /** Beneficiario nuevo con la cuenta de la factura y el canal por el que llegó (§10). Sin escribir nada. */
-function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnType<Repositorio["documento"]>>, ext: Extraccion | null): Beneficiario {
+export function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnType<Repositorio["documento"]>>, ext: Extraccion | null): Beneficiario {
   // #129: con los datos corregidos por la persona, si los hay (nombre y cuenta mandan sobre lo que leyó el agente).
   const nombreCorregido = ext?.beneficiario_nombre.fuente === "humano" ? ext.beneficiario_nombre.valor : null;
   const nombre = nombreCorregido ?? origen.beneficiario ?? ext?.beneficiario_nombre.valor ?? null;
@@ -336,6 +336,7 @@ function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnTyp
     canales: {
       correos: correoInvitacion ? [correoInvitacion] : rem?.tipo === "correo" ? [rem.valor] : [],
       telegram_chat_id: rem?.tipo === "telegram" ? rem.valor : null,
+      ...(rem?.tipo === "whatsapp" ? { whatsapp: rem.valor } : {}),
       portal_usuario: rem?.tipo === "portal" && !correoInvitacion && !esRemitenteInvitacion(rem.valor) ? rem.valor : null,
     },
   };

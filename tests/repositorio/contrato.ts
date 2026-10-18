@@ -31,7 +31,7 @@ export function contratoRepositorio(crear: () => Promise<Repositorio>, opciones:
 
   it("procesar el lote: 12 decisiones, sin pendientes, y el archivo original del escenario se puede leer", async () => {
     const r = await procesarPendientes(repo);
-    expect(r).toEqual({ procesadas: 12, resumen: { PAGAR: 5, FRENAR: 3, ESCALAR: 4, RECHAZADA_NO_FACTURA: 0 } });
+    expect(r).toEqual({ procesadas: 12, resumen: { PAGAR: 5, FRENAR: 5, ESCALAR: 2, RECHAZADA_NO_FACTURA: 0 } });
     expect(await repo.pendientes()).toHaveLength(0);
     expect(await repo.registro({ tipo: ["DECISION_AGENTE"], ref_interna: "INT-2026-000011" })).toHaveLength(1);
     expect((await repo.leerArchivo("INT-2026-000001"))?.mime).toBe("application/pdf");
@@ -153,7 +153,7 @@ export function contratoRepositorio(crear: () => Promise<Repositorio>, opciones:
 
   it("después de reiniciar, el lote da los mismos números que el prototipo", async () => {
     const r = await procesarPendientes(repo);
-    expect(r).toEqual({ procesadas: 12, resumen: { PAGAR: 5, FRENAR: 3, ESCALAR: 4, RECHAZADA_NO_FACTURA: 0 } });
+    expect(r).toEqual({ procesadas: 12, resumen: { PAGAR: 5, FRENAR: 5, ESCALAR: 2, RECHAZADA_NO_FACTURA: 0 } });
     const omi = await repo.registro({ tipo: ["DECISION_AGENTE"], ref_interna: "INT-2026-000011" });
     expect(omi).toHaveLength(1);
     expect(omi[0]?.id).toBe("REG-2026-000011");

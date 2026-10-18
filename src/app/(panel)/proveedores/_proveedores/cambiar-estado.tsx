@@ -66,7 +66,7 @@ export function CambiarEstado({ b }: { b: Beneficiario }) {
           <AlertDialogTitle>{activo ? `¿Desactivar a ${b.nombre}?` : `¿Activar a ${b.nombre}?`}</AlertDialogTitle>
           <AlertDialogDescription>
             {activo
-              ? "Sus facturas dejarán de pagarse solas: el agente las escalará (R3) hasta que lo actives otra vez. Queda en el registro."
+              ? "Sus facturas dejarán de pagarse: el agente las frenará (R3) hasta que lo actives otra vez. Queda en el registro."
               : "Sus facturas volverán a decidirse con las reglas normales. Queda en el registro."}
           </AlertDialogDescription>
         </AlertDialogHeader>

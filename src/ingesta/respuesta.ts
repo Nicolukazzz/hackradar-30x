@@ -17,7 +17,7 @@ type Textos = {
   escalar: string;
   frenar: (motivo: string) => string;
   no_factura: (ref: string) => string;
-  motivos: { repetida: string; no_cuadra: string; general: string };
+  motivos: { repetida: string; no_cuadra: string; no_registrado: string; general: string };
   vincular: (medio: string, url: string | undefined) => string;
   medio: Record<Canal, string>;
 };
@@ -32,6 +32,7 @@ const TEXTOS: Record<Idioma, Textos> = {
     motivos: {
       repetida: "ya habíamos recibido esta factura",
       no_cuadra: "el monto o el concepto no coincide con lo acordado",
+      no_registrado: "no estás registrado como proveedor. Pide a tu contacto en el equipo de finanzas que te registre y envíala de nuevo",
       general: "el equipo de finanzas te contactará",
     },
     vincular: (medio, url) =>
@@ -49,6 +50,7 @@ const TEXTOS: Record<Idioma, Textos> = {
     motivos: {
       repetida: "we had already received this invoice",
       no_cuadra: "the amount or description does not match what was agreed",
+      no_registrado: "you are not registered as a supplier. Ask your contact on the finance team to register you and send it again",
       general: "the finance team will contact you",
     },
     vincular: (medio, url) =>
@@ -66,6 +68,7 @@ const TEXTOS: Record<Idioma, Textos> = {
     motivos: {
       repetida: "já tínhamos recebido esta fatura",
       no_cuadra: "o valor ou a descrição não corresponde ao combinado",
+      no_registrado: "você não está cadastrado como fornecedor. Peça ao seu contato na equipe financeira que cadastre você e envie novamente",
       general: "a equipe financeira entrará em contato",
     },
     vincular: (medio, url) =>
@@ -78,6 +81,8 @@ const TEXTOS: Record<Idioma, Textos> = {
 
 /** Motivo para el proveedor. R6 (máximo) y R7 (presupuesto) son internos: se dice solo que finanzas contactará. */
 function motivoFrenar(reglas: readonly IdRegla[], t: Textos): string {
+  // R3 primero: si no está registrado, lo demás no importa (y no se le confirma nada de la factura).
+  if (reglas.includes("R3")) return t.motivos.no_registrado;
   if (reglas.includes("R2")) return t.motivos.repetida;
   if (reglas.includes("R5")) return t.motivos.no_cuadra;
   return t.motivos.general;
@@ -99,13 +104,16 @@ export function resumenRespuesta(entrada: EntradaRegistro, idioma: Idioma, opcio
   const t = TEXTOS[idioma];
   const base = { ref: entrada.ref_interna, numero: entrada.factura_numero, motivo: null, vincular: null };
   if (entrada.decision === "RECHAZADA_NO_FACTURA") return { ...base, estado: "no_factura", numero: null };
-  // Remitente no verificado (R11): puede ser alguien suplantando al proveedor. No se le confirma el número de
-  // factura ni si ya existía: solo la ref de su envío, "en revisión" y cómo vincular su canal.
+  // Remitente no verificado (R11) o proveedor fuera de la lista (R3): puede ser alguien suplantando al proveedor. No se
+  // le confirma el número de factura ni si ya existía.
+  const sinConfirmar = entrada.reglas_que_fallaron.includes("R11") || entrada.reglas_que_fallaron.includes("R3");
+  if (entrada.decision === "FRENAR") return { ...base, estado: "frenar", numero: sinConfirmar ? null : base.numero, motivo: motivoFrenar(entrada.reglas_que_fallaron, t) };
+  // Escalada por R11: "en revisión" y cómo vincular su canal.
   if (entrada.reglas_que_fallaron.includes("R11")) {
     return { ...base, estado: "escalar", numero: null, vincular: t.vincular(t.medio[entrada.canal], opciones.urlVincular) };
   }
+  if (sinConfirmar) return { ...base, estado: "escalar", numero: null };
   if (entrada.decision === "PAGAR") return { ...base, estado: "pagar" };
-  if (entrada.decision === "FRENAR") return { ...base, estado: "frenar", motivo: motivoFrenar(entrada.reglas_que_fallaron, t) };
   return { ...base, estado: "escalar" };
 }
 

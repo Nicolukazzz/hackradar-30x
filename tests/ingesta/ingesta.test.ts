@@ -194,11 +194,16 @@ describe("respuesta al remitente (§8 paso 8)", () => {
     expect(r("FAC-1041")).toBe("Recibimos tu factura FAC-1041. Ref INT-2026-000001. Estado: aprobada para pago.");
     expect(r("PX-77")).toContain("no se pagará: el monto o el concepto no coincide con lo acordado");
     expect(r("LF-2026-10")).toContain("en revisión por el equipo de finanzas");
-    expect(r("TD-001")).toContain("pide a tu contacto en el equipo de finanzas el enlace para vincular este correo");
-    expect(textoRespuesta(por("TD-001"), "es", { urlVincular: "https://t.me/bot?start=x" })).toContain("vincula este correo: https://t.me/bot?start=x");
-    // remitente no verificado: no se le confirma el número de factura
-    expect(r("TD-001")).not.toContain("TD-001");
-    expect(r("TD-001")).toContain("en revisión");
+    // Proveedor fuera de la lista (R3 frena): se le dice que no está registrado, sin confirmar el número de factura.
+    expect(r("TD-001")).toBe(
+      "Recibimos tu factura. Ref INT-2026-000009. Estado: no se pagará: no estás registrado como proveedor. Pide a tu contacto en el equipo de finanzas que te registre y envíala de nuevo.",
+    );
+    // Proveedor conocido desde un canal no vinculado (escala por R11): "en revisión" y cómo vincular el canal.
+    const soloR11 = { ...por("INV-2210"), decision: "ESCALAR" as const, reglas_que_fallaron: ["R11" as const] };
+    expect(textoRespuesta(soloR11, "es")).toContain("pide a tu contacto en el equipo de finanzas el enlace para vincular este correo");
+    expect(textoRespuesta(soloR11, "es", { urlVincular: "https://t.me/bot?start=x" })).toContain("vincula este correo: https://t.me/bot?start=x");
+    expect(textoRespuesta(soloR11, "es")).not.toContain("INV-2210");
+    expect(textoRespuesta(soloR11, "es")).toContain("en revisión");
     expect(r("INV-2210", "en")).toContain("approved for payment");
   });
 });

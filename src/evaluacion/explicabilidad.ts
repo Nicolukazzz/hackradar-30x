@@ -16,7 +16,7 @@ export const LARGO_POR_CAUSA_EXTRA = 60;
 const MENCIONES: Record<IdRegla, string[]> = {
   R1: ["no esta seguro de lo que leyo", "confirmar los datos"],
   R2: ["no se paga dos veces", "cobro repetido", "se paga una sola vez"],
-  R3: ["lista de beneficiarios permitidos"],
+  R3: ["lista de beneficiarios permitidos", "lista permitida", "identificacion fiscal", "quien cobra"],
   R4: ["no es la registrada"],
   R5: ["acordo", "lo acordado"],
   R6: ["maximo absoluto"],

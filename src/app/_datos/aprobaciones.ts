@@ -5,6 +5,9 @@
 // Después de aprobar o rechazar (6c/6d), llamar `router.refresh()` para que el badge de la barra
 // lateral se actualice: el layout no se vuelve a montar en navegaciones del cliente.
 
+import { proveedoresPorConfirmar, type ProveedorPorConfirmar } from "@/aprobaciones/proveedores-nuevos";
+import { remitentesPorConfirmar, type RemitentePorConfirmar } from "@/aprobaciones/remitentes";
+import { permisoPara, type PermisoUI } from "@/lib/auth/permisos";
 import { obtenerRepositorio } from "@/repositorio";
 import { obtenerAprobaciones as servicio, type OrdenAprobaciones, type RespuestaAprobaciones } from "@/servicios/aprobaciones";
 
@@ -24,4 +27,12 @@ export async function contarPendientes(): Promise<number | null> {
   } catch {
     return null;
   }
+}
+
+/** Por confirmar (2026-10-18): remitentes nuevos y proveedores nuevos, y si quien mira puede responder (es de administrador). */
+export async function obtenerPorConfirmar(): Promise<{ remitentes: RemitentePorConfirmar[]; proveedores: ProveedorPorConfirmar[]; confirmar: PermisoUI }> {
+  const sesion = await exigirMiembro();
+  const repo = await obtenerRepositorio();
+  const [remitentes, proveedores] = await Promise.all([remitentesPorConfirmar(repo), proveedoresPorConfirmar(repo)]);
+  return { remitentes, proveedores, confirmar: permisoPara(sesion, "editar_reglas") };
 }

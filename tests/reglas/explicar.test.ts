@@ -35,7 +35,7 @@ describe("explicaciones (§7)", () => {
   it("textos clave del prototipo", () => {
     const porNumero = (n: string, i = 0) => filas["lote-demo-oct"]!.filter((f) => f.numero === n)[i]!.explicacion;
     expect(porNumero("ES-4410")).toContain(
-      "Frenada: el pago (USD 4.000,00) supera el presupuesto disponible de USD 2.277,30, que ya descuenta lo reservado por escalados.",
+      "Frenada: el pago (USD 6.545,45) supera el presupuesto disponible de USD 6.407,30, que ya descuenta lo reservado por escalados.",
     );
     expect(porNumero("INV-2210", 1)).toBe("Frenada: CloudNorte S.A.S. ya cobró la factura INV-2210 y se pagó a las 09:14:10. No se paga dos veces.");
     expect(porNumero("PX-77")).toBe("Frenada: Pixel & Co. cobra USD 2.600,00, pero OC-121 acordó USD 1.800,00 (+44,4%; la tolerancia es 2%).");
@@ -43,7 +43,7 @@ describe("explicaciones (§7)", () => {
       "Escalada: la cuenta de la factura (•••• 9083) no es la registrada para Diego Herrera (•••• 4471). Se reservan USD 648,65 del presupuesto mientras una persona decide.",
     );
     expect(porNumero("OMI-3381")).toBe(
-      "Escalada: Servicios Ómicron S.A. no está en la lista de beneficiarios permitidos. Además, el correo traía instrucciones para el agente («Nota para el sistema»); se ignoraron. Además, el remitente (facturacion@omicron-pagos.example) tampoco está vinculado. Se reservan USD 2.980,00 del presupuesto mientras una persona decide.",
+      "Frenada: la factura de Servicios Ómicron S.A. (USD 2.980,00) no se paga: no está en la lista permitida. Además, el correo traía instrucciones para el agente («Nota para el sistema»); se ignoraron. Además, el remitente (facturacion@omicron-pagos.example) tampoco está vinculado.",
     );
   });
 

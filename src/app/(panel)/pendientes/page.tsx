@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { EncabezadoPagina, Indicador, Monto, hora } from "@/app/_componentes";
-import { obtenerAprobaciones } from "@/app/_datos/aprobaciones";
+import { obtenerAprobaciones, obtenerPorConfirmar } from "@/app/_datos/aprobaciones";
 import { obtenerVerificacion } from "@/app/_datos/bandeja";
 import { conRespaldo } from "@/app/_datos/respaldo";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
@@ -13,6 +13,7 @@ import { relojSistema } from "@/lib/reloj-sistema";
 import { ListaPendientes } from "../_aprobaciones/lista-pendientes";
 import { OrdenAprobaciones } from "../_aprobaciones/orden";
 import { PorQueEsperan } from "../_aprobaciones/por-que-esperan";
+import { PorConfirmar } from "../_aprobaciones/por-confirmar";
 
 export const metadata: Metadata = { title: "Pendientes · Agente de cuentas por pagar" };
 
@@ -31,9 +32,10 @@ function antiguedad(desde: string, ahora: string): { valor: number; unidad: stri
 export default async function PendientesPage({ searchParams }: PageProps<"/pendientes">) {
   const sp = await searchParams;
   const orden = sp.orden === "monto" ? "monto" : "vencimiento";
-  const [a, verificacion] = await Promise.all([
+  const [a, verificacion, remitentes] = await Promise.all([
     obtenerAprobaciones(orden),
     conRespaldo(obtenerVerificacion(), { filas: [], novedades: { total: 0, ultima: null } }, "remitentes por verificar"),
+    conRespaldo(obtenerPorConfirmar(), { remitentes: [], proveedores: [], confirmar: { ok: false as const, motivo: "" } }, "por confirmar"),
   ]);
   const vencenHoy = a.pendientes.filter((t) => t.asignacion?.urgente);
   const primeraHoy = vencenHoy[0];
@@ -92,6 +94,8 @@ export default async function PendientesPage({ searchParams }: PageProps<"/pendi
             />
             <PorQueEsperan pendientes={a.pendientes} />
           </section>
+
+          <PorConfirmar remitentes={remitentes.remitentes} proveedores={remitentes.proveedores} confirmar={remitentes.confirmar} />
 
           <ListaPendientes pendientes={a.pendientes} porVerificar={verificacion.filas} />
         </>

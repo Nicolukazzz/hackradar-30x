@@ -77,9 +77,13 @@ const FRASES: Record<IdRegla, (f: Frase) => string> = {
       ? `el agente no pudo leer el documento${de} porque el servicio de lectura no respondió. Una persona debe revisarlo o pedir que se reenvíe.`
       : `el agente no está seguro de lo que leyó en la factura${de} (${e.comparacion}). Una persona debe confirmar los datos.`,
   R2: fraseDuplicado,
-  R3: ({ d, nombre }) => {
+  R3: ({ e, d, nombre, de, monto }) => {
+    if (d.motivo === "sin_nit_factura") return `la factura${de} no trae la identificación fiscal (NIT) que la empresa exige para reconocer a quien cobra.`;
+    if (d.motivo === "sin_nit_registrado") return `${nombre} no tiene identificación fiscal registrada y la empresa reconoce a quien cobra por nombre y NIT.`;
     if (d.motivo === "nit_distinto") return `la identificación fiscal de la factura (${texto(d.nit)}) no es la registrada para ${nombre} (${texto(d.nit_registrado)}).`;
     if (d.modo === "nit") return `la identificación fiscal ${texto(d.nit)} no es de ningún proveedor de la lista permitida.`;
+    // Frena (2026-10-18): dice cuánto no se paga. Escala solo si llegó por un enlace de invitación (#85).
+    if (e.si_falla === "FRENAR") return `la factura${de} (${monto}) no se paga: no está en la lista permitida.`;
     return `${nombre} no está en la lista de beneficiarios permitidos.`;
   },
   R4: ({ d, nombre }) =>

@@ -45,19 +45,23 @@ describe("identificar (#108)", () => {
 });
 
 describe("R3 con identidad (#108)", () => {
-  const r3 = (nombre: string, nit: string | null, modo: "nombre" | "nombre_y_nit" | "nit") => {
-    const e = ext(nombre, nit);
+  const r3 = (nombre: string, nit: string | null, modo: "nombre" | "nombre_y_nit" | "nit", confianza = 0.99) => {
+    const e = ext(nombre, nit, confianza);
     const identidad = identificar(e, lista(), modo, 0.9);
     return r03Beneficiario({ ...ctx(d, { ext: e }), beneficiario: identidad.beneficiario, identidad });
   };
 
-  it("NIT distinto falla con los dos NIT; NIT faltante queda indeterminado (escala)", () => {
+  it("NIT distinto o faltante frena (falla); un NIT ilegible queda indeterminado (escala por lectura)", () => {
     const distinto = r3("Mesa Legal S.A.S.", "800.000.000-1", "nombre_y_nit");
     expect(distinto.resultado).toBe("FALLA");
     expect(distinto.comparacion).toBe("NIT 800.000.000-1 ≠ 900.123.456-7 registrado para Mesa Legal S.A.S.");
+    expect(distinto.si_falla).toBe("FRENAR");
     const falta = r3("Mesa Legal S.A.S.", null, "nit");
-    expect(falta.resultado).toBe("INDETERMINADO");
-    expect(falta.comparacion).toContain("no trae una identificación fiscal legible");
+    expect(falta.resultado).toBe("FALLA");
+    expect(falta.comparacion).toBe("la factura no trae la identificación fiscal y la empresa reconoce a quien cobra por NIT");
+    const ilegible = r3("Mesa Legal S.A.S.", "900.123.456-7", "nit", 0.5);
+    expect(ilegible.resultado).toBe("INDETERMINADO");
+    expect(ilegible.comparacion).toBe("no se pudo leer con confianza la identificación fiscal (NIT) (ver R1)");
     expect(r3("Otro Nombre", "900.123.456-7", "nit")).toMatchObject({ resultado: "CUMPLE", comparacion: "Mesa Legal S.A.S. (NIT 900.123.456-7) está entre los 14 permitidos" });
   });
 

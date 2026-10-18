@@ -75,7 +75,7 @@ describe("cambiar la moneda base (#86)", () => {
 
   it("lo ya pagado en USD sigue contando en el presupuesto en COP (nunca suma monedas distintas)", () => {
     const pagada = { id: "REG-1", tipo: "DECISION_AGENTE", decision: "PAGAR", momento: "2026-10-05T10:00:00-05:00", monto_usd_centavos: 100000, beneficiario: "X", factura_numero: "F-1", extraccion: null, sha256: null, ref_interna: "INT-1" } as unknown as EntradaRegistro;
-    const enCop = { ...pagada, id: "REG-2", monto_usd_centavos: 400000000, moneda_base: "COP" as const };
+    const enCop = { ...pagada, id: "REG-2", ref_interna: "INT-2", monto_usd_centavos: 400000000, moneda_base: "COP" as const };
     const cop: TablaTasas = { periodo: "2026-10", base: "COP", tasas: { USD: "0.00025" } };
     expect(facturasVigentes([pagada, enCop], cop).map((f) => f.usd_centavos)).toEqual([400000000, 400000000]);
     // Sin tasa para convertir la entrada en USD: lanza (el motor lo atrapa y no paga).

@@ -83,8 +83,8 @@ exports[`explicaciones (§7) > snapshot de las 26 explicaciones 1`] = `
     },
     {
       "beneficiario": "Tecnologías Delta SpA",
-      "decision": "ESCALAR",
-      "explicacion": "Escalada: Tecnologías Delta SpA no está en la lista de beneficiarios permitidos. Además, el remitente (ventas@tecnologiasdelta.example) tampoco está vinculado. Se reservan USD 1.150,00 del presupuesto mientras una persona decide.",
+      "decision": "FRENAR",
+      "explicacion": "Frenada: la factura de Tecnologías Delta SpA (USD 1.150,00) no se paga: no está en la lista permitida. Además, el remitente (ventas@tecnologiasdelta.example) tampoco está vinculado.",
       "numero": "TD-001",
       "observaciones": [],
       "reglas": [
@@ -106,8 +106,8 @@ exports[`explicaciones (§7) > snapshot de las 26 explicaciones 1`] = `
     },
     {
       "beneficiario": "Servicios Ómicron S.A.",
-      "decision": "ESCALAR",
-      "explicacion": "Escalada: Servicios Ómicron S.A. no está en la lista de beneficiarios permitidos. Además, el correo traía instrucciones para el agente («Nota para el sistema»); se ignoraron. Además, el remitente (facturacion@omicron-pagos.example) tampoco está vinculado. Se reservan USD 2.980,00 del presupuesto mientras una persona decide.",
+      "decision": "FRENAR",
+      "explicacion": "Frenada: la factura de Servicios Ómicron S.A. (USD 2.980,00) no se paga: no está en la lista permitida. Además, el correo traía instrucciones para el agente («Nota para el sistema»); se ignoraron. Además, el remitente (facturacion@omicron-pagos.example) tampoco está vinculado.",
       "numero": "OMI-3381",
       "observaciones": [
         "El monto está a USD 20,00 del límite automático.",
@@ -122,14 +122,14 @@ exports[`explicaciones (§7) > snapshot de las 26 explicaciones 1`] = `
     {
       "beneficiario": "Estudio Sonoro Ltda.",
       "decision": "FRENAR",
-      "explicacion": "Frenada: el pago (USD 4.000,00) supera el presupuesto disponible de USD 2.277,30, que ya descuenta lo reservado por escalados. Además, la factura de Estudio Sonoro Ltda. (USD 4.000,00) supera el límite de pago automático de USD 3.000,00.",
+      "explicacion": "Frenada: el pago (USD 6.545,45) supera el presupuesto disponible de USD 6.407,30, que ya descuenta lo reservado por escalados. Además, la factura de Estudio Sonoro Ltda. (USD 6.545,45) supera el límite de pago automático de USD 3.000,00.",
       "numero": "ES-4410",
       "observaciones": [],
       "reglas": [
         "R7",
         "R9",
       ],
-      "usd": 400000,
+      "usd": 654545,
     },
   ],
   "trampas-extra": [

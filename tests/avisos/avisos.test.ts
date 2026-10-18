@@ -26,6 +26,12 @@ const delLote = (numero: string) => {
   return e;
 };
 
+/**
+ * OMI-3381 escalada, como si hubiera llegado por un enlace de invitación (#85): desde 2026-10-18 R3 la frena en el lote,
+ * pero es el mejor caso para el aviso (remitente que cita R11, R10, asignada a Laura).
+ */
+const omiEscalada = (): EntradaRegistro => ({ ...delLote("OMI-3381"), decision: "ESCALAR" });
+
 beforeAll(async () => {
   fijarAvisador(null);
   const repo = await crearRepositorioMemoria("lote-demo-oct");
@@ -50,7 +56,7 @@ const miembro = (usuario_id: string, rol: Miembro["rol"], extra: Partial<Miembro
 
 describe("armarAviso", () => {
   it("OMI-3381: dice quién, cuánto, por qué, a quién se asignó, para cuándo y dónde decidir", () => {
-    const e = delLote("OMI-3381");
+    const e = omiEscalada();
     const aviso = armarAviso(e, { aprobadores, decidido_en: AHORA_LOTE, enlace: enlace(e.ref_interna) });
     expect(aviso.asunto).toBe("Escalada: OMI-3381 · Servicios Ómicron S.A. · USD 2.980,00");
     expect(aviso.urgente).toBe(false);
@@ -72,7 +78,7 @@ describe("armarAviso", () => {
   });
 
   it("sin número ni beneficiario legibles usa la ref y no escribe null", () => {
-    const e: EntradaRegistro = { ...delLote("OMI-3381"), factura_numero: null, beneficiario: null, monto_usd_centavos: null };
+    const e: EntradaRegistro = { ...omiEscalada(), factura_numero: null, beneficiario: null, monto_usd_centavos: null };
     const aviso = armarAviso(e, { aprobadores, decidido_en: AHORA_LOTE, enlace: enlace(e.ref_interna) });
     expect(aviso.asunto).toBe("Escalada: INT-2026-000011 · beneficiario sin leer · monto por confirmar");
     expect(aviso.texto).not.toMatch(/null|undefined/);
@@ -96,7 +102,7 @@ describe("texto que escribió quien cobra", () => {
   });
 
   it("el aviso no deja que la factura agregue líneas, enlaces ni cabeceras", () => {
-    const e: EntradaRegistro = { ...delLote("OMI-3381"), ...malo };
+    const e: EntradaRegistro = { ...omiEscalada(), ...malo };
     const aviso = armarAviso(e, { aprobadores, decidido_en: AHORA_LOTE, enlace: enlace(e.ref_interna) });
     expect(aviso.asunto).not.toMatch(/[\r\n]/);
     expect(aviso.texto).not.toContain("https://pagos-malos");
@@ -174,7 +180,7 @@ describe("crearAvisador", () => {
 
   it("ESCALAR: un correo en copia oculta a quien puede aprobar y un mensaje a Teams", async () => {
     const { d, correos, posts } = deps();
-    await crearAvisador(d)(delLote("OMI-3381"), AHORA_LOTE);
+    await crearAvisador(d)(omiEscalada(), AHORA_LOTE);
     expect(correos).toHaveLength(1);
     expect(correos[0]?.bcc).toEqual(["admin@nebula.example", "andres@nebula.example"]);
     expect(correos[0]?.asunto).toContain("OMI-3381");
@@ -203,14 +209,14 @@ describe("crearAvisador", () => {
         throw new Error("supabase caído");
       },
     });
-    await crearAvisador(d)(delLote("TD-001"), AHORA_LOTE);
+    await crearAvisador(d)(delLote("F-0101"), AHORA_LOTE);
     expect(correos).toEqual([]);
     expect(posts).toHaveLength(1);
   });
 
   it("sin Teams configurado solo correo", async () => {
     const { d, correos } = deps({ teams: null });
-    await crearAvisador(d)(delLote("TD-001"), AHORA_LOTE);
+    await crearAvisador(d)(delLote("F-0101"), AHORA_LOTE);
     expect(correos).toHaveLength(1);
   });
 });
@@ -244,15 +250,15 @@ describe("avisarEscaladas en el pipeline", () => {
 
   it("sin avisador configurado no hace nada", () => {
     fijarAvisador(null);
-    expect(() => avisarEscaladas([delLote("OMI-3381")])).not.toThrow();
+    expect(() => avisarEscaladas([omiEscalada()])).not.toThrow();
   });
 
-  it("Procesar facturas nuevas avisa las 4 escaladas del lote con la hora del lote", async () => {
+  it("Procesar facturas nuevas avisa las 2 escaladas del lote con la hora del lote", async () => {
     const avisador = vi.fn(async () => {});
     fijarAvisador(avisador);
     await procesarPendientes(await crearRepositorioMemoria("lote-demo-oct"));
     await esperarAvisos();
-    expect(avisador).toHaveBeenCalledTimes(4);
-    expect(avisador.mock.calls.map((c) => [(c as unknown[])[1]])).toEqual(Array(4).fill([AHORA_LOTE]));
+    expect(avisador).toHaveBeenCalledTimes(2);
+    expect(avisador.mock.calls.map((c) => [(c as unknown[])[1]])).toEqual(Array(2).fill([AHORA_LOTE]));
   });
 });

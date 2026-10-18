@@ -49,7 +49,8 @@ def test_lote_demo_reproduce_el_prototipo(corrida):
     _, (lote, _, _) = corrida
     assert verificar.aritmetica_lote_demo(lote) == []
     decisiones = [e["decision"] for e in lote["esperado"]]
-    assert decisiones == ["PAGAR"] * 5 + ["FRENAR", "FRENAR", "ESCALAR", "ESCALAR", "ESCALAR", "ESCALAR", "FRENAR"]
+    # R3 frena (2026-10-18): TD-001 y OMI-3381 (fuera de la lista) se frenan en vez de escalar.
+    assert decisiones == ["PAGAR"] * 5 + ["FRENAR", "FRENAR", "ESCALAR", "FRENAR", "ESCALAR", "FRENAR", "FRENAR"]
     assert [e["ref_esperada"] for e in lote["esperado"]][-1] == "INT-2026-000012"
 
 
@@ -196,6 +197,7 @@ def test_control_factura_normal_paga():
                                    "cuenta_destino_ultimos4", "concepto", "monto_total"])
 def test_campo_faltante_escala_sin_romper(campo):
     r = _evaluar_uno(_ext(**{campo: None}), CLOUDNORTE)
+    # Sin nombre no se sabe si falta o no se leyó: R3 queda indeterminado y escala (no frena).
     assert r["decision"] == "ESCALAR"
     assert "R1" in r["reglas_que_fallan"]
 
@@ -220,7 +222,7 @@ def test_beneficiario_inactivo_solo_falla_r3_y_no_aplica_r4_r5_r8():
     r = _evaluar_uno(_ext(cuenta_destino_ultimos4="0000", monto_total={"centavos": 200000, "moneda": "USD"}),
                      CLOUDNORTE, inactivos)
     assert r["reglas_que_fallan"] == ["R3"]
-    assert r["decision"] == "ESCALAR"
+    assert r["decision"] == "FRENAR"
     assert {r["detalle"][k] for k in ("R4", "R5", "R8")} == {"NO_APLICA"}
 
 

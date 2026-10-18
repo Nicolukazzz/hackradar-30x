@@ -37,7 +37,7 @@ describe("cargarEscenario", () => {
     expect(e.documentos[0]?.archivo_original).toBe("documentos/001-fac-1041.pdf");
     expect(e.documentos.at(-1)?.archivo_original).toBe("documentos/012-es-4410.png");
     const conteo = e.esperado.reduce<Record<string, number>>((c, x) => ({ ...c, [x.decision]: (c[x.decision] ?? 0) + 1 }), {});
-    expect(conteo).toEqual({ PAGAR: 5, FRENAR: 3, ESCALAR: 4 });
+    expect(conteo).toEqual({ PAGAR: 5, FRENAR: 5, ESCALAR: 2 });
   });
 
   it("trampas-extra: 14 documentos, incluye un RECHAZADA_NO_FACTURA", async () => {

@@ -88,7 +88,8 @@ export function PanelDecision(p: PropsPanelDecision) {
   // El servidor agrega a la lista con la firma que cierra la aprobación, nunca con la primera de dos.
   const ultimaFirma = !(p.requiereDobleAprobacion && p.firmas.length === 0);
   const vincular = !p.puedeAgregarALista && p.canalAVincular ? p.canalAVincular : null;
-  const puedeAgregar = (p.puedeAgregarALista || vincular !== null) && ultimaFirma;
+  // Agregar un proveedor nuevo ya no se hace al aprobar una factura: se responde «¿Confiar siempre?» en Pendientes.
+  const puedeAgregar = vincular !== null && ultimaFirma;
   const quien = sinPuntoFinal(p.beneficiario ?? "este beneficiario");
   const textoCasilla = vincular
     ? `vincular ${vincular.tipo === "correo" ? vincular.valor : `el chat de Telegram ${vincular.valor}`} a ${quien} para sus próximas facturas`

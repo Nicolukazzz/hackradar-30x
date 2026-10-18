@@ -34,7 +34,7 @@ describe("R7 Presupuesto disponible", () => {
     expect(r07Presupuesto(ctx(d, { ext: { monto_total: campo<never>(null) } })).resultado).toBe("NO_APLICA");
   });
   it("lote demo: ES-4410", async () => {
-    expect((await delLote("ES-4410", "R7")).comparacion).toBe("4.000,00 > 2.277,30 USD disponibles al evaluar");
+    expect((await delLote("ES-4410", "R7")).comparacion).toBe("6.545,45 > 6.407,30 USD disponibles al evaluar");
   });
 });
 

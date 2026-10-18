@@ -26,6 +26,21 @@ describe("R3 Beneficiario en la lista permitida", () => {
     expect(r03Beneficiario(ctx(d, { beneficiario: inactivo })).comparacion).toBe("Ana María Gómez está inactivo en la lista");
   });
 
+  it("si falla, FRENA (solo se paga a proveedores de la lista); por el portal o un enlace de invitación escala", () => {
+    const nova = { ext: { beneficiario_nombre: campo("Nova Prints") } };
+    const porCorreo = { canal: "correo" as const, remitente: { tipo: "correo" as const, valor: "ventas@novaprints.example" } };
+    expect(r03Beneficiario(ctx(d, { ...nova, doc: porCorreo })).si_falla).toBe("FRENAR");
+    expect(r03Beneficiario(ctx(d, { ...nova, doc: { canal: "portal" } })).si_falla).toBe("ESCALAR");
+    expect(r03Beneficiario(ctx(d, { ...nova, doc: { ...porCorreo, remitente: { tipo: "correo", valor: "invitacion:abc:nova@prints.example" } } })).si_falla).toBe("ESCALAR");
+  });
+
+  it("nombre ilegible o ausente: INDETERMINADO (escala por lectura, nunca se niega por un error del agente)", () => {
+    const ilegible = r03Beneficiario(ctx(d, { ext: { beneficiario_nombre: campo("Nova Prints", 0.4) } }));
+    expect(ilegible).toMatchObject({ resultado: "INDETERMINADO", comparacion: "no se pudo leer con confianza el nombre de quien cobra (ver R1)" });
+    const sinNombre = r03Beneficiario(ctx(d, { ext: { beneficiario_nombre: campo<string>(null) } }));
+    expect(sinNombre.resultado).toBe("INDETERMINADO");
+  });
+
   it("lote demo: OMI-3381", async () => {
     expect((await delLote("OMI-3381", "R3")).comparacion).toBe("Servicios Ómicron S.A. no está entre los 14 permitidos");
   });
