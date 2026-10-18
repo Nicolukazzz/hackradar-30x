@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { formatearUsd } from "@/dominio/dinero";
+import { formatearBase } from "@/dominio/dinero";
 import { salir } from "@/app/entrar/acciones";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
@@ -76,7 +76,7 @@ export default async function PaginaUnirse({ params, searchParams }: PageProps<"
   // #80: sin sesión y con un enlace vigente, la persona crea aquí su cuenta (nombre + contraseña).
   if (vista && !sesion && vista.correo_esperado) {
     const limiteSinSesion =
-      vista.rol === "aprobador" ? (vista.limite_aprobacion_usd === null ? ", sin límite de monto" : `, hasta USD ${formatearUsd(vista.limite_aprobacion_usd)} por pago`) : "";
+      vista.rol === "aprobador" ? (vista.limite_aprobacion_usd === null ? ", sin límite de monto" : `, hasta ${formatearBase(vista.limite_aprobacion_usd, empresa?.moneda_base ?? "USD")} por pago`) : "";
     return (
       <Marco>
         <EmptyHeader>
@@ -112,7 +112,7 @@ export default async function PaginaUnirse({ params, searchParams }: PageProps<"
     );
   }
 
-  const limite = vista.rol === "aprobador" ? (vista.limite_aprobacion_usd === null ? "sin límite de monto" : `hasta USD ${formatearUsd(vista.limite_aprobacion_usd)} por pago`) : null;
+  const limite = vista.rol === "aprobador" ? (vista.limite_aprobacion_usd === null ? "sin límite de monto" : `hasta ${formatearBase(vista.limite_aprobacion_usd, empresa?.moneda_base ?? "USD")} por pago`) : null;
   const error = resultado ? (MENSAJES[resultado] ?? MENSAJES.invalida) : null;
 
   return (

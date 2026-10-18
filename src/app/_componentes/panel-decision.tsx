@@ -36,12 +36,7 @@ export type PropsPanelDecision = {
   montoUsd: number | null;
   /** #129: total leído sin confianza (montoUsd null): se puede aprobar igual confirmándolo o corrigiéndolo */
   montoDudoso?: Dinero | null;
-  puedeAgregarALista: boolean;
-  /** #110: canal (correo o chat) que se puede vincular al proveedor al aprobar; null si no aplica */
-  canalAVincular?: { tipo: "correo" | "telegram"; valor: string } | null;
   requiereDobleAprobacion: boolean;
-  /** llega desde «Por verificar»: la casilla de agregar o vincular empieza marcada */
-  marcarCasilla?: boolean;
   /** moneda de `montoUsd` (#86) */
   moneda?: Moneda;
   /** `cubre`: el límite de quien firmó primero alcanza el monto (§10) */
@@ -59,7 +54,6 @@ export function PanelDecision(p: PropsPanelDecision) {
   const idBase = useId();
   const idComentario = p.idComentario ?? `${idBase}-comentario`;
   const [comentario, setComentario] = useState("");
-  const [agregar, setAgregar] = useState(p.marcarCasilla ?? false);
   const [accion, setAccion] = useState<Accion | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tocado, setTocado] = useState(false);
@@ -85,15 +79,8 @@ export function PanelDecision(p: PropsPanelDecision) {
   // la primera puede ser de control, y la segunda también si la primera ya cubre el monto (igual que decidir()).
   const primeraCubre = p.firmas.some((f) => f.cubre);
   const bloqueoLimite = superaLimite && (!p.requiereDobleAprobacion || (p.firmas.length > 0 && !primeraCubre));
-  // El servidor agrega a la lista con la firma que cierra la aprobación, nunca con la primera de dos.
-  const ultimaFirma = !(p.requiereDobleAprobacion && p.firmas.length === 0);
-  const vincular = !p.puedeAgregarALista && p.canalAVincular ? p.canalAVincular : null;
-  // Agregar un proveedor nuevo ya no se hace al aprobar una factura: se responde «¿Confiar siempre?» en Pendientes.
-  const puedeAgregar = vincular !== null && ultimaFirma;
-  const quien = sinPuntoFinal(p.beneficiario ?? "este beneficiario");
-  const textoCasilla = vincular
-    ? `vincular ${vincular.tipo === "correo" ? vincular.valor : `el chat de Telegram ${vincular.valor}`} a ${quien} para sus próximas facturas`
-    : `agregar a ${quien} a la lista permitida para pagos futuros`;
+  // Agregar un proveedor nuevo o vincular un remitente ya no se hace al aprobar una factura: se responde una sola vez
+  // en Pendientes → «Por confirmar» (2026-10-18). Aquí solo se aprueba o rechaza esta factura.
 
   let textoAprobar = usd ? `Aprobar ${usd}` : "Aprobar";
   if (p.requiereDobleAprobacion) textoAprobar = p.firmas.length === 0 ? "Aprobar (1.ª de 2 firmas)" : "Aprobar (2.ª firma)";
@@ -116,7 +103,6 @@ export function PanelDecision(p: PropsPanelDecision) {
           body: JSON.stringify({
             accion,
             comentario: comentario.trim(),
-            ...(agregar && puedeAgregar && accion === "aprobar" ? { [vincular ? "vincular_canal" : "agregar_a_lista"]: true } : {}),
             ...(corregidas.length > 0 ? { correcciones } : {}),
           }),
         });
@@ -139,7 +125,6 @@ export function PanelDecision(p: PropsPanelDecision) {
       setComentario("");
       limpiar();
       setAccion(null);
-      setAgregar(false);
       setTocado(false);
       router.refresh();
     });
@@ -163,7 +148,7 @@ export function PanelDecision(p: PropsPanelDecision) {
               Vas a <strong className="font-semibold">aprobar</strong> el pago de <span className="font-mono">{usd ?? "esta factura"}</span>
               {p.beneficiario ? ` a ${sinPuntoFinal(p.beneficiario)}` : ""}
               {p.requiereDobleAprobacion && p.firmas.length === 0 ? " como primera de dos firmas" : ""}
-              {agregar && puedeAgregar ? `, y ${textoCasilla}` : ""}.
+              .
             </>
           ) : (
             <>
@@ -218,15 +203,9 @@ export function PanelDecision(p: PropsPanelDecision) {
           </span>
         ) : null}
       </div>
-      {puedeAgregar ? (
-        <label className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm">
-          <input type="checkbox" checked={agregar} onChange={(e) => setAgregar(e.target.checked)} className="size-[18px] accent-primary" />
-          {textoCasilla.charAt(0).toUpperCase() + textoCasilla.slice(1)}
-        </label>
-      ) : null}
       {bloqueoLimite ? (
         <p className="text-[13px] text-frenada-foreground">
-          Supera tu límite de aprobación (USD {formatearUsd(p.actual.limite_usd ?? 0)}). Puedes rechazarla o pedirle a un aprobador con límite suficiente que la apruebe.
+          Supera tu límite de aprobación ({p.moneda ?? moneda} {formatearUsd(p.actual.limite_usd ?? 0)}). Puedes rechazarla o pedirle a un aprobador con límite suficiente que la apruebe.
         </p>
       ) : null}
       {firmaPropia ? <p className="text-[13px] text-texto-3">Ya firmaste esta factura: la segunda aprobación debe ser de otra persona.</p> : null}

@@ -42,16 +42,27 @@ function adjuntosDeFactura(adjuntos: Adjunto[]): Adjunto[] {
 /** Prefijo del remitente cuando no se pudo verificar: no coincide con ningún correo vinculado. */
 export const PREFIJO_NO_VERIFICADO = "no-verificado:";
 
+/** Servidor que recibe el correo y escribe `Authentication-Results` (RFC 8601 authserv-id). Gmail: mx.google.com. */
+export function servidorDeConfianza(env: NodeJS.ProcessEnv = process.env): string {
+  return env.CORREO_AUTHSERV_ID?.trim().toLowerCase() || "mx.google.com";
+}
+
 /**
- * Veredicto de `Authentication-Results` (lo agrega el servidor que recibe; Gmail siempre lo pone).
- * Solo `dmarc=pass` prueba que el From es del dominio que dice (SPF/DKIM pueden pasar para OTRO dominio).
- * Cualquier fail → falla. Sin cabecera → sin_dato.
+ * Veredicto de `Authentication-Results`. Solo vale la cabecera que escribió NUESTRO servidor al recibir: la primera
+ * (más arriba) con su authserv-id. Cualquier otra la pudo escribir quien envía dentro del mensaje (un
+ * "dmarc=pass" falso cuando el dominio del proveedor no publica DMARC y el servidor anota dmarc=none).
+ * Solo `dmarc=pass` con `header.from` del mismo dominio del From prueba que el From es real (SPF/DKIM pueden pasar
+ * para OTRO dominio). Un fail → falla. Sin cabecera de nuestro servidor → sin_dato.
  */
-export function autenticacionDe(cabeceras: string[]): Autenticacion {
-  if (cabeceras.length === 0) return "sin_dato";
-  const texto = cabeceras.join(" ").toLowerCase();
+export function autenticacionDe(cabeceras: string[], de: string, servidor: string = servidorDeConfianza()): Autenticacion {
+  const nuestra = cabeceras.find((c) => c.split(";")[0]!.trim().toLowerCase().split(/\s+/)[0] === servidor);
+  if (!nuestra) return "sin_dato";
+  const texto = nuestra.toLowerCase();
   if (/\b(spf|dkim|dmarc)=(fail|softfail|permerror)\b/.test(texto)) return "falla";
-  return /\bdmarc=pass\b/.test(texto) ? "pasa" : "sin_dato";
+  if (!/\bdmarc=pass\b/.test(texto)) return "sin_dato";
+  const dominio = de.split("@")[1]?.toLowerCase() ?? "";
+  const headerFrom = /\bheader\.from=([^\s;)]+)/.exec(texto)?.[1];
+  return headerFrom && dominio && headerFrom === dominio ? "pasa" : "sin_dato";
 }
 
 const REMITENTES_SISTEMA = /^(mailer-daemon|postmaster|no-?reply|do-?not-?reply|bounces?)([+@.-]|$)/i;
@@ -86,7 +97,7 @@ export async function correoAEntrada(
   if (!de) throw new Error("El correo no tiene remitente (From).");
 
   const lineas = (clave: string) => correo.headerLines.filter((h) => h.key === clave).map((h) => h.line.slice(h.line.indexOf(":") + 1).trim());
-  const autenticacion = autenticacionDe(lineas("authentication-results"));
+  const autenticacion = autenticacionDe(lineas("authentication-results"), de);
   // Buzón real: sin dmarc=pass no se confía. /simular (lo sube el panel): solo un fail explícito.
   const verificado =
     opciones.confiarCabeceras !== false && (autenticacion === "pasa" || (!opciones.exigirAutenticacion && autenticacion === "sin_dato"));

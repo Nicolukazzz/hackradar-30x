@@ -2,13 +2,14 @@ import { dependenciasCanal } from "@/canales/dependencias";
 import { recibirCorreo } from "@/canales/correo/recibir";
 import { MAX_BYTES } from "@/ingesta/limites";
 import type { DecisionAgente, DecisionHumana, IdRegla } from "@/dominio/tipos";
+import type { Sesion } from "@/lib/auth/permisos";
 import { conSesion } from "@/lib/auth/ruta";
 import { crearLimitador } from "@/lib/limite";
 import { obtenerRepositorio } from "@/repositorio";
 
 import { cuerpoLimitado } from "../../../_cuerpo";
 import { error, manejar, ok } from "../../../_http";
-import { demoActiva } from "../../../_identidad";
+import { confiarRemitenteSimulado } from "../../../_identidad";
 
 /**
  * POST /api/canales/correo/simular (#14): recibe un .eml crudo (cuerpo `message/rfc822`) como si hubiera
@@ -30,8 +31,8 @@ export type RespuestaSimularCorreo = {
 // Cada correo corre ingesta, extracción (quizás LLM) y motor: mismo tope que la subida de PDF (/api/documentos).
 const limitador = crearLimitador({ maximo: 20, ventanaMs: 60_000 });
 
-function opcionesRemitente() {
-  return demoActiva() ? { exigirAutenticacion: false } : { exigirAutenticacion: true, confiarCabeceras: false };
+function opcionesRemitente(sesion: Sesion) {
+  return confiarRemitenteSimulado(sesion) ? { exigirAutenticacion: false } : { exigirAutenticacion: true, confiarCabeceras: false };
 }
 
 export const POST = conSesion(async (req: Request, _ctx, sesion) => {
@@ -39,7 +40,7 @@ export const POST = conSesion(async (req: Request, _ctx, sesion) => {
     if (!limitador.permitir(sesion.usuario_id)) return error(429, "Demasiados correos seguidos. Espera un minuto.");
     const eml = await cuerpoLimitado(req, MAX_BYTES, "El correo supera los 10 MB.");
     if (eml.byteLength === 0) return error(400, "Envía el correo .eml en el cuerpo.");
-    const r = await recibirCorreo(eml, { ...(await dependenciasCanal(await obtenerRepositorio())), ...opcionesRemitente() });
+    const r = await recibirCorreo(eml, { ...(await dependenciasCanal(await obtenerRepositorio())), ...opcionesRemitente(sesion) });
     if (r.ignorado !== null) return error(422, `Correo automático ignorado (${r.ignorado}).`);
     return ok<RespuestaSimularCorreo>(
       {

@@ -52,7 +52,7 @@ function entradaArbitraria(): fc.Arbitrary<EntradaMotor> {
       cuentaRegistrada: casi,
       cuentaOtra: fc.stringMatching(/^\d{4}$/),
       remitenteVinculado: casi,
-      canal: fc.constantFrom("portal", "correo", "telegram", "interno"),
+      canal: fc.constantFrom("portal", "correo", "telegram", "whatsapp", "interno"),
       conf: fc.array(confianza, { minLength: 8, maxLength: 8 }),
       emision: fc.oneof({ weight: 9, arbitrary: fc.integer({ min: -60, max: 0 }) }, { weight: 1, arbitrary: fc.integer({ min: 1, max: 30 }) }),
       plazo: fc.integer({ min: -10, max: 45 }),
@@ -109,6 +109,8 @@ function entradaArbitraria(): fc.Arbitrary<EntradaMotor> {
         else if (canales.telegram_chat_id) remitente = { tipo: "telegram", valor: canales.telegram_chat_id };
         else if (canales.correos[0]) remitente = { tipo: "correo", valor: canales.correos[0] };
       } else if (g.canal === "telegram") remitente = { tipo: "telegram", valor: "999999" };
+      // #79: un WhatsApp que ningún proveedor tiene vinculado (R11 nunca cumple).
+      else if (g.canal === "whatsapp") remitente = { tipo: "whatsapp", valor: "573000000000" };
 
       const doc: DocumentoRecibido = {
         canal: remitente.tipo === "interno" ? "carga_manual" : remitente.tipo,

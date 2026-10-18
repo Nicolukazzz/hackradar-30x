@@ -616,7 +616,7 @@ El modo `golden` (§14) incluye el texto de los adjuntos en `texto_crudo`: un ex
 | `POST /api/reglas/simular` | `Reglas` | `ReporteEvaluacion` (§14) | Reglas ("Simular de nuevo") |
 | `GET /api/registro?decision=&actor=agente\|humano&q=` | — | `EntradaRegistro[]` agrupadas por día | Registro |
 | `GET /api/registro/export.json` · `export.csv` | — | archivo | Registro |
-| `POST /api/ingesta` | `DocumentoEntrante` | `{ ref_interna, estado }` | canales |
+| `POST /api/documentos` | multipart `archivo` (PDF, PNG, JPG, XML ≤ 10 MB) | `{ ref_interna, estado, … }` | portal y carga manual (#26) |
 | `GET/POST /api/proveedores/enlaces` · `DELETE /api/proveedores/enlaces/:id` · `POST /api/proveedores/enlaces/:id/codigo` | `{ nombre, correo, codigo }` · `{ codigo }` | `{ enlaces }` · `{ enlace, url, codigo }` (token y código solo aquí) · `{ codigo }` | Proveedores (#85, solo admin) |
 | `POST /api/vincular/:token` · `DELETE` | `{ correo, codigo }` | `{ ok }` + cookie de sesión del proveedor (2 h) · cerrar sesión | `/vincular/[token]` (#85; en `API_PUBLICAS`: sin cuenta, mismo origen, 5 intentos/min por enlace) |
 | `POST /api/vincular/:token/facturas` | multipart `archivo` | `{ ref_interna, recibido_en, nombre_archivo, estado: 'en_revision'\|'aprobada'\|'no_se_pagara'\|'no_es_factura', mensaje }` | `/vincular/[token]/facturas` «Ingrese sus facturas» (#85; exige la cookie) |
@@ -624,6 +624,11 @@ El modo `golden` (§14) incluye el texto de los adjuntos en `texto_crudo`: un ex
 | `POST /api/canales/telegram/simular` | `{ update, archivos? }` | `{ respuesta, ref_interna, estado, … }` | demo sin bot (#13) |
 | `POST /api/canales/telegram/enlace` | `{ beneficiario_id }` | `{ enlace: "https://t.me/<bot>?start=<token>" }` (firmado, un uso, 72 h) | vincular el chat de un proveedor (#13) |
 | `POST /api/evaluar` | `{ extraccion, beneficiario_id? }` | `ResultadoMotor` (simulación sin registrar) | API para otros agentes (pitch) |
+| `GET /api/por-confirmar` | — | `{ remitentes, proveedores }` | Pendientes («Por confirmar») |
+| `POST /api/por-confirmar/remitente` | `{ remitente: { tipo, valor }, beneficiario_id, respuesta: 'si'\|'no' }` | `ResultadoConfirmar` (solo admin) | Pendientes |
+| `POST /api/por-confirmar/proveedor` | `{ clave, respuesta: 'si'\|'no' }` | `ResultadoConfiar` (solo admin) | Pendientes |
+| `GET·POST /api/canales/whatsapp/webhook` | verificación de Meta · mensaje firmado (`X-Hub-Signature-256`) | `200` siempre que la firma sea válida | canal WhatsApp (#79) |
+| `GET /api/salud` | — | `{ ok: true }` (pública, sin base) | healthcheck de Railway |
 | `GET /api/equipo` | — | `{ miembros: Miembro[], invitaciones: (Invitacion & { estado })[] }` | Equipo (admin) |
 | `POST /api/equipo/invitaciones` | `{ rol, limite_aprobacion_usd?, correo_esperado, dias_vigencia? }` | `{ invitacion, enlace }` (el token solo viaja aquí; no se envía correo, el admin copia el enlace) | Equipo (admin) |
 | `DELETE /api/equipo/invitaciones/:id` | — | `{ revocada: true }` | Equipo (admin) |

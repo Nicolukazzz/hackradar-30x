@@ -42,12 +42,25 @@ describe("correo .eml → DocumentoEntrante (#14)", () => {
   });
 
   it("Authentication-Results: un fail basta para no confiar; sin cabecera = sin dato", () => {
-    expect(autenticacionDe(["mx.google.com; spf=pass smtp.mailfrom=x; dkim=pass header.i=@x; dmarc=pass"])).toBe("pasa");
+    const de = "billing@x.example";
+    expect(autenticacionDe(["mx.google.com; spf=pass smtp.mailfrom=x; dkim=pass header.i=@x; dmarc=pass header.from=x.example"], de)).toBe("pasa");
     // SPF y DKIM pueden pasar para OTRO dominio: sin dmarc=pass no hay prueba de que el From sea real
-    expect(autenticacionDe(["mx.google.com; spf=pass smtp.mailfrom=atacante.example; dkim=pass header.i=@atacante.example"])).toBe("sin_dato");
-    expect(autenticacionDe(["mx.google.com; spf=softfail smtp.mailfrom=x; dkim=pass"])).toBe("falla");
-    expect(autenticacionDe(["mx.google.com; dmarc=fail (p=REJECT)"])).toBe("falla");
-    expect(autenticacionDe([])).toBe("sin_dato");
+    expect(autenticacionDe(["mx.google.com; spf=pass smtp.mailfrom=atacante.example; dkim=pass header.i=@atacante.example"], de)).toBe("sin_dato");
+    expect(autenticacionDe(["mx.google.com; spf=softfail smtp.mailfrom=x; dkim=pass"], de)).toBe("falla");
+    expect(autenticacionDe(["mx.google.com; dmarc=fail (p=REJECT)"], de)).toBe("falla");
+    expect(autenticacionDe([], de)).toBe("sin_dato");
+  });
+
+  it("solo vale la cabecera de nuestro servidor (la de arriba) y con header.from del mismo dominio", () => {
+    const de = "billing@cloudnorte.example";
+    // El dominio no publica DMARC (nuestro servidor anota none) y quien envía mete un «dmarc=pass» falso más abajo.
+    const falsa = ["mx.google.com; spf=pass smtp.mailfrom=atacante.example; dmarc=none header.from=cloudnorte.example", "mx.google.com; dmarc=pass header.from=cloudnorte.example"];
+    expect(autenticacionDe(falsa, de)).toBe("sin_dato");
+    // Una cabecera de otro servidor (la escribió quien envía) no cuenta.
+    expect(autenticacionDe(["mx.atacante.example; dmarc=pass header.from=cloudnorte.example"], de)).toBe("sin_dato");
+    // dmarc=pass, pero para OTRO dominio que el del From.
+    expect(autenticacionDe(["mx.google.com; dmarc=pass header.from=atacante.example"], de)).toBe("sin_dato");
+    expect(autenticacionDe(["mx.google.com; dkim=pass; dmarc=pass (p=REJECT) header.from=cloudnorte.example"], de)).toBe("pasa");
   });
 });
 
@@ -198,7 +211,7 @@ describe("buzón real: ante la duda, no verificado; automáticos ignorados (revi
 describe("correoAEntrada con confiarCabeceras: false (#49, /simular en producción)", () => {
   it("un Authentication-Results escrito por quien sube el .eml no verifica el remitente", async () => {
     const eml = Buffer.from(
-      ["From: billing@cloudnorte.example", "To: facturas@nebula.example", "Authentication-Results: mx.example; dmarc=pass header.from=cloudnorte.example", "Subject: INV", "", "hola", ""].join("\r\n"),
+      ["From: billing@cloudnorte.example", "To: facturas@nebula.example", "Authentication-Results: mx.google.com; dmarc=pass header.from=cloudnorte.example", "Subject: INV", "", "hola", ""].join("\r\n"),
     );
     const confiando = await correoAEntrada(eml, { recibido_en: AHORA, exigirAutenticacion: true });
     expect(confiando.entrada.remitente.valor).toBe("billing@cloudnorte.example");

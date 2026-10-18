@@ -8,13 +8,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GET, POST } from "@/app/api/canales/whatsapp/webhook/route";
 import { crearTokenVinculo } from "@/canales/telegram/vinculo";
-import { firmaValida } from "@/canales/whatsapp/cliente";
+import { escaparUnicode, firmaValida } from "@/canales/whatsapp/cliente";
 import { type DependenciasWhatsapp, type MensajeWhatsapp, mensajesDe, recibirWhatsapp, WebhookSchema } from "@/canales/whatsapp/recibir";
 import { extractorGolden } from "@/ingesta/cargar-escenario";
+import { fijarRepositorio } from "@/repositorio";
 import { crearRepositorioMemoria } from "@/repositorio/memoria";
 import type { Repositorio } from "@/repositorio/repositorio";
 
 vi.mock("server-only", () => ({}));
+// `after` corre después de responder; en el test se guarda la tarea para esperarla.
+const tareas = vi.hoisted(() => [] as Promise<unknown>[]);
+vi.mock("next/server", async (original) => ({ ...(await original<typeof import("next/server")>()), after: (fn: () => Promise<unknown>) => void tareas.push(fn()) }));
 vi.stubEnv("LLM_PROVIDER", "ninguno");
 
 const AHORA = "2026-10-16T10:00:00-05:00";
@@ -116,6 +120,28 @@ describe("webhook", () => {
     for (const [k, v] of Object.entries({ WHATSAPP_TOKEN: "t", WHATSAPP_PHONE_ID: "1", WHATSAPP_APP_SECRET: "s", WHATSAPP_VERIFY_TOKEN: "v" })) vi.stubEnv(k, v);
     const r = await POST(new Request("http://x", { method: "POST", body: "{}", headers: { "x-hub-signature-256": "sha256=00" } }));
     expect(r.status).toBe(401);
+  });
+
+  it("de punta a punta: un mensaje firmado como Meta (nombre con tilde, firma sobre el JSON escapado) crea la factura una sola vez", async () => {
+    for (const [k, v] of Object.entries({ WHATSAPP_TOKEN: "t", WHATSAPP_PHONE_ID: "1", WHATSAPP_APP_SECRET: "s", WHATSAPP_VERIFY_TOKEN: "v" })) vi.stubEnv(k, v);
+    fijarRepositorio(repo);
+    vi.stubGlobal("fetch", async () => new Response("{}", { status: 200 }));
+    const cuerpo = JSON.stringify({
+      object: "whatsapp_business_account",
+      entry: [{ id: "1", changes: [{ field: "messages", value: { contacts: [{ profile: { name: "Nicolás" } }], messages: [texto(textoJpo10, "wamid.e2e")] } }] }],
+    });
+    // Meta firma el JSON con todo lo no ASCII escapado (\u00e1), aunque mande el cuerpo con «á».
+    const escapado = escaparUnicode(cuerpo);
+    expect(escapado).not.toBe(cuerpo);
+    const firma = `sha256=${createHmac("sha256", "s").update(escapado).digest("hex")}`;
+    const pedir = () => POST(new Request("http://x", { method: "POST", body: cuerpo, headers: { "x-hub-signature-256": firma } }));
+    expect((await pedir()).status).toBe(200);
+    expect((await pedir()).status).toBe(200); // reintento de Meta: mismo id
+    await Promise.all(tareas.splice(0));
+    vi.unstubAllGlobals();
+    const docs = await repo.documentos();
+    expect(docs).toHaveLength(1);
+    expect(docs[0]).toMatchObject({ canal: "whatsapp", remitente: { tipo: "whatsapp", valor: NUMERO } });
   });
 
   it("firma y forma del payload de Meta", () => {

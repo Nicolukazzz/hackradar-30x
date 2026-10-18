@@ -7,8 +7,8 @@ import type { PorVerificar } from "@/servicios/verificar";
 
 // Lista de Aprobaciones (#125, #126): una fila por factura que espera una decisión, con el botón «Verificar» que abre la
 // factura en el panel de decisión. Antes estaba en la Bandeja como «remitentes sin verificar»; ahora vive aquí y trae
-// todas las escaladas pendientes. Las de remitente sin verificar (R3/R11) dicen quién escribió y desde dónde, y abren la
-// decisión con «Agregar a la lista» o «Vincular correo» ya marcada (#110); las demás dicen su motivo en una línea.
+// todas las escaladas pendientes. Las de remitente sin verificar (R3/R11) dicen quién escribió y desde dónde (agregar o
+// vincular se responde arriba, en «Por confirmar»); las demás dicen su motivo en una línea.
 
 function quien(p: PorVerificar): string {
   const r = p.remitente;
@@ -91,7 +91,7 @@ export function ListaPendientes({ pendientes, porVerificar }: Readonly<{ pendien
                 </span>
               </div>
               <Link
-                href={`/facturas/${encodeURIComponent(t.ref_interna)}${v ? "?verificar=1" : ""}#decidir`}
+                href={`/facturas/${encodeURIComponent(t.ref_interna)}#decidir`}
                 className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 Verificar

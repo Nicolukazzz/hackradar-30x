@@ -5,12 +5,16 @@ const cabecerasSeguridad = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "same-origin" },
+  // La app no usa cámara, micrófono, ubicación ni pagos del navegador: que ningún script pueda pedirlos.
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
 ];
 
 // Nadie puede mostrar la app dentro de un iframe (clickjacking)…
 const sinMarcos = [
   { key: "X-Frame-Options", value: "DENY" },
-  { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+  // Sin scripts con nonce (Next los necesitaría en cada página): se cierran las vías que no rompen nada.
+  { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'" },
 ];
 // …salvo el archivo original de una factura, que la Traza (#6c) muestra en un iframe del mismo sitio. La ruta pone
 // su propia CSP (sin scripts, frame-ancestors 'self').
