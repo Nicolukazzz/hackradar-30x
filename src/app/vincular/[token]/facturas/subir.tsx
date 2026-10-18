@@ -1,12 +1,22 @@
 "use client";
 
-import { CheckCircle2Icon, FileTextIcon, FileUpIcon, Loader2Icon, LogOutIcon, SendIcon, TriangleAlertIcon, XIcon } from "lucide-react";
+import { CheckCircle2Icon, ChevronDownIcon, FileTextIcon, FileUpIcon, Loader2Icon, LogOutIcon, SendIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
 import { Boton } from "@/app/_componentes";
 import { ACEPTA, enviarArchivo } from "@/components/subir-documento";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MAX_BYTES } from "@/ingesta/limites";
 import { cn } from "@/lib/utils";
 
@@ -180,22 +190,56 @@ export function SubirFacturas({ token }: { token: string }) {
   );
 }
 
-export function Salir({ token }: { token: string }) {
+/** Iniciales para el avatar: "Hot Dogs Rincon" → "HR". */
+function iniciales(nombre: string): string {
+  const partes = nombre.trim().split(/\s+/).filter(Boolean);
+  const letras = partes.length > 1 ? [partes[0], partes.at(-1)] : partes;
+  return letras.map((p) => p?.[0]?.toUpperCase() ?? "").join("") || "?";
+}
+
+/**
+ * Cuenta del proveedor en la barra superior (como en cualquier web): avatar con iniciales y nombre; al tocarlo, un menú
+ * con su correo y «Cerrar sesión».
+ */
+export function CuentaProveedor({ token, nombre, correo }: Readonly<{ token: string; nombre: string; correo: string }>) {
   const router = useRouter();
   const [ocupado, iniciar] = useTransition();
+  function salir() {
+    iniciar(async () => {
+      await fetch(`/api/vincular/${encodeURIComponent(token)}`, { method: "DELETE" }).catch(() => null);
+      router.replace(`/vincular/${encodeURIComponent(token)}`);
+    });
+  }
   return (
-    <Boton
-      variante="secundaria"
-      disabled={ocupado}
-      onClick={() =>
-        iniciar(async () => {
-          await fetch(`/api/vincular/${encodeURIComponent(token)}`, { method: "DELETE" }).catch(() => null);
-          router.replace(`/vincular/${encodeURIComponent(token)}`);
-        })
-      }
-    >
-      <LogOutIcon aria-hidden />
-      Salir
-    </Boton>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            className="flex min-h-11 items-center gap-2.5 rounded-full py-1 pr-3 pl-1 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted"
+            aria-label={`Cuenta de ${nombre}`}
+          />
+        }
+      >
+        <Avatar className="size-8">
+          <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">{iniciales(nombre)}</AvatarFallback>
+        </Avatar>
+        <span className="hidden max-w-[180px] truncate text-sm font-medium sm:inline">{nombre}</span>
+        <ChevronDownIcon className="size-4 text-muted-foreground" aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64 p-1.5">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex flex-col gap-0.5 px-2 py-2">
+            <span className="truncate text-sm font-semibold text-foreground">{nombre}</span>
+            <span className="truncate text-xs font-normal text-muted-foreground">{correo}</span>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" className="min-h-10 px-2" disabled={ocupado} onClick={salir}>
+          {ocupado ? <Loader2Icon className="animate-spin" aria-hidden /> : <LogOutIcon aria-hidden />}
+          {ocupado ? "Cerrando sesión…" : "Cerrar sesión"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
