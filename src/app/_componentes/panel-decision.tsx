@@ -31,6 +31,8 @@ export type PropsPanelDecision = {
   beneficiario: string | null;
   montoUsd: number | null;
   puedeAgregarALista: boolean;
+  /** #110: canal (correo o chat) que se puede vincular al proveedor al aprobar; null si no aplica */
+  canalAVincular?: { tipo: "correo" | "telegram"; valor: string } | null;
   requiereDobleAprobacion: boolean;
   /** `cubre`: el límite de quien firmó primero alcanza el monto (§10) */
   firmas: { aprobador_id: string; nombre: string; cubre: boolean }[];
@@ -63,7 +65,13 @@ export function PanelDecision(p: PropsPanelDecision) {
   const primeraCubre = p.firmas.some((f) => f.cubre);
   const bloqueoLimite = superaLimite && (!p.requiereDobleAprobacion || (p.firmas.length > 0 && !primeraCubre));
   // El servidor agrega a la lista con la firma que cierra la aprobación, nunca con la primera de dos.
-  const puedeAgregar = p.puedeAgregarALista && !(p.requiereDobleAprobacion && p.firmas.length === 0);
+  const ultimaFirma = !(p.requiereDobleAprobacion && p.firmas.length === 0);
+  const vincular = !p.puedeAgregarALista && p.canalAVincular ? p.canalAVincular : null;
+  const puedeAgregar = (p.puedeAgregarALista || vincular !== null) && ultimaFirma;
+  const quien = sinPuntoFinal(p.beneficiario ?? "este beneficiario");
+  const textoCasilla = vincular
+    ? `vincular ${vincular.tipo === "correo" ? vincular.valor : `el chat de Telegram ${vincular.valor}`} a ${quien} para sus próximas facturas`
+    : `agregar a ${quien} a la lista permitida para pagos futuros`;
 
   let textoAprobar = usd ? `Aprobar ${usd}` : "Aprobar";
   if (p.requiereDobleAprobacion) textoAprobar = p.firmas.length === 0 ? "Aprobar (1.ª de 2 firmas)" : "Aprobar (2.ª firma)";
@@ -83,7 +91,7 @@ export function PanelDecision(p: PropsPanelDecision) {
         res = await fetch(`/api/aprobaciones/${encodeURIComponent(p.refInterna)}`, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ accion, comentario: comentario.trim(), ...(agregar && puedeAgregar && accion === "aprobar" ? { agregar_a_lista: true } : {}) }),
+          body: JSON.stringify({ accion, comentario: comentario.trim(), ...(agregar && puedeAgregar && accion === "aprobar" ? { [vincular ? "vincular_canal" : "agregar_a_lista"]: true } : {}) }),
         });
       } catch {
         // Sin red o servidor reiniciando: no se registró nada; el comentario se conserva para reintentar.
@@ -127,7 +135,7 @@ export function PanelDecision(p: PropsPanelDecision) {
               Vas a <strong className="font-semibold">aprobar</strong> el pago de <span className="font-mono">{usd ?? "esta factura"}</span>
               {p.beneficiario ? ` a ${sinPuntoFinal(p.beneficiario)}` : ""}
               {p.requiereDobleAprobacion && p.firmas.length === 0 ? " como primera de dos firmas" : ""}
-              {agregar && puedeAgregar ? `, y agregar a ${sinPuntoFinal(p.beneficiario ?? "este beneficiario")} a la lista permitida` : ""}.
+              {agregar && puedeAgregar ? `, y ${textoCasilla}` : ""}.
             </>
           ) : (
             <>
@@ -185,7 +193,7 @@ export function PanelDecision(p: PropsPanelDecision) {
       {puedeAgregar ? (
         <label className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm">
           <input type="checkbox" checked={agregar} onChange={(e) => setAgregar(e.target.checked)} className="size-[18px] accent-primary" />
-          Agregar a {p.beneficiario ?? "este beneficiario"} a la lista permitida para pagos futuros
+          {textoCasilla.charAt(0).toUpperCase() + textoCasilla.slice(1)}
         </label>
       ) : null}
       {bloqueoLimite ? (

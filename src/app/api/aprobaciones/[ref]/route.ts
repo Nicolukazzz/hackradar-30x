@@ -14,6 +14,7 @@ const Cuerpo = z.strictObject({
   accion: z.enum(["aprobar", "rechazar"]),
   comentario: z.string().max(1000),
   agregar_a_lista: z.boolean().optional(),
+  vincular_canal: z.boolean().optional(),
 });
 
 /**
@@ -28,6 +29,9 @@ export const POST = conSesion(
       // Agregar a la lista permitida cambia las reglas (beneficiarios, §13.4): solo administradores.
       if (body.agregar_a_lista && !puede(sesion, "editar_reglas")) {
         return error(403, "Solo un administrador puede agregar beneficiarios a la lista permitida. Puedes aprobar sin agregarlo.");
+      }
+      if (body.vincular_canal && !puede(sesion, "editar_reglas")) {
+        return error(403, "Solo un administrador puede vincular canales a un proveedor. Puedes aprobar sin vincularlo.");
       }
       const [repo, cuentas] = await Promise.all([obtenerRepositorio(), cuentasFirmantes()]);
       const r = await decidir({ ref, ...body, aprobador_id: sesion.usuario_id, cuentas }, { repo, ahora: await ahoraHumano(repo) });

@@ -72,7 +72,14 @@ export function TarjetaAprobacion({
   const urgente = t.asignacion?.urgente ?? false;
   const yaFirme = t.firmas.some((f) => f.aprobador_id === cuenta);
   // El beneficiario se agrega a la lista con la última firma (decidir.ts): en la primera de dos no se ofrece.
-  const ofrecerAgregar = puedeAgregarALista && t.puede_agregar_a_lista && !(t.requiere_doble_aprobacion && t.firmas.length === 0);
+  const ultimaFirma = !(t.requiere_doble_aprobacion && t.firmas.length === 0);
+  // #110: proveedor conocido desde un canal nuevo → la misma casilla ofrece vincular ese correo o chat.
+  const vincular = !t.puede_agregar_a_lista && t.canal_a_vincular ? t.canal_a_vincular : null;
+  const ofrecerAgregar = puedeAgregarALista && (t.puede_agregar_a_lista || vincular !== null) && ultimaFirma;
+  const textoCasilla = vincular
+    ? `Vincular ${vincular.tipo === "correo" ? vincular.valor : `el chat de Telegram ${vincular.valor}`} a ${a} para sus próximas facturas`
+    : `Agregar a ${a} a la lista permitida para pagos futuros`;
+  const campoCasilla = vincular ? "vincular_canal" : "agregar_a_lista";
   const motivoNoAprobar =
     t.monto_usd_centavos === null
       ? "Sin un monto confiable (R1) no se puede aprobar: recházala o pide la factura de nuevo."
@@ -81,7 +88,7 @@ export function TarjetaAprobacion({
         : null;
 
   function cuerpoDe(accion: Accion): string {
-    return JSON.stringify({ accion, comentario: comentario.trim(), ...(ofrecerAgregar && accion === "aprobar" ? { agregar_a_lista: agregar } : {}) });
+    return JSON.stringify({ accion, comentario: comentario.trim(), ...(ofrecerAgregar && accion === "aprobar" ? { [campoCasilla]: agregar } : {}) });
   }
 
   async function enviar(accion: Accion) {
@@ -240,7 +247,7 @@ export function TarjetaAprobacion({
             {ofrecerAgregar ? (
               <label className="flex min-h-11 items-center gap-2.5 text-sm">
                 <input type="checkbox" checked={agregar} onChange={(e) => setAgregar(e.target.checked)} className="size-[18px] accent-primary" />
-                Agregar a {a} a la lista permitida para pagos futuros
+                {textoCasilla}
               </label>
             ) : (
               <span className="text-[13px] text-muted-foreground">
@@ -287,7 +294,7 @@ export function TarjetaAprobacion({
             />
             <span id={`${id}-ayuda`} className="text-xs text-muted-foreground">
               Obligatorio, al menos {MINIMO_COMENTARIO} caracteres. Queda en el registro con tu nombre.
-              {paso.accion === "aprobar" && agregar ? ` También se agregará a ${a} a la lista permitida.` : ""}
+              {paso.accion === "aprobar" && agregar ? ` También: ${textoCasilla.charAt(0).toLowerCase()}${textoCasilla.slice(1)}.` : ""}
             </span>
             {error ? (
               <p role="alert" className="rounded-[10px] bg-frenada px-3 py-2 text-sm font-medium text-frenada-foreground">

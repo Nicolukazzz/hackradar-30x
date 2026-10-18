@@ -5,7 +5,7 @@
 import { correoDeInvitacion, esRemitenteInvitacion } from "@/dominio/remitente";
 import { formatearUsd } from "@/dominio/dinero";
 import { slug } from "@/dominio/normalizar";
-import type { Aprobador, Beneficiario, EntradaRegistro } from "@/dominio/tipos";
+import type { Aprobador, Beneficiario, DocumentoRecibido, EntradaRegistro } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
 
 export type EntradaDecision = {
@@ -21,7 +21,24 @@ export type EntradaDecision = {
    */
   cuentas?: readonly Aprobador[];
   agregar_a_lista?: boolean;
+  /** #110: vincular el correo o chat desde el que llegó la factura al proveedor (falló solo por R11) */
+  vincular_canal?: boolean;
 };
+
+export type CanalAVincular = { tipo: "correo" | "telegram"; valor: string; beneficiario_id: string };
+
+/**
+ * #110: proveedor conocido (R3 cumple) que escribió desde un correo o chat que no tiene vinculado (R11 falla). Al aprobar,
+ * ese canal se puede vincular para sus próximas facturas. Nunca un enlace de invitación ni el portal (no verifican a nadie).
+ */
+export function canalAVincular(origen: EntradaRegistro, documento: Pick<DocumentoRecibido, "remitente"> | null): CanalAVincular | null {
+  const r3 = origen.evaluaciones.find((e) => e.id === "R3");
+  const beneficiario_id = r3?.resultado === "CUMPLE" && typeof r3.datos.beneficiario_id === "string" ? r3.datos.beneficiario_id : null;
+  const rem = documento?.remitente;
+  if (!beneficiario_id || !rem || !origen.reglas_que_fallaron.includes("R11")) return null;
+  if ((rem.tipo !== "correo" && rem.tipo !== "telegram") || esRemitenteInvitacion(rem.valor)) return null;
+  return { tipo: rem.tipo, valor: rem.tipo === "correo" ? rem.valor.toLowerCase() : rem.valor, beneficiario_id };
+}
 
 export type ResultadoDecision = {
   entrada: EntradaRegistro;
@@ -69,7 +86,7 @@ export async function decidir(input: EntradaDecision, deps: { repo: Repositorio;
   return deps.repo.enExclusiva(() => decidirEnExclusiva(input, deps));
 }
 
-type Validado = { origen: EntradaRegistro; firmas: Firma[]; comentario: string; aprobador: Aprobador; agregar: boolean };
+type Validado = { origen: EntradaRegistro; firmas: Firma[]; comentario: string; aprobador: Aprobador; agregar: boolean; vincular: boolean };
 
 /** 404/409/400/403 antes de escribir nada. */
 function validar(input: EntradaDecision, registro: readonly EntradaRegistro[], aprobadores: readonly Aprobador[]): Validado {
@@ -94,7 +111,9 @@ function validar(input: EntradaDecision, registro: readonly EntradaRegistro[], a
   if (agregar && (input.accion !== "aprobar" || !origen.reglas_que_fallaron.includes("R3"))) {
     throw new ErrorDecision(400, "Agregar a la lista solo es posible al aprobar una factura escalada por beneficiario fuera de la lista (R3).");
   }
-  return { origen, firmas, comentario, aprobador, agregar };
+  const vincular = input.vincular_canal === true;
+  if (vincular && input.accion !== "aprobar") throw new ErrorDecision(400, "Vincular el canal solo es posible al aprobar.");
+  return { origen, firmas, comentario, aprobador, agregar, vincular };
 }
 
 /** Campos comunes de la DECISION_HUMANA: copia los datos de la factura y apunta a la entrada del agente. */
@@ -191,10 +210,12 @@ async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Reposito
   }
   const { parcial, explicacion } = resolverAprobacion(v, usd, reglas.aprobacion.doble_aprobacion_desde_usd, aprobadores);
   const nuevo = beneficiarioAAgregar(v, parcial, documento, datos.beneficiarios);
+  const vinculo = canalValidado(v, parcial, documento, datos.beneficiarios);
 
   const entrada: EntradaRegistro = { ...base, id: await repo.siguienteIdRegistro(anio), decision: parcial ? null : "APROBADA_HUMANO", explicacion };
   await repo.agregarEntrada(entrada);
   if (nuevo) await agregarALista(nuevo, v.origen, entrada, { repo, ahora, aprobador: v.aprobador });
+  if (vinculo) await vincularCanal(vinculo, v.origen, entrada, { repo, ahora, aprobador: v.aprobador });
   return { entrada, parcial, beneficiario_agregado: nuevo };
 }
 
@@ -232,14 +253,40 @@ function beneficiarioDesde(origen: EntradaRegistro, documento: Awaited<ReturnTyp
   };
 }
 
+type Escritura = { repo: Repositorio; ahora: string; aprobador: Aprobador };
+
+/** Todo lo que puede fallar al vincular se valida ANTES de registrar la aprobación (#110). */
+function canalValidado(
+  v: Validado,
+  parcial: boolean,
+  documento: Awaited<ReturnType<Repositorio["documento"]>>,
+  existentes: readonly Beneficiario[],
+): (CanalAVincular & { beneficiario: Beneficiario }) | null {
+  if (!v.vincular) return null;
+  if (parcial) throw new ErrorDecision(400, "El canal se vincula con la segunda firma, no con la primera.");
+  const canal = canalAVincular(v.origen, documento);
+  const b = canal ? existentes.find((x) => x.id === canal.beneficiario_id) : undefined;
+  if (!canal || !b) throw new ErrorDecision(400, "Solo se vincula el correo o chat de un proveedor de la lista cuando la factura escaló por remitente no verificado (R11).");
+  const dueno = existentes.find((x) => x.id !== b.id && (canal.tipo === "correo" ? x.canales.correos.includes(canal.valor) : x.canales.telegram_chat_id === canal.valor));
+  if (dueno) throw new ErrorDecision(409, `Ese ${canal.tipo === "correo" ? "correo" : "chat"} ya está vinculado a ${dueno.nombre}.`);
+  return { ...canal, beneficiario: b };
+}
+
+async function vincularCanal(c: CanalAVincular & { beneficiario: Beneficiario }, origen: EntradaRegistro, decision: EntradaRegistro, w: Escritura): Promise<void> {
+  const b = c.beneficiario;
+  if (c.tipo === "correo") await w.repo.actualizarBeneficiario({ ...b, canales: { ...b.canales, correos: [...new Set([...b.canales.correos, c.valor])] } });
+  else await w.repo.vincularTelegram(b.id, c.valor);
+  const que = c.tipo === "correo" ? `el correo ${c.valor}` : `el chat de Telegram ${c.valor}`;
+  await registrarCambio(b.nombre, `${w.aprobador.nombre} vinculó ${que} a ${b.nombre} al aprobar ${origen.factura_numero ?? origen.ref_interna}: sus próximas facturas desde ahí pasan R11.`, origen, decision, w);
+}
+
 /** Guarda el beneficiario y escribe CAMBIO_BENEFICIARIOS apuntando a la aprobación. */
-async function agregarALista(
-  b: Beneficiario,
-  origen: EntradaRegistro,
-  decision: EntradaRegistro,
-  { repo, ahora, aprobador }: { repo: Repositorio; ahora: string; aprobador: Aprobador },
-): Promise<void> {
-  await repo.guardarBeneficiario(b);
+async function agregarALista(b: Beneficiario, origen: EntradaRegistro, decision: EntradaRegistro, w: Escritura): Promise<void> {
+  await w.repo.guardarBeneficiario(b);
+  await registrarCambio(b.nombre, `${w.aprobador.nombre} agregó a ${b.nombre} a la lista permitida (cuenta •••• ${b.cuenta.ultimos4}) al aprobar ${origen.factura_numero ?? origen.ref_interna}.`, origen, decision, w);
+}
+
+async function registrarCambio(beneficiario: string, explicacion: string, origen: EntradaRegistro, decision: EntradaRegistro, { repo, ahora, aprobador }: Escritura): Promise<void> {
   await repo.agregarEntrada({
     id: await repo.siguienteIdRegistro(Number(ahora.slice(0, 4))),
     momento: ahora,
@@ -247,7 +294,7 @@ async function agregarALista(
     tipo: "CAMBIO_BENEFICIARIOS",
     ref_interna: origen.ref_interna,
     factura_numero: origen.factura_numero,
-    beneficiario: b.nombre,
+    beneficiario,
     canal: origen.canal,
     formato: origen.formato,
     monto_original: null,
@@ -258,7 +305,7 @@ async function agregarALista(
     evaluaciones: [],
     reglas_que_fallaron: [],
     comparaciones: [],
-    explicacion: `${aprobador.nombre} agregó a ${b.nombre} a la lista permitida (cuenta •••• ${b.cuenta.ultimos4}) al aprobar ${origen.factura_numero ?? origen.ref_interna}.`,
+    explicacion,
     comentario: decision.comentario,
     entrada_origen: decision.id,
     extraccion: null,
