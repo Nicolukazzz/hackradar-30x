@@ -6,6 +6,8 @@ import { decisionAgente, estadoHumano } from "@/aprobaciones/decidir";
 import type { DocumentoRecibido, Moneda } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
 
+import { registroEnBaseDeHoy } from "./comun";
+
 export type PorVerificar = {
   ref_interna: string;
   factura_numero: string | null;
@@ -20,7 +22,8 @@ export type PorVerificar = {
 };
 
 export async function porVerificar(repo: Repositorio): Promise<PorVerificar[]> {
-  const registro = await repo.registro();
+  // #86: montos en la moneda base de hoy.
+  const registro = await registroEnBaseDeHoy(repo);
   const pendientes = registro.filter(
     (e) =>
       e.tipo === "DECISION_AGENTE" &&

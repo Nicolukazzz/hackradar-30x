@@ -1,4 +1,4 @@
-import { PildoraResultado, Tarjeta, TarjetaEncabezado, TarjetaPie, hora } from "@/app/_componentes";
+import { PildoraResultado, Tarjeta, TarjetaEncabezado, TarjetaPie, fechaCorta, hora } from "@/app/_componentes";
 import type { HitoLineaTiempo, RespuestaFactura } from "@/app/_datos/facturas";
 import type { IdRegla } from "@/dominio/tipos";
 import { cn } from "@/lib/utils";
@@ -6,6 +6,21 @@ import { cn } from "@/lib/utils";
 import { type FilaDato, TablaDatos } from "./datos-editables";
 
 // Secciones de la traza (§13.2) que no tienen interacción: datos extraídos, reglas y línea de tiempo.
+
+/**
+ * "COP 4.200,00" (1 base = 4.200 COP, así se guarda en el registro) → "1 USD = 4.200,00 COP". Si la tasa es menor que 1
+ * (empresa en COP, factura en USD: "USD 0,00025") se muestra al revés, como se lee una TRM: "1 USD = 4.000,00 COP".
+ */
+export function trm(tasa: string, base: string): string {
+  const [moneda, numero] = tasa.split(" ");
+  if (!moneda || !numero) return tasa;
+  const valor = Number(numero.replaceAll(".", "").replace(",", "."));
+  if (Number.isFinite(valor) && valor > 0 && valor < 1) {
+    const inversa = (1 / valor).toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `1 ${moneda} = ${inversa} ${base}`;
+  }
+  return `1 ${base} = ${numero} ${moneda}`;
+}
 
 /** Filas de «Datos extraídos» (#129: el total al final; cada dato corregible con su clave). */
 function campos(f: RespuestaFactura): FilaDato[] {
@@ -37,6 +52,17 @@ function campos(f: RespuestaFactura): FilaDato[] {
   }
   // El total va al final, debajo de subtotal e impuestos, como en una factura (#126).
   lista.push({ ...fila("Total", "monto_total", "dinero", ext.monto_total), total: true });
+  // Factura en otra moneda que la de la empresa: la TRM con la que se convirtió y el total en la moneda de la empresa.
+  const total = ext.monto_total.valor;
+  const base = f.entrada.moneda_base ?? "USD";
+  if (total && total.moneda !== base && f.entrada.monto_usd_centavos !== null) {
+    const fecha = ext.fecha_emision.valor;
+    const nota = fecha ? `de ${fechaCorta(fecha)}` : "de hoy";
+    if (f.entrada.tasa_usada) {
+      lista.push({ etiqueta: "TRM de emisión", clave: null, tipo: "mono", valor: trm(f.entrada.tasa_usada, base), confianza: 1, moneda: base, nota });
+    }
+    lista.push({ etiqueta: `Total en ${base}`, clave: null, tipo: "dinero", valor: { centavos: f.entrada.monto_usd_centavos, moneda: base }, confianza: 1, moneda: base, total: true, nota: "calculado" });
+  }
   return lista;
 }
 

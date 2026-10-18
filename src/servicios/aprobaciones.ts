@@ -7,7 +7,7 @@ import type { Aprobador, Canal, Dinero, EntradaRegistro, Formato, IdRegla, Moned
 import { canalAVincular, decisionAgente, estadoHumano } from "@/aprobaciones/decidir";
 import type { Repositorio } from "@/repositorio/repositorio";
 
-import { descripcionBeneficiario, montoEstimado } from "./comun";
+import { descripcionBeneficiario, enLaBase, montoEstimado, registroEnBaseDeHoy } from "./comun";
 import { asignacionDe, type AsignacionEscalada } from "./facturas";
 
 export type TarjetaAprobacion = {
@@ -69,7 +69,9 @@ function siApruebas(usd: number | null, beneficiario: string | null, reglas: IdR
 }
 
 export async function obtenerAprobaciones(repo: Repositorio, orden: OrdenAprobaciones = "vencimiento"): Promise<RespuestaAprobaciones> {
-  const [registro, datos, reglas, esc] = await Promise.all([repo.registro(), repo.datosComunes(), repo.reglasVigentes(), repo.escenario()]);
+  // #86: montos en la moneda base de hoy (una decisión tomada antes de cambiar la moneda se muestra convertida).
+  const [registro, datos, reglas, esc] = await Promise.all([registroEnBaseDeHoy(repo), repo.datosComunes(), repo.reglasVigentes(), repo.escenario()]);
+  const base = monedaBase(reglas);
   const importadas = new Set(registro.slice(0, esc?.entradas_importadas ?? 0).map((e) => e.id));
   const decididoEn = (id: string, momento: string) => (esc && !importadas.has(id) ? esc.config.ahora : momento);
   const porNombre = new Map(datos.beneficiarios.map((b) => [normalizarNombre(b.nombre), b]));
@@ -122,13 +124,13 @@ export async function obtenerAprobaciones(repo: Repositorio, orden: OrdenAprobac
   );
 
   const plazo = (t: TarjetaAprobacion) => (t.asignacion ? instante(t.asignacion.responder_antes_de) : Number.MAX_SAFE_INTEGER);
-  pendientes.sort((a, b) =>
-    orden === "monto" ? (b.monto_usd_centavos ?? 0) - (a.monto_usd_centavos ?? 0) || plazo(a) - plazo(b) : plazo(a) - plazo(b) || (b.monto_usd_centavos ?? 0) - (a.monto_usd_centavos ?? 0),
-  );
+  const monto = (t: TarjetaAprobacion) => enLaBase(t, base) ?? 0;
+  pendientes.sort((a, b) => (orden === "monto" ? monto(b) - monto(a) || plazo(a) - plazo(b) : plazo(a) - plazo(b) || monto(b) - monto(a)));
 
   return {
     pendientes,
-    reservado_usd: reglas.presupuesto.contar_escalado_como_reservado ? pendientes.reduce((s, t) => s + (t.monto_usd_centavos ?? 0), 0) : 0,
+    // Solo lo que está en la moneda de hoy: nunca se suman monedas distintas.
+    reservado_usd: reglas.presupuesto.contar_escalado_como_reservado ? pendientes.reduce((s, t) => s + monto(t), 0) : 0,
     aprobadores: datos.aprobadores,
     doble_aprobacion_desde_usd: reglas.aprobacion.doble_aprobacion_desde_usd,
     moneda_base: monedaBase(reglas),

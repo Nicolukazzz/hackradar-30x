@@ -7,7 +7,7 @@ import type { Canal, DecisionAgente, Dinero, EntradaRegistro, Formato, IdRegla, 
 import { facturasVigentes, periodoDe, totalEn } from "@/reglas/libro";
 import type { Repositorio } from "@/repositorio/repositorio";
 
-import { ahoraHumano, descripcionBeneficiario, entradasDelLote, estadoActual, type EstadoFactura, montoEstimado } from "./comun";
+import { ahoraHumano, descripcionBeneficiario, enLaBase, entradasDelLote, estadoActual, type EstadoFactura, montoEstimado } from "./comun";
 
 export type FiltroDecision = "todas" | "pagar" | "frenar" | "escalar";
 
@@ -102,9 +102,9 @@ export type RespuestaBandeja = {
 
 const FILTRO: Record<Exclude<FiltroDecision, "todas">, DecisionAgente> = { pagar: "PAGAR", frenar: "FRENAR", escalar: "ESCALAR" };
 
-function suma(lote: EntradaRegistro[], d: DecisionAgente): ConteoMonto {
+function suma(lote: EntradaRegistro[], d: DecisionAgente, base: Moneda): ConteoMonto {
   const de = lote.filter((e) => e.decision === d);
-  return { n: de.length, usd_centavos: de.reduce((s, e) => s + (e.monto_usd_centavos ?? 0), 0) };
+  return { n: de.length, usd_centavos: de.reduce((s, e) => s + (enLaBase(e, base) ?? 0), 0) };
 }
 
 export type OpcionesBandeja = { decision?: FiltroDecision; q?: string; /** "AAAA-MM": solo facturas recibidas ese mes */ mes?: string };
@@ -178,7 +178,7 @@ export async function obtenerBandeja(repo: Repositorio, opciones: OpcionesBandej
       humana: humana ? sinTexto(humana) : null,
     };
   });
-  const resumen = resumir(todas, (await ahoraHumano(repo)).slice(0, 10));
+  const resumen = resumir(todas, (await ahoraHumano(repo)).slice(0, 10), monedaBase(reglas));
 
   const q = normalizarTexto(opciones.q ?? "").trim();
   const filtro = opciones.decision && opciones.decision !== "todas" ? FILTRO[opciones.decision] : null;
@@ -201,9 +201,9 @@ export async function obtenerBandeja(repo: Repositorio, opciones: OpcionesBandej
       pagos_fuera_de_reglas,
       autonomas,
       autonomia: lote.length === 0 ? 0 : autonomas / lote.length,
-      pagadas: suma(lote, "PAGAR"),
-      frenadas: suma(lote, "FRENAR"),
-      escaladas: suma(lote, "ESCALAR"),
+      pagadas: suma(lote, "PAGAR", monedaBase(reglas)),
+      frenadas: suma(lote, "FRENAR", monedaBase(reglas)),
+      escaladas: suma(lote, "ESCALAR", monedaBase(reglas)),
       escaladas_pendientes: todas.filter((f) => f.estado === "ESCALAR").length,
       rechazadas_no_factura: lote.filter((e) => e.decision === "RECHAZADA_NO_FACTURA").length,
     },
@@ -235,22 +235,25 @@ const sumaDe = (filas: readonly FilaBandeja[], monto: (f: FilaBandeja) => number
   usd_centavos: filas.reduce((s, f) => s + (monto(f) ?? 0), 0),
 });
 
+/** Monto de la fila en la base de hoy; la que quedó en otra moneda (sin tasa) no se suma. */
+const deFila = (f: FilaBandeja, base: Moneda) => enLaBase(f, base);
+
 /** `hoy` AAAA-MM-DD en hora de la empresa. */
-function resumir(filas: readonly FilaBandeja[], hoy: string): ResumenBandeja {
+function resumir(filas: readonly FilaBandeja[], hoy: string, base: Moneda): ResumenBandeja {
   const enSieteDias = new Date(Date.parse(`${hoy}T12:00:00Z`) + 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
   const pendientes = filas.filter((f) => f.estado === "ESCALAR");
   const pronto = pendientes.filter((f) => f.vence !== null && f.vence <= enSieteDias);
   return {
-    por_aprobar: sumaDe(pendientes, (f) => f.monto_usd_centavos),
-    vencen_semana: { ...sumaDe(pronto, (f) => f.monto_usd_centavos), hoy: pronto.filter((f) => f.vence! <= hoy).length },
+    por_aprobar: sumaDe(pendientes, (f) => deFila(f, base)),
+    vencen_semana: { ...sumaDe(pronto, (f) => deFila(f, base)), hoy: pronto.filter((f) => f.vence! <= hoy).length },
     // Lo aprobado por una persona cuenta con el monto que ella confirmó (#129).
     aprobadas: sumaDe(
       filas.filter((f) => f.estado === "PAGAR" || f.estado === "APROBADA_HUMANO"),
-      (f) => f.humana?.monto_usd_centavos ?? f.monto_usd_centavos,
+      (f) => (f.humana?.monto_usd_centavos != null ? enLaBase(f.humana, base) : deFila(f, base)),
     ),
     frenadas: sumaDe(
       filas.filter((f) => f.estado === "FRENAR"),
-      (f) => f.monto_usd_centavos,
+      (f) => deFila(f, base),
     ),
   };
 }

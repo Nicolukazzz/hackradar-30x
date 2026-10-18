@@ -23,3 +23,12 @@ describe("formato de fechas y porcentajes en pantalla", () => {
     expect(porcentajeUi(1)).toBe("100,0%");
   });
 });
+
+describe("TRM de emisión en la traza", () => {
+  it("1 base = X moneda de la factura; si la tasa es menor que 1, al revés", async () => {
+    const { trm } = await import("@/app/(panel)/facturas/[ref]/secciones");
+    expect(trm("COP 4.200,00", "USD")).toBe("1 USD = 4.200,00 COP");
+    expect(trm("COP 750,00", "BRL")).toBe("1 BRL = 750,00 COP");
+    expect(trm("USD 0,00025", "COP")).toBe("1 USD = 4.000,00 COP");
+  });
+});
