@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 ```
 
 ---
+## 2026-10-18 — Canal WhatsApp Cloud API (#79)
+- Estado: propuesta
+- Decisión: `Canal` y `Remitente.tipo` suman `whatsapp`; `Beneficiario.canales.whatsapp` (opcional, dígitos E.164 sin `+`) y tabla `vinculos_whatsapp` + RPC `vincular_whatsapp` (igual que Telegram, fuera de las corridas de demo; ya aplicada en Supabase). Webhook `/api/canales/whatsapp/webhook` en `API_PUBLICAS`: GET responde `hub.challenge` si `hub.verify_token` = `WHATSAPP_VERIFY_TOKEN`; POST exige `X-Hub-Signature-256` con `WHATSAPP_APP_SECRET`, responde 200 de inmediato y procesa con `after()` (Meta reintenta si tarda; cada id de mensaje se procesa una vez). Vincular: `POST /api/canales/whatsapp/enlace` → `wa.me/<WHATSAPP_NUMERO>?text=VINCULAR <token>` (mismo token firmado de un solo uso que Telegram, con clave `whatsapp:<WHATSAPP_VERIFY_TOKEN>`). `ESTADO <ref>` solo para refs del mismo número. `/api/canales/whatsapp/simular` para la demo sin Meta. R11 cumple solo si el número está vinculado al beneficiario que nombra la factura.
+- Por qué: mismo núcleo que Telegram (ingesta única → motor → `textoRespuesta`), así R2/R11 no cambian de lógica por canal.
+- Quién: J
+
 ## 2026-10-18 — Doble lectura: la traza dice qué hizo cada lector
 - Estado: propuesta
 - Decisión: se mantiene «nunca paga con una sola lectura» (#58), pero cada extracción en modo doble guarda `senales_llm.lectores` (`leyo` · `fallo` con el error · `vacio`) y la traza lo muestra («Doble lectura: Gemini leyó · Groq falló (groq: HTTP 404)»). La cadena de proveedores conserva el último error (`fallo`). El panel de decisión dice por qué «Aprobar» está deshabilitado cuando el monto no es confiable.

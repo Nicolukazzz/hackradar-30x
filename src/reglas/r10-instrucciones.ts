@@ -5,7 +5,7 @@ import { evaluacion } from "./catalogo";
 import type { ContextoRegla } from "./contexto";
 import { detectarInstrucciones, type Hallazgo } from "./inyeccion";
 
-const DONDE_MENSAJE = { correo: "en el cuerpo del correo", telegram: "en el mensaje", portal: "en el mensaje", carga_manual: "en el mensaje" } as const;
+const DONDE_MENSAJE = { correo: "en el cuerpo del correo", telegram: "en el mensaje", whatsapp: "en el mensaje", portal: "en el mensaje", carga_manual: "en el mensaje" } as const;
 
 /** Texto de a lo sumo `max` caracteres, con "…" si se cortó. */
 const recortar = (t: string, max: number) => (t.length > max ? `${t.slice(0, max - 1)}…` : t);

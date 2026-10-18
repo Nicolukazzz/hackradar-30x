@@ -46,7 +46,7 @@ export function fechaHora(iso: string): string {
 }
 
 const FORMATOS: Record<Formato, string> = { pdf: "PDF", correo: "Correo", chat: "Chat", imagen: "Imagen", xml: "XML" };
-const CANALES: Record<Canal, string> = { portal: "portal", correo: "correo", telegram: "Telegram", carga_manual: "carga manual" };
+const CANALES: Record<Canal, string> = { portal: "portal", correo: "correo", telegram: "Telegram", whatsapp: "WhatsApp", carga_manual: "carga manual" };
 
 /** Cómo llegó, corto: "PDF", "Correo", "Chat", "Imagen" (columna Factura de la Bandeja). */
 export function etiquetaFormato(f: Formato): string {

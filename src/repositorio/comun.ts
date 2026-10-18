@@ -59,6 +59,17 @@ export async function leerAdjuntoDe(doc: DocumentoRecibido | null | undefined, i
   return { nombre: adj.nombre, mime: adj.mime, bytes: await readFile(/*turbopackIgnore: true*/ ruta) };
 }
 
+/** Aplica los vínculos de WhatsApp (#79): un número, un beneficiario. */
+export function conVinculosWhatsapp(beneficiarios: readonly Beneficiario[], vinculos: ReadonlyMap<string, string>): Beneficiario[] {
+  if (vinculos.size === 0) return [...beneficiarios];
+  const numeros = new Set(vinculos.values());
+  return beneficiarios.map((b) => {
+    const actual = b.canales.whatsapp ?? null;
+    const numero = vinculos.get(b.id) ?? (actual && !numeros.has(actual) ? actual : null);
+    return numero === actual ? b : { ...b, canales: { ...b.canales, whatsapp: numero } };
+  });
+}
+
 /** Aplica los vínculos de Telegram (#13) sobre la lista de beneficiarios: un chat, un beneficiario. */
 export function conVinculosTelegram(beneficiarios: readonly Beneficiario[], vinculos: ReadonlyMap<string, string>): Beneficiario[] {
   const chats = new Set(vinculos.values());

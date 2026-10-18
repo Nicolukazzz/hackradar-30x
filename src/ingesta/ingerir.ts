@@ -47,6 +47,7 @@ export function beneficiarioDelRemitente(remitente: Remitente, beneficiarios: re
   const b = beneficiarios.find((x) => {
     if (tipo === "correo") return x.canales.correos.some((c) => c.toLowerCase() === valor.toLowerCase());
     if (tipo === "telegram") return x.canales.telegram_chat_id === valor;
+    if (tipo === "whatsapp") return !!x.canales.whatsapp && x.canales.whatsapp === valor;
     // Portal: la sesión ya probó quién es; vale su usuario de portal o el id del beneficiario (sin usuario de portal).
     if (tipo === "portal") return x.canales.portal_usuario === valor || x.id === valor;
     return false;

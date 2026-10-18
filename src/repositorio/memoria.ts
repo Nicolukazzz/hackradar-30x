@@ -11,7 +11,7 @@ import { cargarGolden, cargarSinDocumentos, type DocGolden } from "@/evaluacion/
 import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
 
-import { coincideFiltro, conVinculosTelegram, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
+import { coincideFiltro, conVinculosTelegram, conVinculosWhatsapp, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
 import type { ArchivoGuardado, CambiosEmpresa, EscenarioCargado, Repositorio, ResumenVersion } from "./repositorio";
 
 
@@ -44,12 +44,13 @@ export async function crearRepositorioMemoria(
   // Sobreviven a "Reiniciar demo" (#76), igual que en Supabase: el chat de Telegram de cada beneficiario y las
   // huellas de los enlaces ya usados.
   const vinculos = new Map<string, string>();
+  const vinculosWhatsapp = new Map<string, string>();
   const huellasUsadas = new Set<string>();
 
   async function estadoInicial(): Promise<Estado> {
     const g = await cargar();
     const datos = structuredClone(g.datos);
-    datos.beneficiarios = conVinculosTelegram(datos.beneficiarios, vinculos);
+    datos.beneficiarios = conVinculosWhatsapp(conVinculosTelegram(datos.beneficiarios, vinculos), vinculosWhatsapp);
     const e: Estado = {
       datos,
       versiones: [...datos.reglas.versiones],
@@ -127,6 +128,12 @@ export async function crearRepositorioMemoria(
       for (const [b, c] of vinculos) if (b === beneficiario_id || c === chat_id) vinculos.delete(b);
       vinculos.set(beneficiario_id, chat_id);
       s.datos.beneficiarios = conVinculosTelegram(s.datos.beneficiarios, new Map([[beneficiario_id, chat_id]]));
+    },
+    async vincularWhatsapp(beneficiario_id, numero) {
+      if (!s.datos.beneficiarios.some((b) => b.id === beneficiario_id)) throw new Error(`no existe el beneficiario ${beneficiario_id}`);
+      for (const [b, n] of vinculosWhatsapp) if (b === beneficiario_id || n === numero) vinculosWhatsapp.delete(b);
+      vinculosWhatsapp.set(beneficiario_id, numero);
+      s.datos.beneficiarios = conVinculosWhatsapp(s.datos.beneficiarios, new Map([[beneficiario_id, numero]]));
     },
     async guardarArchivo(ref, archivo) {
       s.archivos.set(ref, { ...archivo, bytes: Buffer.from(archivo.bytes) });
