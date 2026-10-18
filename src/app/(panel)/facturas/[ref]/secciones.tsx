@@ -34,11 +34,28 @@ function campos(f: RespuestaFactura): CampoVista[] {
   return lista;
 }
 
+const NOMBRE_LECTOR: Record<string, string> = { gemini: "Gemini", groq: "Groq", anthropic: "Claude", ninguno: "ninguno" };
+
+/** Doble lectura: qué hizo cada modelo. "Gemini leyó · Groq falló (groq: HTTP 404)". */
+function textoLectores(f: RespuestaFactura): string | null {
+  const lectores = f.extraccion?.senales_llm.lectores;
+  if (!lectores?.length) return null;
+  const partes = lectores.map((l) => {
+    const n = NOMBRE_LECTOR[l.proveedor] ?? l.proveedor;
+    if (l.estado === "leyo") return `${n} leyó`;
+    return `${n} ${l.estado === "fallo" ? "falló" : "no devolvió datos"}${l.detalle ? ` (${l.detalle})` : ""}`;
+  });
+  const uno = lectores.filter((l) => l.estado === "leyo").length < 2;
+  return `Doble lectura: ${partes.join(" · ")}.${uno ? " Con un solo modelo nada llega a 2 de 3 coincidencias: queda en 50 % y escala." : ""}`;
+}
+
 export function DatosExtraidos({ f }: { f: RespuestaFactura }) {
   const lista = campos(f);
+  const lectores = textoLectores(f);
   return (
     <Tarjeta as="section" aria-labelledby="ext">
       <TarjetaEncabezado id="ext" titulo="Datos extraídos" descripcion="Umbral de confianza: 90%" />
+      {lectores ? <p className="border-t border-subtle px-6 py-3 text-[13px] text-muted-foreground">{lectores}</p> : null}
       {lista.length === 0 ? (
         <p className="border-t border-border px-6 py-5 text-sm text-muted-foreground">No se pudieron extraer datos de este documento.</p>
       ) : (

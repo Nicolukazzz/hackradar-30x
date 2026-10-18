@@ -100,6 +100,11 @@ describe("extraer() con doble lectura", () => {
     const ext = await extraer(doc, { llm: doble(falso("gemini", ES4410), falso("anthropic", new ErrorLLM("anthropic", "HTTP 529", 529))), dirBase: carpeta });
     expect(ext.monto_total.confianza).toBeLessThanOrEqual(0.5);
     expect(ext.numero.confianza).toBeLessThanOrEqual(0.5);
+    // La traza dice cuál lector leyó y cuál falló (con su error), para diagnosticar sin entrar a los logs.
+    expect(ext.senales_llm.lectores).toEqual([
+      { proveedor: "gemini", estado: "leyo" },
+      { proveedor: "anthropic", estado: "fallo", detalle: "anthropic: HTTP 529" },
+    ]);
   });
 
   it("las señales de R10 de cualquiera de los dos cuentan", async () => {

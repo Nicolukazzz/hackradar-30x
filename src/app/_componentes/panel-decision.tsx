@@ -208,6 +208,12 @@ export function PanelDecision(p: PropsPanelDecision) {
         </p>
       ) : null}
       {firmaPropia ? <p className="text-[13px] text-texto-3">Ya firmaste esta factura: la segunda aprobación debe ser de otra persona.</p> : null}
+      {p.montoUsd === null ? (
+        <p className="text-[13px] text-escalada-foreground">
+          No se puede aprobar: el monto no se leyó con confianza (R1) y no se aprueba un pago sin monto seguro. Recházala o pide al proveedor que la envíe de
+          nuevo (un PDF se lee mejor que una foto).
+        </p>
+      ) : null}
       {error ? (
         <p role="alert" className="rounded-xl bg-frenada px-4 py-3 text-sm text-frenada-foreground">
           {error}

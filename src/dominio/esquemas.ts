@@ -210,7 +210,13 @@ export const ExtraccionSchema = z.strictObject({
   identificacion_fiscal: campo(z.string()).optional(),
   idioma,
   texto_crudo: z.string(),
-  senales_llm: z.strictObject({ instrucciones_sospechosas: z.array(z.string()), sin_respuesta: z.boolean().optional() }),
+  senales_llm: z.strictObject({
+    instrucciones_sospechosas: z.array(z.string()),
+    sin_respuesta: z.boolean().optional(),
+    lectores: z
+      .array(z.strictObject({ proveedor: z.string(), estado: z.enum(["leyo", "fallo", "vacio"]), detalle: z.string().optional() }))
+      .optional(),
+  }),
   proveedor_llm: z.enum(["ninguno", "gemini", "groq", "anthropic"]),
 }) satisfies z.ZodType<Extraccion>;
 

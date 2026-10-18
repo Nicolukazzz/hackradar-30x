@@ -189,6 +189,8 @@ export type Extraccion = {
     instrucciones_sospechosas: string[];
     /** se necesitaba el LLM y ningún proveedor respondió (#103): R1 lo dice en vez de "confianza 0 %" */
     sin_respuesta?: boolean;
+    /** doble lectura: qué hizo cada lector. Si solo uno leyó, se usó su lectura sola (como sin doble lectura) */
+    lectores?: { proveedor: string; estado: "leyo" | "fallo" | "vacio"; detalle?: string }[];
   };
   proveedor_llm: ProveedorLlm;
 };

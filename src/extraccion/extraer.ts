@@ -152,13 +152,32 @@ export async function extraer(doc: DocumentoRecibido, deps: DependenciasExtracci
   const parser = parsearSinIa(n);
   const faltantes = camposPorConsultar(parser, minima);
   const lectores = deps.llm.lectores;
-  // Doble lectura (#58): los dos lectores en paralelo; si uno falla del todo, cuenta como si no hubiera leído nada.
-  const [llm, otro]: [ExtraccionParcial, ExtraccionParcial | null] =
-    faltantes.length === 0
-      ? [{}, null]
-      : lectores
-        ? await Promise.all(lectores.map((l) => consultarLlm(n, faltantes, deps, l).catch((): ExtraccionParcial => ({})))).then(([x = {}, y = {}]) => [x, y])
-        : [await consultarLlm(n, faltantes, deps), null];
+  // Doble lectura (#58): los dos lectores en paralelo y se cruzan (2 de 3). Si uno falla del todo, nada llega a 2 de 3 y
+  // escala: nunca se paga con una sola lectura. Se guarda qué hizo cada lector para que la traza diga cuál falló y por qué.
+  let estadoLectores: NonNullable<Extraccion["senales_llm"]["lectores"]> | undefined;
+  let llm: ExtraccionParcial = {};
+  let otro: ExtraccionParcial | null = null;
+  if (faltantes.length > 0 && lectores) {
+    const lecturas = await Promise.all(
+      lectores.map((l) =>
+        consultarLlm(n, faltantes, deps, l).then(
+          (r): { nombre: string; r: ExtraccionParcial; error: string | null } => ({ nombre: l.nombre, r, error: r.fallo ?? null }),
+          (e: unknown) => ({ nombre: l.nombre, r: { sin_respuesta: true } as ExtraccionParcial, error: e instanceof Error ? e.message : String(e) }),
+        ),
+      ),
+    );
+    const usables = lecturas.filter((x) => aportaAlgo(x.r));
+    estadoLectores = lecturas.map((x) => {
+      if (aportaAlgo(x.r)) return { proveedor: x.nombre, estado: "leyo" as const };
+      if (x.r.sin_respuesta) return { proveedor: x.nombre, estado: "fallo" as const, ...(x.error ? { detalle: x.error } : {}) };
+      return { proveedor: x.nombre, estado: "vacio" as const, detalle: "respuesta vacía o que no cumple el formato" };
+    });
+    // Orden de los lectores: el que leyó va primero (sus señales de R10 e idioma cuentan igual).
+    const [a = {}, b = {}] = [...usables.map((x) => x.r), ...lecturas.filter((x) => !aportaAlgo(x.r)).map((x) => x.r)];
+    [llm, otro] = [a, b];
+  } else if (faltantes.length > 0) {
+    llm = await consultarLlm(n, faltantes, deps);
+  }
   // 2 de 3 da al menos el umbral de R1 (si el umbral sube por encima de 0,95, ni el acuerdo alcanza: escala).
   const acuerdo = Math.min(0.95, Math.max(CONFIANZA_DOS_DE_TRES, minima));
 
@@ -178,6 +197,7 @@ export async function extraer(doc: DocumentoRecibido, deps: DependenciasExtracci
       instrucciones_sospechosas: [...new Set([...(llm.instrucciones_sospechosas ?? []), ...(otro?.instrucciones_sospechosas ?? [])])],
       // Hacía falta el LLM y ningún lector respondió (#103). Solo se escribe cuando pasa, así las demás extracciones no cambian.
       ...(faltantes.length > 0 && llm.sin_respuesta && (otro === null || otro.sin_respuesta) ? { sin_respuesta: true } : {}),
+      ...(estadoLectores ? { lectores: estadoLectores } : {}),
     },
     proveedor_llm: faltantes.length > 0 ? (llm.proveedor_llm ?? otro?.proveedor_llm ?? "ninguno") : "ninguno",
   };

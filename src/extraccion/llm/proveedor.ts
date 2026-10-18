@@ -53,14 +53,16 @@ export function cadena(proveedores: ProveedorLLM[], alFallar: (e: unknown) => vo
     nombre: proveedores[0]?.nombre ?? "ninguno",
     modelo: proveedores.map((p) => `${p.nombre}:${p.modelo ?? ""}`).join(">"),
     async extraer(doc, faltantes) {
+      let fallo = "";
       for (const p of proveedores) {
         try {
           return await p.extraer(doc, faltantes);
         } catch (e) {
           alFallar(e);
+          fallo = e instanceof Error ? e.message : String(e);
         }
       }
-      return { ...(await ninguno.extraer(doc, faltantes)), sin_respuesta: true };
+      return { ...(await ninguno.extraer(doc, faltantes)), sin_respuesta: true, ...(fallo ? { fallo } : {}) };
     },
   };
 }
