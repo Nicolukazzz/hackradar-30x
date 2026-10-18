@@ -261,6 +261,10 @@ describe("proveedores HTTP (fetch simulado)", () => {
     expect(proveedorDesdeEntorno({ LLM_PROVIDER: "gemini" }).nombre).toBe("ninguno");
     expect(proveedorDesdeEntorno({ LLM_PROVIDER: "groq", GEMINI_API_KEY: "a", GROQ_API_KEY: "b" }).nombre).toBe("groq");
     expect(proveedorDesdeEntorno({ LLM_PROVIDER: "gemini", GROQ_API_KEY: "b" }).nombre).toBe("groq");
+    // #111: GROQ_MODEL también admite lista; en doble lectura Gemini y Groq leen en paralelo.
+    expect(proveedorDesdeEntorno({ LLM_PROVIDER: "groq", GROQ_API_KEY: "b", GROQ_MODEL: "uno, dos" }).modelo).toBe("groq:groq:uno>groq:dos");
+    const doble = proveedorDesdeEntorno({ LLM_PROVIDER: "doble", GEMINI_API_KEY: "a", GROQ_API_KEY: "b" });
+    expect(doble.lectores?.map((l) => l.nombre)).toEqual(["gemini", "groq"]);
   });
 });
 

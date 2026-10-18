@@ -13,11 +13,13 @@ import { mensajeUsuario, PROMPT_SISTEMA } from "./prompt";
 export const MODELOS_GEMINI_POR_DEFECTO = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"] as const;
 export const MODELO_GEMINI_POR_DEFECTO = MODELOS_GEMINI_POR_DEFECTO[0];
 
-/** `GEMINI_MODEL` admite una lista separada por comas; vacía → los modelos por defecto. */
-export function modelosGemini(valor: string | undefined): string[] {
+/** `GEMINI_MODEL` (o `GROQ_MODEL`) admite una lista separada por comas; vacía → los modelos por defecto. */
+export function listaDeModelos(valor: string | undefined, porDefecto: readonly string[]): string[] {
   const lista = (valor ?? "").split(",").map((m) => m.trim()).filter(Boolean);
-  return lista.length > 0 ? [...new Set(lista)] : [...MODELOS_GEMINI_POR_DEFECTO];
+  return lista.length > 0 ? [...new Set(lista)] : [...porDefecto];
 }
+
+export const modelosGemini = (valor: string | undefined): string[] => listaDeModelos(valor, MODELOS_GEMINI_POR_DEFECTO);
 const URL_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const TIEMPO_MAXIMO_MS = 30_000;
 
