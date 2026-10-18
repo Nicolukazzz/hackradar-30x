@@ -20,9 +20,11 @@ Cada empresa lo ve con su nombre: Quadra solo firma al pie («Powered by Quadra�
 | Aprobador | `aprobador.nebula@gmail.com` | Ver todo y aprobar o rechazar escaladas hasta USD 5.000 |
 | Tesorería | `tesorero.nebula@gmail.com` | Ver todo, subir y procesar facturas; no aprueba ni cambia reglas |
 
-**Facturas para probar:** [`facturas-de-prueba/`](facturas-de-prueba/) trae 41 facturas ficticias en PDF e imagen
-(8 países, 7 monedas, 10 formatos distintos): 30 que se pagan solas y 11 trampas, cada una con el resultado esperado.
-Los proveedores ya están en la lista y cada uno tiene su portal ([accesos](facturas-de-prueba/ACCESOS.md)).
+**Para probar en 1 minuto:** entra como administrador y en la **Bandeja** pulsa **Probar con facturas de ejemplo**.
+Son 41 facturas ficticias en PDF e imagen (8 países, 7 monedas, 10 formatos): 30 que se pagan solas y 11 trampas.
+Cada una se envía con un clic como si la mandara su proveedor y el resultado aparece al lado del esperado. Los
+archivos están en [`facturas-de-prueba/`](facturas-de-prueba/) y cada proveedor tiene además su portal
+([accesos](facturas-de-prueba/ACCESOS.md)).
 
 > **El modelo solo lee. Las reglas deciden en código. Lo que no cumple espera a una persona, con la explicación escrita.**
 

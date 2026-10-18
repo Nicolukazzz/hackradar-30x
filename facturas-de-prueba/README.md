@@ -8,11 +8,14 @@ No es el dataset del CI: ese vive en `data/` y no cambia.
 
 ## Cómo probarlas
 
-1. Entra con la cuenta de administrador (README principal) y abre **Proveedores**: los 11 proveedores de la tabla
-   ya están en la lista permitida, con su cuenta, su correo y lo acordado.
-2. Abre el **portal del proveedor** que cobra la factura (enlace y código en [ACCESOS.md](ACCESOS.md)) y súbela en
-   «Ingrese sus facturas». Así llega con el correo verificado del proveedor (R11) y, si cumple todo, se paga sola.
-3. Mira el resultado en la **Bandeja** y abre la factura para ver la traza.
+**La forma rápida:** entra con la cuenta de administrador (README principal) y en la **Bandeja** pulsa **Probar con
+facturas de ejemplo**. Ahí están todas: «Enviar» manda cada una como si su proveedor la subiera por su portal y muestra
+el resultado al lado, junto al esperado y el enlace a su traza; «Enviar todas» manda las que se pagan solas.
+
+**Como lo haría un proveedor:** abre su portal (enlace y código en [ACCESOS.md](ACCESOS.md)) y sube el archivo en
+«Ingrese sus facturas». Llega con el correo verificado del proveedor (R11) y, si cumple todo, se paga sola.
+
+Los 11 proveedores de la tabla ya están en la lista permitida, con su cuenta, su correo y lo acordado.
 
 Subirlas con **Cargar factura manualmente** también funciona, pero llegan a nombre de quien sube (no del proveedor):
 por seguridad, R11 las deja esperando a una persona en vez de pagarlas.
