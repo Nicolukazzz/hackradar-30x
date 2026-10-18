@@ -28,6 +28,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/reglas", destination: "/ajustes/reglas", permanent: false },
       { source: "/equipo", destination: "/ajustes/equipo", permanent: false },
+      // #131: «Aprobaciones» pasa a «Pendientes».
+      { source: "/aprobaciones", destination: "/pendientes", permanent: false },
     ];
   },
   async headers() {

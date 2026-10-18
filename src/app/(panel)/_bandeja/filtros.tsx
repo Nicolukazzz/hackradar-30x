@@ -14,9 +14,9 @@ import { cn } from "@/lib/utils";
 
 const ESTADOS: { id: FiltroDecision; texto: string }[] = [
   { id: "todas", texto: "Todas" },
-  { id: "pagar", texto: "Pagadas" },
+  { id: "pagar", texto: "Aprobadas" },
   { id: "frenar", texto: "Frenadas" },
-  { id: "escalar", texto: "Escaladas" },
+  { id: "escalar", texto: "Por aprobar" },
 ];
 
 export function FiltrosBandeja({ meses, conteos }: { meses: string[]; conteos: Record<FiltroDecision, number> }) {

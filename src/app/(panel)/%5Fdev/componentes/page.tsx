@@ -86,7 +86,7 @@ export default function ComponentesPage() {
           <Kpi etiqueta="Autonomía" valor="66,7%" detalle="8 de 12 decididas sin intervención humana" />
           <Kpi tono="pagada" etiqueta="Pagadas" valor="5" detalle={<Monto usd={744405} />} />
           <Kpi tono="frenada" etiqueta="Frenadas" valor="3" detalle={<><Monto usd={784000} /> sin pagar</>} />
-          <Kpi tono="escalada" etiqueta="Escaladas · esperan a una persona" valor="4" detalle="Revisar aprobaciones →" href="/aprobaciones" />
+          <Kpi tono="escalada" etiqueta="Escaladas · esperan a una persona" valor="4" detalle="Revisar aprobaciones →" href="/pendientes" />
         </div>
       </Seccion>
 

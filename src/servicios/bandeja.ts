@@ -1,12 +1,13 @@
 // GET /api/bandeja (§12, pantalla §13.1): KPIs, presupuesto del periodo y filas del lote.
 
+import { estadoHumano } from "@/aprobaciones/decidir";
 import { normalizarNombre, normalizarTexto } from "@/dominio/normalizar";
 import { monedaBase } from "@/dominio/dinero";
 import type { Canal, DecisionAgente, Dinero, EntradaRegistro, Formato, IdRegla, Moneda } from "@/dominio/tipos";
 import { facturasVigentes, periodoDe, totalEn } from "@/reglas/libro";
 import type { Repositorio } from "@/repositorio/repositorio";
 
-import { descripcionBeneficiario, entradasDelLote, estadoActual, type EstadoFactura } from "./comun";
+import { ahoraHumano, descripcionBeneficiario, entradasDelLote, estadoActual, type EstadoFactura } from "./comun";
 
 export type FiltroDecision = "todas" | "pagar" | "frenar" | "escalar";
 
@@ -32,6 +33,24 @@ export type FilaBandeja = {
   explicacion: string;
   reglas_que_fallaron: IdRegla[];
   comparaciones: string[];
+  /** #131: fecha de vencimiento de la factura (si se leyó) */
+  vence: string | null;
+  /** #131: la decisión del agente completa (vista previa de la factura; sin `texto_crudo`, que pesa y no se muestra) */
+  entrada: EntradaRegistro;
+  /** #131: la decisión humana final, si la hay */
+  humana: EntradaRegistro | null;
+};
+
+/** #131: indicadores de la Bandeja para el día a día de cuentas por pagar (no pagamos: aprobamos). */
+export type ResumenBandeja = {
+  /** escaladas que esperan a una persona */
+  por_aprobar: ConteoMonto;
+  /** de las anteriores, las que vencen en 7 días o menos (y cuántas ya vencen hoy o vencieron) */
+  vencen_semana: ConteoMonto & { hoy: number };
+  /** aprobadas para pago: por el agente (PAGAR) o por una persona */
+  aprobadas: ConteoMonto;
+  /** frenadas: esperan que el proveedor corrija */
+  frenadas: ConteoMonto;
 };
 
 export type ConteoMonto = { n: number; usd_centavos: number };
@@ -75,6 +94,7 @@ export type RespuestaBandeja = {
     disponible: number;
   };
   conteos: Record<FiltroDecision, number>;
+  resumen: ResumenBandeja;
   filas: FilaBandeja[];
 };
 
@@ -132,6 +152,7 @@ export async function obtenerBandeja(repo: Repositorio, opciones: OpcionesBandej
   const porNombre = new Map(datos.beneficiarios.map((b) => [normalizarNombre(b.nombre), b]));
   const todas: FilaBandeja[] = lote.map((e) => {
     const b = e.beneficiario ? (porNombre.get(normalizarNombre(e.beneficiario)) ?? null) : null;
+    const humana = estadoHumano(registro, e).final;
     return {
       ref_interna: e.ref_interna,
       factura_numero: e.factura_numero,
@@ -149,8 +170,12 @@ export async function obtenerBandeja(repo: Repositorio, opciones: OpcionesBandej
       explicacion: e.explicacion,
       reglas_que_fallaron: e.reglas_que_fallaron,
       comparaciones: e.comparaciones,
+      vence: e.extraccion?.fecha_vencimiento.valor ?? null,
+      entrada: sinTexto(e),
+      humana: humana ? sinTexto(humana) : null,
     };
   });
+  const resumen = resumir(todas, (await ahoraHumano(repo)).slice(0, 10));
 
   const q = normalizarTexto(opciones.q ?? "").trim();
   const filtro = opciones.decision && opciones.decision !== "todas" ? FILTRO[opciones.decision] : null;
@@ -192,6 +217,37 @@ export async function obtenerBandeja(repo: Repositorio, opciones: OpcionesBandej
       frenar: buscadas.filter((f) => f.decision === "FRENAR").length,
       escalar: buscadas.filter((f) => f.decision === "ESCALAR").length,
     },
+    resumen,
     filas,
+  };
+}
+
+/** La entrada sin el texto completo del documento: la vista previa no lo usa y puede pesar varios KB. */
+function sinTexto(e: EntradaRegistro): EntradaRegistro {
+  return e.extraccion ? { ...e, extraccion: { ...e.extraccion, texto_crudo: "" } } : e;
+}
+
+const sumaDe = (filas: readonly FilaBandeja[], monto: (f: FilaBandeja) => number | null): ConteoMonto => ({
+  n: filas.length,
+  usd_centavos: filas.reduce((s, f) => s + (monto(f) ?? 0), 0),
+});
+
+/** `hoy` AAAA-MM-DD en hora de la empresa. */
+function resumir(filas: readonly FilaBandeja[], hoy: string): ResumenBandeja {
+  const enSieteDias = new Date(Date.parse(`${hoy}T12:00:00Z`) + 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  const pendientes = filas.filter((f) => f.estado === "ESCALAR");
+  const pronto = pendientes.filter((f) => f.vence !== null && f.vence <= enSieteDias);
+  return {
+    por_aprobar: sumaDe(pendientes, (f) => f.monto_usd_centavos),
+    vencen_semana: { ...sumaDe(pronto, (f) => f.monto_usd_centavos), hoy: pronto.filter((f) => f.vence! <= hoy).length },
+    // Lo aprobado por una persona cuenta con el monto que ella confirmó (#129).
+    aprobadas: sumaDe(
+      filas.filter((f) => f.estado === "PAGAR" || f.estado === "APROBADA_HUMANO"),
+      (f) => f.humana?.monto_usd_centavos ?? f.monto_usd_centavos,
+    ),
+    frenadas: sumaDe(
+      filas.filter((f) => f.estado === "FRENAR"),
+      (f) => f.monto_usd_centavos,
+    ),
   };
 }

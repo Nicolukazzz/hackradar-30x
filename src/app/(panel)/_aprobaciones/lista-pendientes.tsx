@@ -1,4 +1,4 @@
-import { ArrowRightIcon, ShieldAlertIcon } from "lucide-react";
+import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
 
 import { Monto, MontoDudoso, Tarjeta, hora } from "@/app/_componentes";
@@ -44,15 +44,17 @@ export function ListaPendientes({ pendientes, porVerificar }: Readonly<{ pendien
   const todasSinVerificar = pendientes.every((t) => verificar.has(t.ref_interna));
   const n = pendientes.length;
   let titulo: string;
-  if (todasSinVerificar) titulo = n === 1 ? "1 factura de alguien sin verificar" : `${n} facturas de remitentes sin verificar`;
-  else titulo = n === 1 ? "1 factura espera tu decisión" : `${n} facturas esperan tu decisión`;
+  // El número va en la insignia de al lado: el título no lo repite.
+  if (todasSinVerificar) titulo = n === 1 ? "De alguien sin verificar" : "De remitentes sin verificar";
+  else titulo = n === 1 ? "Espera tu decisión" : "Esperan tu decisión";
 
   return (
     <Tarjeta as="section" aria-labelledby="pendientes" className="ring-2 ring-escalada-punto/60">
       <div className="flex flex-wrap items-start justify-between gap-3 px-6 pt-5 pb-3">
         <div className="flex items-start gap-3">
-          <span className="mt-0.5 flex size-9 flex-none items-center justify-center rounded-full bg-escalada text-escalada-foreground">
-            <ShieldAlertIcon className="size-5" aria-hidden />
+          {/* #131: el número, no un ícono genérico de escudo. */}
+          <span aria-hidden className="mt-0.5 flex size-10 flex-none items-center justify-center rounded-[12px] bg-escalada font-mono text-base font-semibold text-escalada-foreground tabular-nums">
+            {n}
           </span>
           <div className="flex flex-col gap-0.5">
             <h2 id="pendientes" className="text-[17px] font-semibold tracking-tight">

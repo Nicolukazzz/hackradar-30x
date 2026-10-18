@@ -3,14 +3,16 @@ import type { DecisionAgente, DecisionHumana, ResultadoRegla } from "@/dominio/t
 import { cn } from "@/lib/utils";
 
 // Píldoras de decisión (§13 "Comunes") y de resultado de regla (§13.2 traza). Colores §15.
+// #131: el agente no paga, aprueba para pago: «Aprobada»; lo escalado es «Por aprobar» y su punto late (patrón
+// `status` de Kibo UI) porque es lo único que espera a alguien.
 
 const DECISIONES: Record<DecisionAgente | DecisionHumana, { texto: string; clase: string; punto?: string }> = {
-  PAGAR: { texto: "Pagada", clase: "bg-pagada text-pagada-foreground", punto: "bg-pagada-punto" },
+  PAGAR: { texto: "Aprobada", clase: "bg-pagada text-pagada-foreground", punto: "bg-pagada-punto" },
   FRENAR: { texto: "Frenada", clase: "bg-frenada text-frenada-foreground", punto: "bg-frenada-punto" },
-  ESCALAR: { texto: "Escalada", clase: "bg-escalada text-escalada-foreground", punto: "bg-escalada-punto" },
+  ESCALAR: { texto: "Por aprobar", clase: "bg-escalada text-escalada-foreground", punto: "bg-escalada-punto" },
   RECHAZADA_NO_FACTURA: { texto: "No es factura", clase: "bg-muted text-muted-foreground", punto: "bg-muted-foreground" },
   APROBADA_HUMANO: { texto: "Aprobada por persona", clase: "border-pagada-punto bg-card text-pagada-foreground" },
-  RECHAZADA_HUMANO: { texto: "Rechazada por persona", clase: "border-frenada-punto bg-card text-frenada-foreground" },
+  RECHAZADA_HUMANO: { texto: "Rechazada", clase: "border-frenada-punto bg-card text-frenada-foreground" },
 };
 
 /** Forma común de las píldoras (también la del portal de proveedores, #12). */
@@ -20,7 +22,12 @@ export function PildoraDecision({ decision, className }: { decision: DecisionAge
   const d = DECISIONES[decision];
   return (
     <Badge className={cn(PILDORA, d.clase, className)}>
-      {d.punto ? <span aria-hidden className={cn("size-1.5 rounded-full", d.punto)} /> : null}
+      {d.punto ? (
+        <span aria-hidden className="relative flex size-1.5">
+          {decision === "ESCALAR" ? <span className={cn("absolute inline-flex size-full animate-ping rounded-full opacity-60 motion-reduce:animate-none", d.punto)} /> : null}
+          <span className={cn("relative inline-flex size-1.5 rounded-full", d.punto)} />
+        </span>
+      ) : null}
       {d.texto}
     </Badge>
   );
