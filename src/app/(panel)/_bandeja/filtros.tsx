@@ -41,8 +41,8 @@ export function FiltrosBandeja({ meses, conteos }: { meses: string[]; conteos: R
   const opcionesMes = [{ value: "todos", label: "Todos los meses" }, ...meses.map((m) => ({ value: m, label: mesAnio(m) }))];
 
   return (
-    <div className="flex flex-col gap-3 px-5 pt-5 md:flex-row md:items-center md:justify-between md:px-6">
-      <div role="tablist" aria-label="Filtrar por estado" className="flex w-full overflow-x-auto rounded-[12px] bg-muted p-1 md:w-auto">
+    <div className="flex flex-col gap-3 px-5 pt-5 md:px-6 xl:flex-row xl:items-center xl:justify-between">
+      <div role="tablist" aria-label="Filtrar por estado" className="flex w-full overflow-x-auto rounded-[12px] bg-muted p-1 xl:w-auto">
         {ESTADOS.map((e) => {
           const activa = e.id === decision;
           return (
@@ -53,7 +53,7 @@ export function FiltrosBandeja({ meses, conteos }: { meses: string[]; conteos: R
               aria-selected={activa}
               onClick={() => ir({ decision: e.id })}
               className={cn(
-                "flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-[9px] px-3.5 text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:flex-none",
+                "flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-[9px] px-3.5 text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/50 xl:flex-none",
                 activa ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
               )}
             >

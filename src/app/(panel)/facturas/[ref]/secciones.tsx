@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 // Secciones de la traza (§13.2) que no tienen interacción: datos extraídos, reglas y línea de tiempo.
 
-type CampoVista = { etiqueta: string; valor: React.ReactNode; confianza: number | null };
+type CampoVista = { etiqueta: string; valor: React.ReactNode; confianza: number | null; total?: boolean };
 
 function campos(f: RespuestaFactura): CampoVista[] {
   const ext = f.extraccion;
@@ -15,7 +15,6 @@ function campos(f: RespuestaFactura): CampoVista[] {
   const lista: CampoVista[] = [
     { etiqueta: "Beneficiario", valor: ext.beneficiario_nombre.valor, confianza: ext.beneficiario_nombre.confianza },
     { etiqueta: "Número", valor: ext.numero.valor ? <span className="font-mono">{ext.numero.valor}</span> : null, confianza: ext.numero.confianza },
-    { etiqueta: "Monto", valor: dinero(ext.monto_total.valor), confianza: ext.monto_total.confianza },
     { etiqueta: "Emisión", valor: fecha(ext.fecha_emision.valor), confianza: ext.fecha_emision.confianza },
     { etiqueta: "Vencimiento", valor: fecha(ext.fecha_vencimiento.valor), confianza: ext.fecha_vencimiento.confianza },
     {
@@ -31,6 +30,8 @@ function campos(f: RespuestaFactura): CampoVista[] {
     const hito = ext.hito_numero?.valor ? ` · hito ${ext.hito_numero.valor}` : "";
     lista.push({ etiqueta: "Acuerdo", valor: <span className="font-mono">{ext.referencia_acuerdo.valor + hito}</span>, confianza: ext.referencia_acuerdo.confianza });
   }
+  // El total va al final, debajo de subtotal e impuestos, como en una factura (#126).
+  lista.push({ etiqueta: "Total", valor: dinero(ext.monto_total.valor), confianza: ext.monto_total.confianza, total: true });
   return lista;
 }
 
@@ -61,9 +62,16 @@ export function DatosExtraidos({ f }: { f: RespuestaFactura }) {
       ) : (
         <dl>
           {lista.map((c) => (
-            <div key={c.etiqueta} className="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-1.5 border-t border-subtle px-6 py-3 sm:grid-cols-[130px_minmax(0,1fr)_120px]">
-              <dt className="text-[13px] text-muted-foreground">{c.etiqueta}</dt>
-              <dd className="text-sm font-medium break-words">{c.valor ?? <span className="font-normal text-escalada-foreground">No se pudo leer</span>}</dd>
+            <div
+              key={c.etiqueta}
+              className={cn(
+                "grid grid-cols-[96px_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 px-6 py-3 sm:grid-cols-[96px_minmax(0,1fr)_88px]",
+                // El total se separa con una línea punteada negra a lo ancho de la tabla.
+                c.total ? "border-t-2 border-dotted border-foreground" : "border-t border-subtle",
+              )}
+            >
+              <dt className={cn("text-[13px]", c.total ? "font-semibold text-foreground" : "text-muted-foreground")}>{c.etiqueta}</dt>
+              <dd className={cn("text-sm break-words", c.total ? "text-base font-semibold" : "font-medium")}>{c.valor ?? <span className="font-normal text-escalada-foreground">No se pudo leer</span>}</dd>
               <dd className="col-span-2 sm:col-span-1">
                 <BarraConfianza campo={c.etiqueta} valor={c.confianza ?? 0} />
               </dd>
