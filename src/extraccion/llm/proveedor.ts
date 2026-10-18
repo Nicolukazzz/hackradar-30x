@@ -6,8 +6,8 @@ import type { ProveedorLlm } from "@/dominio/tipos";
 
 import { crearAnthropic } from "./anthropic";
 import { ErrorLLM, type ProveedorLLM } from "./contrato";
-import { crearGemini, modelosGemini } from "./gemini";
-import { crearGroq } from "./groq";
+import { crearGemini, listaDeModelos, modelosGemini } from "./gemini";
+import { crearGroq, MODELO_GROQ_POR_DEFECTO } from "./groq";
 import { ninguno } from "./ninguno";
 
 export { CONFIANZA_MAXIMA_LLM, ErrorLLM, RespuestaLlmSchema, validarRespuestaLlm, type ProveedorLLM } from "./contrato";
@@ -91,7 +91,11 @@ export function proveedorDesdeEntorno(env: Entorno = process.env, alFallar?: (e:
     const modelos = modelosGemini(env.GEMINI_MODEL).map((modelo) => conReintento(crearGemini({ apiKey: env.GEMINI_API_KEY ?? "", modelo })));
     disponibles.gemini = () => (modelos.length === 1 ? modelos[0]! : cadena(modelos, alFallar));
   }
-  if (env.GROQ_API_KEY) disponibles.groq = () => conReintento(crearGroq({ apiKey: env.GROQ_API_KEY ?? "", modelo: env.GROQ_MODEL }));
+  if (env.GROQ_API_KEY) {
+    // Igual que Gemini: GROQ_MODEL admite una lista y un modelo retirado o saturado pasa al siguiente.
+    const modelos = listaDeModelos(env.GROQ_MODEL, [MODELO_GROQ_POR_DEFECTO]).map((modelo) => conReintento(crearGroq({ apiKey: env.GROQ_API_KEY ?? "", modelo })));
+    disponibles.groq = () => (modelos.length === 1 ? modelos[0]! : cadena(modelos, alFallar));
+  }
   if (env.ANTHROPIC_API_KEY) disponibles.anthropic = () => conReintento(crearAnthropic({ apiKey: env.ANTHROPIC_API_KEY ?? "", modelo: env.ANTHROPIC_MODEL }));
   const orden: ProveedorLlm[] = ["gemini", "groq", "anthropic"];
   if (elegido === "doble") {
