@@ -624,6 +624,11 @@ El modo `golden` (§14) incluye el texto de los adjuntos en `texto_crudo`: un ex
 | `POST /api/canales/telegram/simular` | `{ update, archivos? }` | `{ respuesta, ref_interna, estado, … }` | demo sin bot (#13) |
 | `POST /api/canales/telegram/enlace` | `{ beneficiario_id }` | `{ enlace: "https://t.me/<bot>?start=<token>" }` (firmado, un uso, 72 h) | vincular el chat de un proveedor (#13) |
 | `POST /api/evaluar` | `{ extraccion, beneficiario_id? }` | `ResultadoMotor` (simulación sin registrar) | API para otros agentes (pitch) |
+| `GET /api/por-confirmar` | — | `{ remitentes, proveedores }` | Pendientes («Por confirmar») |
+| `POST /api/por-confirmar/remitente` | `{ remitente: { tipo, valor }, beneficiario_id, respuesta: 'si'\|'no' }` | `ResultadoConfirmar` (solo admin) | Pendientes |
+| `POST /api/por-confirmar/proveedor` | `{ clave, respuesta: 'si'\|'no' }` | `ResultadoConfiar` (solo admin) | Pendientes |
+| `GET·POST /api/canales/whatsapp/webhook` | verificación de Meta · mensaje firmado (`X-Hub-Signature-256`) | `200` siempre que la firma sea válida | canal WhatsApp (#79) |
+| `GET /api/salud` | — | `{ ok: true }` (pública, sin base) | healthcheck de Railway |
 | `GET /api/equipo` | — | `{ miembros: Miembro[], invitaciones: (Invitacion & { estado })[] }` | Equipo (admin) |
 | `POST /api/equipo/invitaciones` | `{ rol, limite_aprobacion_usd?, correo_esperado, dias_vigencia? }` | `{ invitacion, enlace }` (el token solo viaja aquí; no se envía correo, el admin copia el enlace) | Equipo (admin) |
 | `DELETE /api/equipo/invitaciones/:id` | — | `{ revocada: true }` | Equipo (admin) |

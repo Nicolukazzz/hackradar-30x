@@ -2,6 +2,8 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { POST as enlaceTelegram } from "@/app/api/canales/telegram/enlace/route";
+import { POST as enlaceWhatsapp } from "@/app/api/canales/whatsapp/enlace/route";
 import { POST as simularWhatsapp } from "@/app/api/canales/whatsapp/simular/route";
 import { GET as getArchivo } from "@/app/api/documentos/[ref]/archivo/route";
 import { confiarRemitenteSimulado } from "@/app/api/_identidad";
@@ -36,6 +38,26 @@ describe("remitente de un /simular", () => {
     expect(res.status).toBe(201);
     expect((await repo.documento(r.ref_interna))?.remitente.valor).toBe("no-verificado:573001112233");
     expect(r.estado).not.toBe("PAGAR");
+  });
+});
+
+describe("enlaces para vincular un chat o un WhatsApp a un proveedor", () => {
+  it("solo un administrador los genera: un aprobador o tesorería recibe 403 (si no, vincularía su propio chat y cobraría)", async () => {
+    vi.stubEnv("TELEGRAM_BOT_USUARIO", "bot_prueba");
+    vi.stubEnv("TELEGRAM_WEBHOOK_SECRET", "secreto-de-prueba-0123456789");
+    vi.stubEnv("WHATSAPP_NUMERO", "15551958819");
+    vi.stubEnv("WHATSAPP_VERIFY_TOKEN", "verificar-0123456789");
+    await repoProcesado();
+    const pedir = (ruta: typeof enlaceTelegram, url: string) =>
+      ruta(peticion(url, { method: "POST", body: JSON.stringify({ beneficiario_id: "ben-diego-herrera" }), headers: { "content-type": "application/json" } }), {});
+    for (const rol of ["tesoreria", "aprobador"] as const) {
+      comoCuenta(`Persona ${rol}`, rol);
+      expect((await pedir(enlaceTelegram, "http://x/api/canales/telegram/enlace")).status).toBe(403);
+      expect((await pedir(enlaceWhatsapp, "http://x/api/canales/whatsapp/enlace")).status).toBe(403);
+    }
+    comoSesion(CUENTA);
+    expect((await pedir(enlaceTelegram, "http://x/api/canales/telegram/enlace")).status).toBe(201);
+    expect((await pedir(enlaceWhatsapp, "http://x/api/canales/whatsapp/enlace")).status).toBe(201);
   });
 });
 

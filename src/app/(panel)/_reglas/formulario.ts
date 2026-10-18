@@ -76,7 +76,8 @@ export function aReglas(f: Formulario, base: Reglas): { reglas: Reglas | null; e
   const presupuesto = usd("presupuesto");
   const doble = usd("doble");
   const tolerancia = leerDecimal(f.tolerancia);
-  if (tolerancia === null || tolerancia > 100) errores.tolerancia = "Escribe un porcentaje entre 0 y 100.";
+  // Mismo tope que el servidor (ReglasSchema): más de 50 % dejaría de frenar casi cualquier cobro inflado.
+  if (tolerancia === null || tolerancia > 50) errores.tolerancia = "Escribe un porcentaje entre 0 y 50.";
   const ventana = /^\d+$/.test(f.ventana.trim()) ? Number(f.ventana) : null;
   if (ventana === null || ventana < 1 || ventana > 365) errores.ventana = "Escribe un número de días entre 1 y 365.";
   if (!errores.automatico && !errores.maximo && automatico > maximo)

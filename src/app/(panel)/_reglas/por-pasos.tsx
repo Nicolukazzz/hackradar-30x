@@ -152,7 +152,11 @@ const TEXTOS: Record<Seccion, { titulo: string; descripcion: string; errores: (k
   acordado: { titulo: "Cuadra con lo acordado", descripcion: "Cuánto puede diferir la factura del contrato u orden de compra.", errores: ["tolerancia"] },
   presupuesto: { titulo: "Presupuesto", descripcion: "Un pago que no cabe en lo disponible del periodo no se paga.", errores: ["presupuesto"] },
   requisitos: { titulo: "Datos obligatorios", descripcion: "Si a una factura le falta uno de estos datos, espera a una persona. El monto siempre es obligatorio.", errores: [] },
-  identidad: { titulo: "Cómo reconoce al proveedor", descripcion: "Con qué dato de la factura busca al proveedor en la lista.", errores: [] },
+  identidad: {
+    titulo: "Cómo reconoce al proveedor",
+    descripcion: "Con qué dato de la factura busca al proveedor en la lista. Si no coincide o falta, la factura no se paga.",
+    errores: [],
+  },
   duplicados: { titulo: "Facturas duplicadas", descripcion: "Cuántos días hacia atrás busca si ya se pagó la misma factura.", errores: ["ventana"] },
   doble: { titulo: "Dos aprobaciones", descripcion: "Desde este monto hacen falta dos personas distintas para aprobar.", errores: ["doble"] },
 };
