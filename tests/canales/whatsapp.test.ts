@@ -128,4 +128,13 @@ describe("webhook", () => {
     expect(firmaValida(`${cuerpo} `, firma, "s")).toBe(false);
     expect(mensajesDe(WebhookSchema.parse(JSON.parse(cuerpo)))).toHaveLength(1);
   });
+
+  it("acepta la firma de Meta sobre el cuerpo con unicode escapado (nombre con tilde o emoji)", () => {
+    const cuerpo = JSON.stringify({ object: "whatsapp_business_account", entry: [{ changes: [{ field: "messages", value: { contacts: [{ profile: { name: "Nicolás 🙂" } }] } }] }] });
+    const escapado = cuerpo.replace("á", "\\u00e1").replace("🙂", "\\ud83d\\ude42");
+    const firma = `sha256=${createHmac("sha256", "s").update(escapado).digest("hex")}`;
+    expect(firmaValida(cuerpo, firma, "s")).toBe(true);
+    expect(firmaValida(escapado, firma, "s")).toBe(true);
+    expect(firmaValida(cuerpo.replace("Nicolás", "Nicolas"), firma, "s")).toBe(false);
+  });
 });
