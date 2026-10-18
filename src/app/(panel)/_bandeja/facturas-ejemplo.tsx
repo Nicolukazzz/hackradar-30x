@@ -42,8 +42,8 @@ export function FacturasEjemplo() {
     setCargando(true);
     try {
       const lista = (await llamar<{ facturas: FacturaEjemploConEstado[] }>("/api/demo/facturas", "GET")).facturas;
+      // El resultado se ve solo después de enviar en este panel (#162): al abrir, todas listas para enviar.
       setFacturas(lista);
-      setEstados(Object.fromEntries(lista.flatMap((f) => (f.enviada ? [[f.archivo, { tipo: "listo", r: f.enviada, antes: true } satisfies Estado]] : []))));
     } catch (e) {
       toast.error("No se pudieron cargar las facturas de ejemplo", { description: e instanceof Error ? e.message : undefined });
     } finally {
