@@ -4,9 +4,11 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import type { DecisionAgente, IdRegla } from "@/dominio/tipos";
 import { problemasExplicacion } from "@/evaluacion/explicabilidad";
+import { observaciones } from "@/reglas/explicar";
 import { procesarLote } from "@/reglas/motor";
 
 import { cargarGolden } from "./escenario";
+import { AHORA, datosComunes } from "./fixtures";
 
 type Fila = { numero: string | null; beneficiario: string | null; decision: string; reglas: IdRegla[]; usd: number | null; explicacion: string; observaciones: string[] };
 const filas: Record<string, Fila[]> = {};
@@ -87,5 +89,17 @@ describe("#103: el LLM no respondió", () => {
     expect(e.explicacion).toContain("el agente no pudo leer el documento porque el servicio de lectura no respondió");
     expect(e.explicacion).not.toContain("El beneficiario");
     expect(e.explicacion).not.toContain("0%");
+  });
+});
+
+describe("observaciones (#149)", () => {
+  it("una factura vencida lo dice, sin decidir nada", async () => {
+    const reglas = (await datosComunes()).reglas.vigente;
+    expect(observaciones(50_000, reglas, { fecha: "2019-01-29", ahora: AHORA })).toEqual(["La factura venció hace 2817 días (29/01/2019)."]);
+    expect(observaciones(50_000, reglas, { fecha: "2026-10-15", ahora: AHORA })).toEqual(["La factura venció hace 1 día (15/10/2026)."]);
+  });
+  it("vence hoy, después, o sin fecha: nada", async () => {
+    const reglas = (await datosComunes()).reglas.vigente;
+    for (const fecha of ["2026-10-16", "2026-10-30", null, "no-es-fecha"]) expect(observaciones(50_000, reglas, { fecha, ahora: AHORA })).toEqual([]);
   });
 });

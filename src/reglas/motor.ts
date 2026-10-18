@@ -205,7 +205,7 @@ function evaluarSinProteccion(input: EntradaMotor): ResultadoMotor {
     asignado_a,
     responder_antes_de,
     explicacion: explicacionSinDecidir(reglas, tasas) ?? explicar({ decision, evaluaciones, doc, ext, beneficiario, monto_usd_centavos: usd, reglas, ahora }),
-    observaciones: sinDecidir ? [] : observaciones(usd, reglas),
+    observaciones: sinDecidir ? [] : observaciones(usd, reglas, { fecha: ext.fecha_vencimiento.valor, ahora }),
   };
 }
 

@@ -3,7 +3,7 @@
 // reglas (en la moneda nueva), luego proveedores y aprobadores, y al final la empresa. Mientras reglas y tasas estén en
 // monedas distintas, el motor escala todo; nunca paga con límites en otra moneda.
 
-import { convertirLimite, formatearBase, formatearTasa, monedaBase } from "@/dominio/dinero";
+import { convertirLimite, convertirReglas, formatearBase, formatearTasa, monedaBase } from "@/dominio/dinero";
 import type { Aprobador, EntradaRegistro, Moneda, Reglas } from "@/dominio/tipos";
 import type { AlmacenEquipo } from "@/equipo/almacen";
 import { EMPRESA_ID } from "@/equipo/tipos";
@@ -62,13 +62,7 @@ async function planear(repo: Repositorio, equipo: AlmacenEquipo, nueva: Moneda):
   }
   const c = (centavos: number) => convertirLimite(centavos, tasa);
   const l = reglasActuales.limites;
-  const reglas: Reglas = {
-    ...reglasActuales,
-    moneda: nueva,
-    limites: { ...l, pago_automatico_usd: c(l.pago_automatico_usd), maximo_absoluto_usd: c(l.maximo_absoluto_usd), mensual_por_beneficiario_default_usd: c(l.mensual_por_beneficiario_default_usd) },
-    presupuesto: { ...reglasActuales.presupuesto, monto_usd: c(reglasActuales.presupuesto.monto_usd) },
-    aprobacion: { doble_aprobacion_desde_usd: c(reglasActuales.aprobacion.doble_aprobacion_desde_usd) },
-  };
+  const reglas = convertirReglas(reglasActuales, nueva, tasa);
   const fila = (concepto: string, antes: number, despues: number): FilaConversion => ({ concepto, antes: formatearBase(antes, actual), despues: formatearBase(despues, nueva) });
   const proveedores = datos.beneficiarios.filter((b) => b.limite_mensual_usd !== null).map((b) => ({ b, limite: c(b.limite_mensual_usd!) }));
   const aprobadores = miembros.filter((m) => m.limite_aprobacion_usd !== null).map((m) => ({ m, limite: c(m.limite_aprobacion_usd!) }));

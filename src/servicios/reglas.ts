@@ -1,5 +1,6 @@
 // GET/POST /api/reglas y POST /api/reglas/simular (§12, pantalla §13.4).
 
+import { convertirReglas, monedaBase } from "@/dominio/dinero";
 import type { Aprobador, Beneficiario, EntradaRegistro, Moneda, Reglas, TablaTasas } from "@/dominio/tipos";
 import { evaluarEscenario, type ReporteEvaluacion } from "@/evaluacion/evaluar";
 import { sinConfigurar } from "@/reglas/sin-configurar";
@@ -7,6 +8,8 @@ import type { Repositorio, ResumenVersion } from "@/repositorio/repositorio";
 
 /** Set de prueba de `data/` para simular reglas cuando no hay escenario cargado (producción, #106). */
 const SET_DE_PRUEBA = "lote-demo-oct";
+/** Moneda de las tasas y montos del set de prueba. */
+const MONEDA_SET_DE_PRUEBA: Moneda = "USD";
 
 export type UsoTasa = { moneda: Moneda; tasa: string; facturas: number };
 
@@ -64,6 +67,19 @@ export async function obtenerReglas(repo: Repositorio): Promise<RespuestaReglas>
 }
 
 /**
+ * El set de prueba está en USD. Con otra moneda base el motor escalaría todo (reglas y tasas en monedas distintas) y la
+ * simulación no diría nada (#149): se pasan los límites a USD con la tasa del día. Sin tasa se simulan tal cual: escala
+ * todo y nunca paga, así que la guarda de «Guardar» sigue del lado seguro.
+ */
+async function enMonedaDelSet(repo: Repositorio, reglas: Reglas): Promise<Reglas> {
+  const moneda = monedaBase(reglas);
+  if (moneda === MONEDA_SET_DE_PRUEBA) return reglas;
+  const vivas = await repo.tasasVigentes();
+  const tasa = vivas?.tabla.base === moneda ? vivas.tabla.tasas[MONEDA_SET_DE_PRUEBA] : undefined;
+  return tasa ? convertirReglas(reglas, MONEDA_SET_DE_PRUEBA, tasa) : reglas;
+}
+
+/**
  * Corre el lote del escenario con `reglas` sobre el historial previo al lote, sin registrar nada,
  * y compara con el esperado (§14, modo golden).
  */
@@ -72,7 +88,7 @@ export async function simularReglas(repo: Repositorio, reglas: Reglas): Promise<
   const candidata = sinConfigurar(reglas) ? { ...reglas, version: 1 } : reglas;
   const esc = await repo.escenario();
   // Producción no carga escenario (#106): se simula sobre el set de prueba de data/, el mismo del CI.
-  if (!esc) return evaluarEscenario(SET_DE_PRUEBA, { extraccion: "golden", reglas: candidata });
+  if (!esc) return evaluarEscenario(SET_DE_PRUEBA, { extraccion: "golden", reglas: await enMonedaDelSet(repo, candidata) });
   return evaluarEscenario(esc.config.id, { extraccion: "golden", reglas: candidata, repo });
 }
 

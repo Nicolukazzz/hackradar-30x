@@ -8,6 +8,7 @@
 // (`decisionAgente`, libro y Bandeja). Sin reloj: `ahora` llega inyectado.
 
 import { esRemitenteInvitacion } from "@/dominio/remitente";
+import { sinPuntoDoble } from "@/dominio/normalizar";
 import type { Aprobador, Beneficiario, EntradaRegistro, Moneda } from "@/dominio/tipos";
 import { avisarEscaladas } from "@/avisos";
 import type { Repositorio } from "@/repositorio/repositorio";
@@ -21,6 +22,7 @@ export type FacturaDelRemitente = {
   ref_interna: string;
   factura_numero: string | null;
   monto_usd_centavos: number | null;
+  moneda_base: Moneda;
   recibido_en: string;
   /** otras reglas que fallaron además de R11 (si las hay, la factura seguirá escalada tras confirmar) */
   otras_reglas: string[];
@@ -90,6 +92,7 @@ export async function remitentesPorConfirmar(repo: Repositorio): Promise<Remiten
       ref_interna: e.ref_interna,
       factura_numero: e.factura_numero,
       monto_usd_centavos: e.monto_usd_centavos,
+      moneda_base: e.moneda_base ?? "USD",
       recibido_en: e.momento,
       otras_reglas: e.reglas_que_fallaron.filter((r) => r !== "R11"),
     });
@@ -113,7 +116,7 @@ async function vincular(repo: Repositorio, b: Beneficiario, tipo: TipoRemitente,
       x.id !== b.id &&
       (tipo === "correo" ? x.canales.correos.some((c) => c.toLowerCase() === valor) : tipo === "telegram" ? x.canales.telegram_chat_id === valor : x.canales.whatsapp === valor),
   );
-  if (dueno) throw new ErrorDecision(409, `${quien(tipo, valor)} ya está vinculado a ${dueno.nombre}.`);
+  if (dueno) throw new ErrorDecision(409, sinPuntoDoble(`${quien(tipo, valor)} ya está vinculado a ${dueno.nombre}.`));
   if (tipo === "correo") await repo.actualizarBeneficiario({ ...b, canales: { ...b.canales, correos: [...new Set([...b.canales.correos, valor])] } });
   else if (tipo === "telegram") await repo.vincularTelegram(b.id, valor);
   else await repo.vincularWhatsapp(b.id, valor);
@@ -133,7 +136,7 @@ async function reevaluar(repo: Repositorio, origen: EntradaRegistro, b: Benefici
     ...nueva,
     id: await repo.siguienteIdRegistro(Number(ahora.slice(0, 4))),
     entrada_origen: origen.id,
-    explicacion: `${nueva.explicacion} Reevaluada: ${texto}.`,
+    explicacion: sinPuntoDoble(`${nueva.explicacion} Reevaluada: ${texto}.`),
   };
   await repo.agregarEntrada(entrada);
   return entrada;

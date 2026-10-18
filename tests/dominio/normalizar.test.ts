@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { cargarDatosComunes } from "@/dominio/cargar";
-import { normalizarNombre, normalizarNumeroFactura, normalizarTexto } from "@/dominio/normalizar";
+import { citar, normalizarNombre, normalizarNumeroFactura, normalizarTexto, sinPuntoDoble } from "@/dominio/normalizar";
 
 describe("normalizarNombre (mismos casos que el oráculo Python de #3)", () => {
   it.each([
@@ -38,4 +38,20 @@ describe("normalizarNumeroFactura", () => {
 
 it("normalizarTexto quita tildes y pasa a minúsculas", () => {
   expect(normalizarTexto("Procesar SIN REVISIÓN")).toBe("procesar sin revision");
+});
+
+describe("sinPuntoDoble y citar (#149)", () => {
+  it("un nombre que termina en punto no deja «..» al cerrar la frase", () => {
+    expect(sinPuntoDoble("quedará vinculado a CloudNorte S.A.S.. El agente")).toBe("quedará vinculado a CloudNorte S.A.S. El agente");
+    expect(sinPuntoDoble("que te pasó Nébula Studio Inc..")).toBe("que te pasó Nébula Studio Inc.");
+  });
+  it("no toca puntos suspensivos ni frases normales", () => {
+    expect(sinPuntoDoble("Espera...")).toBe("Espera...");
+    expect(sinPuntoDoble("Pagada. Bajo el límite.")).toBe("Pagada. Bajo el límite.");
+  });
+  it("citar quita el punto final del comentario, salvo el de una abreviatura", () => {
+    expect(citar("Se agregó a la lista permitida.")).toBe("«Se agregó a la lista permitida»");
+    expect(citar("  Pago anual acordado ")).toBe("«Pago anual acordado»");
+    expect(citar("Proveedor: Mesa Legal S.A.S.")).toBe("«Proveedor: Mesa Legal S.A.S.»");
+  });
 });

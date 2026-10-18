@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import { Boton } from "@/app/_componentes";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { sinPuntoDoble } from "@/dominio/normalizar";
 import { normalizarCodigo } from "@/vinculos/codigo";
 
 // Entrar al portal: correo + código, los dos que puso la empresa al crear el enlace.
@@ -52,7 +53,7 @@ export function FormularioEntrar({ token, empresa }: { token: string; empresa: s
       <div className="flex flex-col gap-2">
         <span className="text-[13px] text-muted-foreground">{empresa} · Portal de proveedores</span>
         <h1 className="text-2xl font-semibold tracking-tight text-balance">Entra para enviar tus facturas</h1>
-        <p className="text-[15px] leading-relaxed text-muted-foreground">Escribe el correo y el código que te pasó {empresa}.</p>
+        <p className="text-[15px] leading-relaxed text-muted-foreground">{sinPuntoDoble(`Escribe el correo y el código que te pasó ${empresa}.`)}</p>
       </div>
       <FieldGroup className="gap-4">
         <Field data-invalid={correoInvalido || undefined}>

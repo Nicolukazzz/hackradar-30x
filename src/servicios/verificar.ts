@@ -3,6 +3,7 @@
 // el canal (#110), así las próximas no vuelven a escalar por lo mismo.
 
 import { decisionAgente, estadoHumano } from "@/aprobaciones/decidir";
+import { normalizarNombre } from "@/dominio/normalizar";
 import type { DocumentoRecibido, Moneda } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
 
@@ -14,8 +15,11 @@ export type PorVerificar = {
   beneficiario: string | null;
   /** quién la mandó: correo, chat de Telegram o usuario del portal */
   remitente: DocumentoRecibido["remitente"] | null;
-  /** proveedor_nuevo: no está en la lista (R3) · remitente_no_vinculado: proveedor conocido, canal nuevo (R11) */
-  motivo: "proveedor_nuevo" | "remitente_no_vinculado";
+  /**
+   * proveedor_nuevo: no está en la lista (R3) · agregado_despues: no estaba cuando llegó la factura, pero ya está (#149)
+   * · remitente_no_vinculado: proveedor conocido, canal nuevo (R11)
+   */
+  motivo: "proveedor_nuevo" | "agregado_despues" | "remitente_no_vinculado";
   monto_usd_centavos: number | null;
   moneda_base: Moneda;
   recibido_en: string;
@@ -32,6 +36,12 @@ export async function porVerificar(repo: Repositorio): Promise<PorVerificar[]> {
       estadoHumano(registro, e).final === null &&
       (e.reglas_que_fallaron.includes("R3") || e.reglas_que_fallaron.includes("R11")),
   );
+  const datos = await repo.datosComunes();
+  const enLista = new Set(datos.beneficiarios.filter((b) => b.estado === "activo").map((b) => normalizarNombre(b.nombre)));
+  const motivo = (e: (typeof pendientes)[number]): PorVerificar["motivo"] => {
+    if (!e.reglas_que_fallaron.includes("R3")) return "remitente_no_vinculado";
+    return e.beneficiario && enLista.has(normalizarNombre(e.beneficiario)) ? "agregado_despues" : "proveedor_nuevo";
+  };
   const filas = await Promise.all(
     pendientes.map(async (e): Promise<PorVerificar> => {
       const doc = await repo.documento(e.ref_interna);
@@ -40,7 +50,7 @@ export async function porVerificar(repo: Repositorio): Promise<PorVerificar[]> {
         factura_numero: e.factura_numero,
         beneficiario: e.beneficiario,
         remitente: doc?.remitente ?? null,
-        motivo: e.reglas_que_fallaron.includes("R3") ? "proveedor_nuevo" : "remitente_no_vinculado",
+        motivo: motivo(e),
         monto_usd_centavos: e.monto_usd_centavos,
         moneda_base: e.moneda_base ?? "USD",
         recibido_en: e.momento,

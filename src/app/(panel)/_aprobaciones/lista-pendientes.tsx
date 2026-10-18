@@ -21,9 +21,9 @@ function quien(p: PorVerificar): string {
 
 function motivoVerificar(p: PorVerificar): string {
   const nombre = p.beneficiario ?? "Quien cobra";
-  return p.motivo === "proveedor_nuevo"
-    ? `${nombre} no está en tus proveedores · escribió desde ${quien(p)}`
-    : `${nombre} escribió desde ${quien(p)}, que no está vinculado a su perfil`;
+  if (p.motivo === "proveedor_nuevo") return `${nombre} no está en tus proveedores · escribió desde ${quien(p)}`;
+  if (p.motivo === "agregado_despues") return `${nombre} no estaba en tus proveedores cuando llegó; ya está en la lista · escribió desde ${quien(p)}`;
+  return `${nombre} escribió desde ${quien(p)}, que no está vinculado a su perfil`;
 }
 
 /** La causa principal de la explicación del agente (§7), sin «Escalada:», sin causas extra ni la nota de reserva. */

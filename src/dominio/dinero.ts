@@ -4,7 +4,7 @@
 
 import Decimal from "decimal.js";
 
-import type { Dinero, Moneda, TablaTasas } from "./tipos";
+import type { Dinero, Moneda, Reglas, TablaTasas } from "./tipos";
 
 /** Copia aislada: no depende de la configuración global de decimal.js. */
 const Dec = Decimal.clone({ precision: 40, rounding: Decimal.ROUND_HALF_UP });
@@ -47,6 +47,19 @@ export function aUsd(d: Dinero, tabla: TablaTasas): { usd_centavos: number; tasa
  */
 export function convertirLimite(centavos: number, tasa: string): number {
   return new Dec(centavos).times(tasa).div(100).toDecimalPlaces(0, Dec.ROUND_HALF_UP).times(100).toNumber();
+}
+
+/** Las reglas con límites, presupuesto y doble firma pasados a `nueva` (1 moneda de las reglas = `tasa` de `nueva`). */
+export function convertirReglas(reglas: Reglas, nueva: Moneda, tasa: string): Reglas {
+  const c = (centavos: number) => convertirLimite(centavos, tasa);
+  const l = reglas.limites;
+  return {
+    ...reglas,
+    moneda: nueva,
+    limites: { ...l, pago_automatico_usd: c(l.pago_automatico_usd), maximo_absoluto_usd: c(l.maximo_absoluto_usd), mensual_por_beneficiario_default_usd: c(l.mensual_por_beneficiario_default_usd) },
+    presupuesto: { ...reglas.presupuesto, monto_usd: c(reglas.presupuesto.monto_usd) },
+    aprobacion: { doble_aprobacion_desde_usd: c(reglas.aprobacion.doble_aprobacion_desde_usd) },
+  };
 }
 
 /** "8400000" → "8.400.000" (sin regex: recorre de a tres dígitos desde la derecha). */
