@@ -83,18 +83,40 @@ function motivoFrenar(reglas: readonly IdRegla[], t: Textos): string {
   return t.motivos.general;
 }
 
-export function textoRespuesta(entrada: EntradaRegistro, idioma: Idioma, opciones: OpcionesRespuesta = {}): string {
-  const t = TEXTOS[idioma];
-  if (entrada.decision === "RECHAZADA_NO_FACTURA") return t.no_factura(entrada.ref_interna);
+/** Lo que se le puede decir al remitente, ya filtrado (sin reglas internas). Base de `textoRespuesta` y de los formatos por canal. */
+export type ResumenRespuesta = {
+  estado: "pagar" | "escalar" | "frenar" | "no_factura";
+  ref: string;
+  /** null si no se le confirma (R11) o no se leyó */
+  numero: string | null;
+  /** motivo para el proveedor si se frena */
+  motivo: string | null;
+  /** frase para vincular el canal (solo si falló R11) */
+  vincular: string | null;
+};
 
+export function resumenRespuesta(entrada: EntradaRegistro, idioma: Idioma, opciones: OpcionesRespuesta = {}): ResumenRespuesta {
+  const t = TEXTOS[idioma];
+  const base = { ref: entrada.ref_interna, numero: entrada.factura_numero, motivo: null, vincular: null };
+  if (entrada.decision === "RECHAZADA_NO_FACTURA") return { ...base, estado: "no_factura", numero: null };
   // Remitente no verificado (R11): puede ser alguien suplantando al proveedor. No se le confirma el número de
   // factura ni si ya existía: solo la ref de su envío, "en revisión" y cómo vincular su canal.
   if (entrada.reglas_que_fallaron.includes("R11")) {
-    return [t.recibida(null, entrada.ref_interna), t.escalar, t.vincular(t.medio[entrada.canal], opciones.urlVincular)].join(" ");
+    return { ...base, estado: "escalar", numero: null, vincular: t.vincular(t.medio[entrada.canal], opciones.urlVincular) };
   }
-  const partes = [t.recibida(entrada.factura_numero, entrada.ref_interna)];
-  if (entrada.decision === "PAGAR") partes.push(t.pagar);
-  else if (entrada.decision === "FRENAR") partes.push(t.frenar(motivoFrenar(entrada.reglas_que_fallaron, t)));
+  if (entrada.decision === "PAGAR") return { ...base, estado: "pagar" };
+  if (entrada.decision === "FRENAR") return { ...base, estado: "frenar", motivo: motivoFrenar(entrada.reglas_que_fallaron, t) };
+  return { ...base, estado: "escalar" };
+}
+
+export function textoRespuesta(entrada: EntradaRegistro, idioma: Idioma, opciones: OpcionesRespuesta = {}): string {
+  const t = TEXTOS[idioma];
+  const r = resumenRespuesta(entrada, idioma, opciones);
+  if (r.estado === "no_factura") return t.no_factura(r.ref);
+  const partes = [t.recibida(r.numero, r.ref)];
+  if (r.estado === "pagar") partes.push(t.pagar);
+  else if (r.estado === "frenar") partes.push(t.frenar(r.motivo ?? t.motivos.general));
   else partes.push(t.escalar);
+  if (r.vincular) partes.push(r.vincular);
   return partes.join(" ");
 }
