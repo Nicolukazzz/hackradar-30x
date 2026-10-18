@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Boton, EncabezadoPagina, Indicador, Monto } from "@/app/_componentes";
 import { obtenerBandeja, obtenerVerificacion, type FiltroDecision } from "@/app/_datos/bandeja";
 import { obtenerCriteriosExtraccion } from "@/app/_datos/registro";
+import { conRespaldo } from "@/app/_datos/respaldo";
+import { REQUERIDOS_POR_DEFECTO } from "@/dominio/tipos";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
 import { AutoActualizar } from "./_bandeja/auto-actualizar";
@@ -24,7 +26,11 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
   const decision = (FILTROS as readonly string[]).includes(decisionPedida) ? (decisionPedida as FiltroDecision) : "todas";
   const q = typeof sp.q === "string" ? sp.q.slice(0, 100) : "";
   const mes = typeof sp.mes === "string" && /^\d{4}-\d{2}$/.test(sp.mes) ? sp.mes : undefined;
-  const [b, verificacion, criterios] = await Promise.all([obtenerBandeja({ decision, q, mes }), obtenerVerificacion(), obtenerCriteriosExtraccion()]);
+  const [b, verificacion, criterios] = await Promise.all([
+    obtenerBandeja({ decision, q, mes }),
+    conRespaldo(obtenerVerificacion(), { filas: [], novedades: { total: 0, ultima: null } }, "remitentes por verificar"),
+    conRespaldo(obtenerCriteriosExtraccion(), { requeridos: [...REQUERIDOS_POR_DEFECTO], confianza_minima: 0.9 }, "criterios de extracción"),
+  ]);
   const { resumen: r } = b;
   const hayFacturas = b.meses.length > 0;
   const moneda = b.moneda_base;
