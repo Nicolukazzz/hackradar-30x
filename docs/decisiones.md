@@ -12,6 +12,12 @@ Una entrada por decisión, la más nueva arriba. Formato:
 ```
 
 ---
+## 2026-10-17 — Aprobar y vincular el canal de un proveedor conocido (#110)
+- Estado: propuesta
+- Decisión: si una factura escaló porque un proveedor de la lista (R3 cumple) escribió desde un correo o chat de Telegram no vinculado (R11 falla), al aprobarla un admin puede marcar «Vincular {correo/chat} a {proveedor} para sus próximas facturas» (`vincular_canal` en `POST /api/aprobaciones/:ref`, mismo permiso que «Agregar a la lista»). `canalAVincular` (`src/aprobaciones/decidir.ts`) decide cuándo aplica: nunca portal ni enlaces de invitación. Se valida antes de registrar la aprobación (solo al aprobar y con la última firma; 409 si el canal ya es de otro proveedor); el correo se agrega a `canales.correos` (`actualizarBeneficiario`) y el chat con `vincularTelegram`, con su `CAMBIO_BENEFICIARIOS`. La tarjeta de Aprobaciones y la Traza reutilizan la casilla de «Agregar a la lista» con el texto que corresponde; `TarjetaAprobacion` suma `canal_a_vincular`.
+- Por qué: el equipo pidió que un proveedor que escribe por un canal nuevo pueda quedar aceptado para la próxima vez sin repetir la aprobación.
+- Quién: J
+
 ## 2026-10-17 — Requisitos de factura configurables; el monto siempre obligatorio (#109)
 - Estado: propuesta
 - Decisión: `Reglas.requisitos?: { obligatorios: CampoRequerible[] }` (beneficiario, número, fechas, cuenta, concepto, referencia al acuerdo, identificación fiscal); ausente = los de §4.3. **El monto con moneda siempre es obligatorio** (el equipo pidió «todo configurable»; sin monto no hay R6/R7/R9). R1 exige solo lo marcado; un campo de los de siempre que llega con baja confianza sigue fallando aunque no se exija (una cuenta leída a medias puede ser un desvío) y las validaciones (fechas, suma, monto > 0) aplican a todo lo que llega. Si la cuenta no se exige y la factura no trae ninguna, R4 da NO_APLICA «se paga a la registrada» con `cuenta_no_exigida: true`, y es el único NO_APLICA que la guarda de PAGAR acepta en R4 (invariante 1 de §5 ajustado); si trae otra cuenta, R4 falla igual. Reglas de pago: tarjeta «Qué debe traer la factura · R1» con casillas (monto fijo) y aviso al desmarcar la cuenta. Invariante nuevo con fast-check: con cualquier combinación de requisitos y campos faltantes, nunca PAGAR sin monto, sin lo exigido ni a una cuenta distinta de la registrada.

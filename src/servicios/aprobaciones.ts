@@ -3,8 +3,8 @@
 import { formatearUsd } from "@/dominio/dinero";
 import { normalizarNombre } from "@/dominio/normalizar";
 import { instante } from "@/dominio/reloj";
-import type { Aprobador, Canal, Dinero, Formato, IdRegla } from "@/dominio/tipos";
-import { decisionAgente, estadoHumano } from "@/aprobaciones/decidir";
+import type { Aprobador, Canal, Dinero, EntradaRegistro, Formato, IdRegla } from "@/dominio/tipos";
+import { canalAVincular, decisionAgente, estadoHumano } from "@/aprobaciones/decidir";
 import type { Repositorio } from "@/repositorio/repositorio";
 
 import { descripcionBeneficiario } from "./comun";
@@ -36,6 +36,8 @@ export type TarjetaAprobacion = {
   firmas: { aprobador_id: string; nombre: string; momento: string }[];
   /** falló R3: se puede agregar el beneficiario a la lista al aprobar */
   puede_agregar_a_lista: boolean;
+  /** #110: proveedor conocido que escribió desde un canal no vinculado: se puede vincular al aprobar */
+  canal_a_vincular: { tipo: "correo" | "telegram"; valor: string } | null;
 };
 
 export type RespuestaAprobaciones = {
@@ -64,12 +66,14 @@ export async function obtenerAprobaciones(repo: Repositorio, orden: OrdenAprobac
   const decididoEn = (id: string, momento: string) => (esc && !importadas.has(id) ? esc.config.ahora : momento);
   const porNombre = new Map(datos.beneficiarios.map((b) => [normalizarNombre(b.nombre), b]));
 
+  const origenes = new Map<string, EntradaRegistro>();
   const pendientes: TarjetaAprobacion[] = registro
     // Si una ref se reprocesó, manda su última decisión del agente (la que firma decidir.ts): una tarjeta por ref.
     .filter((e) => e.tipo === "DECISION_AGENTE" && e.decision === "ESCALAR" && decisionAgente(registro, e.ref_interna) === e)
     .map((e) => ({ e, h: estadoHumano(registro, e) }))
     .filter(({ h }) => h.final === null)
     .map(({ e, h }) => {
+      origenes.set(e.ref_interna, e);
       const b = e.beneficiario ? (porNombre.get(normalizarNombre(e.beneficiario)) ?? null) : null;
       const ok = e.evaluaciones.filter((x) => x.resultado === "CUMPLE" || x.resultado === "NO_APLICA").length;
       return {
@@ -93,8 +97,18 @@ export async function obtenerAprobaciones(repo: Repositorio, orden: OrdenAprobac
         requiere_doble_aprobacion: e.monto_usd_centavos !== null && e.monto_usd_centavos >= reglas.aprobacion.doble_aprobacion_desde_usd,
         firmas: h.firmas,
         puede_agregar_a_lista: e.reglas_que_fallaron.includes("R3"),
+        canal_a_vincular: null,
       };
     });
+  // #110: solo las que fallaron por R11 con R3 cumplido necesitan su documento (quién escribió).
+  await Promise.all(
+    pendientes.map(async (t) => {
+      const origen = origenes.get(t.ref_interna);
+      if (!origen?.reglas_que_fallaron.includes("R11") || origen.reglas_que_fallaron.includes("R3")) return;
+      const c = canalAVincular(origen, await repo.documento(t.ref_interna));
+      t.canal_a_vincular = c ? { tipo: c.tipo, valor: c.valor } : null;
+    }),
+  );
 
   const plazo = (t: TarjetaAprobacion) => (t.asignacion ? instante(t.asignacion.responder_antes_de) : Number.MAX_SAFE_INTEGER);
   pendientes.sort((a, b) =>

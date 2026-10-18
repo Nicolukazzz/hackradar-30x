@@ -8,6 +8,7 @@ import { obtenerFactura, type RespuestaFactura } from "@/app/_datos/facturas";
 import { aprobadorDeLaCuenta } from "@/app/api/_identidad";
 import { permisoPara } from "@/lib/auth/permisos";
 import { obtenerSesion } from "@/lib/auth/sesion";
+import { canalAVincular } from "@/aprobaciones/decidir";
 import { cn } from "@/lib/utils";
 
 import { DatosExtraidos, LineaDeTiempo, TrazaReglas } from "./secciones";
@@ -135,6 +136,8 @@ async function DecisionHumana({ f }: { f: RespuestaFactura }) {
             montoUsd={e.monto_usd_centavos}
             // Agregar a la lista permitida cambia las reglas: solo `editar_reglas` (el servidor responde 403 si no).
             puedeAgregarALista={e.reglas_que_fallaron.includes("R3") && permisoPara(sesion, "editar_reglas").ok}
+            // #110: vincular el correo o chat desde el que escribió un proveedor conocido (también solo administradores).
+            canalAVincular={permisoPara(sesion, "editar_reglas").ok ? canalAVincular(e, f.documento) : null}
             motivoSinPermiso={permiso.ok ? undefined : permiso.motivo}
             requiereDobleAprobacion={f.requiere_doble_aprobacion}
             firmas={f.firmas}
