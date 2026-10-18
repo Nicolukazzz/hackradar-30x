@@ -79,7 +79,17 @@ function PorQue({ f }: { f: RespuestaFactura }) {
             <Dato etiqueta={`Monto en ${e.moneda_base ?? "USD"}`}>
               <Monto usd={e.monto_usd_centavos} moneda={e.moneda_base} />
             </Dato>
-            <Dato etiqueta="Tasa usada">{e.tasa_usada ? <span className="font-mono">{e.tasa_usada}</span> : `No aplica (${e.moneda_base ?? "USD"})`}</Dato>
+            <Dato etiqueta="Tasa usada">
+              {e.tasa_usada ? (
+                <>
+                  <span className="font-mono">{e.tasa_usada}</span>
+                  {/* #86: la de la fecha de emisión (o la anterior más cercana) */}
+                  {e.tasa_fecha ? <span className="text-muted-foreground"> · del {e.tasa_fecha.split("-").reverse().join("/")}</span> : null}
+                </>
+              ) : (
+                `No aplica (${e.moneda_base ?? "USD"})`
+              )}
+            </Dato>
             <Dato etiqueta="Estado">
               <PildoraDecision decision={f.estado} />
             </Dato>

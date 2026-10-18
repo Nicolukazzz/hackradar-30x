@@ -41,6 +41,11 @@ export type DatosComunes = {
   reglas: { vigente: Reglas; versiones: Reglas[] };
   /** por periodo: "2026-10" → tabla */
   tasas: Record<string, TablaTasas>;
+  /**
+   * #86: fotos diarias por fecha ("2026-10-10" → tabla). Si existen, el motor convierte con la de la fecha de emisión
+   * de la factura (o la más cercana anterior). Ausente (dataset): la tabla del periodo.
+   */
+  tasas_diarias?: Record<string, TablaTasas>;
 };
 
 export type Escenario = {

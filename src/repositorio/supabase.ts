@@ -17,15 +17,16 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cargarDatosComunes, DIR_DATA_POR_DEFECTO } from "@/dominio/cargar";
 import { aBase } from "@/dominio/dinero";
 import { EmpresaSchema } from "@/dominio/esquemas";
-import type { Aprobador, Beneficiario, DocumentoRecibido, Empresa, EntradaRegistro, Reglas } from "@/dominio/tipos";
+import type { Aprobador, Beneficiario, DocumentoRecibido, Empresa, EntradaRegistro, Reglas, TablaTasas } from "@/dominio/tipos";
 import { cargarGolden, type DocGolden } from "@/evaluacion/escenario";
 import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
 import { reglasSinConfigurar, reglasSinConfigurarEn } from "@/reglas/sin-configurar";
 import { crearFuenteErApi } from "@/tasas/fuente-er-api";
-import { tasasVigentes as calcularTasasVigentes } from "@/tasas/servicio";
+import { crearFuenteHistorica } from "@/tasas/fuente-historica";
+import { asegurarFoto, tablasPorFecha, tasasVigentes as calcularTasasVigentes } from "@/tasas/servicio";
 import { almacenTasasSupabase } from "@/tasas/supabase";
-import type { FuenteTasas, TasasVigentes } from "@/tasas/tipos";
+import type { FuenteHistorica, FuenteTasas, TasasVigentes } from "@/tasas/tipos";
 
 import { coincideFiltro, conVinculosTelegram, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
 import type { CambiosEmpresa, Repositorio, ResumenVersion } from "./repositorio";
@@ -42,6 +43,8 @@ export type ConfigSupabase = {
   hoy?: (zona: string) => string;
   /** de dónde salen las tasas del día (#86); por defecto open.er-api.com */
   fuenteTasas?: FuenteTasas;
+  /** tasas de fechas pasadas (fecha de emisión, #86); por defecto currency-api */
+  fuenteHistorica?: FuenteHistorica;
 };
 
 const BUCKET = "documentos";
@@ -101,14 +104,18 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
 
   // #86: en producción las tasas son las del día (foto en `tasas_dia`), no las fijas de data/.
   const tasasDelDia = !demo && config.hoy ? { almacen: almacenTasasSupabase(db), fuente: config.fuenteTasas ?? crearFuenteErApi() } : null;
+  const historica = config.fuenteHistorica ?? crearFuenteHistorica();
+  const alFallarTasas = (e: unknown) => console.error(JSON.stringify({ tasas: "falló la fuente", error: e instanceof Error ? e.message : String(e) }));
+  /** Todas las fotos guardadas de la base de la empresa, por fecha (para convertir con la de la fecha de emisión). */
+  async function tasasDiarias(): Promise<Record<string, TablaTasas> | undefined> {
+    if (!tasasDelDia) return undefined;
+    return tablasPorFecha(await tasasDelDia.almacen.todas((await empresa()).moneda_base));
+  }
   const hoy = config.hoy;
   async function tasasVigentes(): Promise<TasasVigentes | null> {
     if (!tasasDelDia || !hoy) return null;
     const emp = await empresa();
-    return calcularTasasVigentes(emp.moneda_base, hoy(emp.zona_horaria), {
-      ...tasasDelDia,
-      alFallar: (e) => console.error(JSON.stringify({ tasas: "falló la fuente", error: e instanceof Error ? e.message : String(e) })),
-    });
+    return calcularTasasVigentes(emp.moneda_base, hoy(emp.zona_horaria), { ...tasasDelDia, alFallar: alFallarTasas });
   }
 
   /** Sin reglas guardadas (producción recién creada): versión 0, todo escala. */
@@ -197,10 +204,26 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
     async datosComunes() {
       const [vs, bs, emp, aps, tv] = await Promise.all([versiones(), beneficiarios(), empresa(), aprobadores(), tasasVigentes()]);
       const tasas = tv ? { [tv.tabla.periodo]: tv.tabla } : comunes.tasas;
-      return { ...comunes, empresa: emp, beneficiarios: bs, aprobadores: aps, tasas, reglas: { vigente: await vigenteDe(vs), versiones: vs } };
+      // Después de tasasVigentes: la foto de hoy ya está guardada y entra en las diarias.
+      const tasas_diarias = await tasasDiarias();
+      return {
+        ...comunes,
+        empresa: emp,
+        beneficiarios: bs,
+        aprobadores: aps,
+        tasas,
+        ...(tasas_diarias ? { tasas_diarias } : {}),
+        reglas: { vigente: await vigenteDe(vs), versiones: vs },
+      };
     },
     empresa,
     tasasVigentes,
+    async prepararTasas(fecha) {
+      if (!tasasDelDia || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return;
+      const emp = await empresa();
+      if (hoy && fecha > hoy(emp.zona_horaria)) return; // fecha futura: R1 la marca; no hay tasa que pedir
+      await asegurarFoto(emp.moneda_base, fecha, { almacen: tasasDelDia.almacen, historica, alFallar: alFallarTasas }).catch(alFallarTasas);
+    },
     async guardarEmpresa(cambios: CambiosEmpresa) {
       const actual = await empresa();
       const { error } = await db

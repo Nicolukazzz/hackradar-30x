@@ -21,6 +21,7 @@ import { evaluacion } from "./catalogo";
 import { combinar } from "./combinar";
 import { afectado, type ContextoRegla, montoUsd, type Regla } from "./contexto";
 import { EXPLICACION_ERROR, EXPLICACION_SIN_REGLAS, explicar, observaciones } from "./explicar";
+import { esFechaValida, fechaDe } from "./fechas";
 import { periodoDe } from "./libro";
 import { aplicar, type EstadoPresupuesto, estadoInicial } from "./presupuesto";
 import { identificar, modoIdentidad } from "./identidad";
@@ -43,7 +44,7 @@ export const REGLAS: readonly Regla[] = [
   r07Presupuesto, r08Mensual, r09Automatico, r10Instrucciones, r11Remitente,
 ];
 
-export type DatosMotor = Pick<DatosComunes, "beneficiarios" | "aprobadores" | "tasas">;
+export type DatosMotor = Pick<DatosComunes, "beneficiarios" | "aprobadores" | "tasas" | "tasas_diarias">;
 
 export type EntradaMotor = {
   doc: DocumentoRecibido;
@@ -59,6 +60,22 @@ function tasasPara(datos: DatosMotor, reglas: Reglas, ahora: string): TablaTasas
   const periodo = ahora.slice(0, 7);
   // Sin tabla del periodo solo se puede convertir la moneda base: cualquier otra falla R1 y escala.
   return datos.tasas[periodo] ?? { periodo, base: monedaBase(reglas), tasas: {} };
+}
+
+/**
+ * #86: tasa de la fecha de emisión de la factura (NIC 21: la de la fecha de la transacción). Con fotos diarias, la de
+ * esa fecha o la más cercana anterior; si no hay ninguna anterior, la más reciente hasta hoy. Si la fecha de emisión
+ * no es confiable (falta, baja confianza, inválida o futura), la de hoy. Sin fotos diarias (dataset): la del periodo.
+ */
+export function tasasDeLaFactura(datos: DatosMotor, reglas: Reglas, ahora: string, ext: Extraccion): { tabla: TablaTasas; fecha: string | null } {
+  const diarias = datos.tasas_diarias;
+  const fechas = diarias ? Object.keys(diarias).filter((f) => f <= fechaDe(ahora)).sort((a, b) => a.localeCompare(b)) : [];
+  if (!diarias || fechas.length === 0) return { tabla: tasasPara(datos, reglas, ahora), fecha: null };
+  const e = ext.fecha_emision;
+  const confiable = e.valor !== null && e.confianza >= reglas.extraccion.confianza_minima && esFechaValida(e.valor) && e.valor <= fechaDe(ahora);
+  const emision = confiable ? e.valor : null;
+  const fecha = (emision ? fechas.filter((f) => f <= emision).at(-1) : undefined) ?? fechas.at(-1)!;
+  return { tabla: diarias[fecha]!, fecha };
 }
 
 /**
@@ -149,7 +166,7 @@ function evaluarSinProteccion(input: EntradaMotor): ResultadoMotor {
     };
   }
 
-  const tasas = tasasPara(datos, reglas, ahora);
+  const { tabla: tasas, fecha: tasa_fecha } = tasasDeLaFactura(datos, reglas, ahora, ext);
   const identidad = identificar(ext, datos.beneficiarios, modoIdentidad(reglas), minima);
   const beneficiario = identidad.beneficiario;
   const ctx: ContextoRegla = {
@@ -183,6 +200,7 @@ function evaluarSinProteccion(input: EntradaMotor): ResultadoMotor {
     reglas_que_fallaron,
     monto_usd_centavos: usd,
     tasa_usada,
+    ...(tasa_usada && tasa_fecha ? { tasa_fecha } : {}),
     disponible_antes_usd_centavos: presupuesto.disponible,
     asignado_a,
     responder_antes_de,

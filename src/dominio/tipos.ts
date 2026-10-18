@@ -218,6 +218,8 @@ export type ResultadoMotor = {
   monto_usd_centavos: number | null;
   /** "MXN 18,50" o null si es USD */
   tasa_usada: string | null;
+  /** #86: fecha de la tasa usada (la de emisión de la factura o la más cercana anterior); ausente = tasa del periodo */
+  tasa_fecha?: string;
   disponible_antes_usd_centavos: number;
   /** id de aprobador si ESCALAR (§10) */
   asignado_a: string | null;
@@ -247,6 +249,8 @@ export type EntradaRegistro = {
   monto_original: Dinero | null;
   monto_usd_centavos: number | null;
   tasa_usada: string | null;
+  /** #86: fecha de la tasa usada (ver ResultadoMotor) */
+  tasa_fecha?: string;
   /** null en la primera de dos aprobaciones y en cambios de configuración */
   decision: DecisionAgente | DecisionHumana | null;
   reglas_version: number;

@@ -60,6 +60,11 @@ export interface Repositorio {
    * Producción: la foto del día de `tasas_dia`, o la última si la fuente falla.
    */
   tasasVigentes(): Promise<TasasVigentes | null>;
+  /**
+   * #86: que exista la foto de tasas de `fecha` (emisión de la factura) antes de decidir. No lanza: si la fuente falla,
+   * el motor usa la foto anterior más cercana. En memoria no hace nada (tasas fijas del set de prueba).
+   */
+  prepararTasas(fecha: string): Promise<void>;
   /** Reemplaza un beneficiario creado en la app (#107). Lanza si no existe o es uno base del escenario de prueba. */
   actualizarBeneficiario(b: Beneficiario): Promise<void>;
   /**

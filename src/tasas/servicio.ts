@@ -2,9 +2,9 @@
 // fuente falla, la última foto. Sin ninguna, una tabla vacía: solo se convierte la moneda base y el resto escala (R1).
 // El motor nunca llama a la red: recibe la tabla que sale de aquí.
 
-import type { Moneda } from "@/dominio/tipos";
+import type { Moneda, TablaTasas } from "@/dominio/tipos";
 
-import type { AlmacenTasas, FotoTasas, FuenteTasas, TasasVigentes } from "./tipos";
+import type { AlmacenTasas, FotoTasas, FuenteHistorica, FuenteTasas, TasasVigentes } from "./tipos";
 
 export type DepsTasas = { almacen: AlmacenTasas; fuente: FuenteTasas; alFallar?: (e: unknown) => void };
 
@@ -27,9 +27,30 @@ export async function tasasVigentes(base: Moneda, hoy: string, deps: DepsTasas):
   }
 }
 
+/**
+ * #86: antes de decidir, que exista la foto de la fecha de emisión de la factura. Si no está guardada, se pide a la fuente
+ * histórica y se guarda. Si la fuente falla, no pasa nada: el motor usará la foto anterior más cercana (o la de hoy).
+ */
+export async function asegurarFoto(base: Moneda, fecha: string, deps: { almacen: AlmacenTasas; historica: FuenteHistorica; alFallar?: (e: unknown) => void }): Promise<void> {
+  if (await deps.almacen.delDia(base, fecha)) return;
+  try {
+    await deps.almacen.guardar({ ...(await deps.historica.obtenerEn(base, fecha)), fecha });
+  } catch (e) {
+    deps.alFallar?.(e);
+  }
+}
+
+/** Fotos → tablas por fecha para el motor (`DatosComunes.tasas_diarias`). */
+export function tablasPorFecha(fotos: readonly FotoTasas[]): Record<string, TablaTasas> {
+  return Object.fromEntries(fotos.map((f) => [f.fecha, { periodo: f.fecha, base: f.base, tasas: { ...f.tasas } }]));
+}
+
 /** Almacén en memoria (tests y demo local). */
 export function almacenTasasMemoria(fotos: FotoTasas[] = []): AlmacenTasas {
   return {
+    async todas(base) {
+      return fotos.filter((f) => f.base === base);
+    },
     async delDia(base, fecha) {
       return fotos.find((f) => f.base === base && f.fecha === fecha) ?? null;
     },

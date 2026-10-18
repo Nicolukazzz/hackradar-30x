@@ -11,6 +11,11 @@ const foto = (f: Fila): FotoTasas => ({ fecha: f.fecha, base: f.base as Moneda, 
 
 export function almacenTasasSupabase(db: SupabaseClient): AlmacenTasas {
   return {
+    async todas(base) {
+      const { data, error } = await db.from("tasas_dia").select("fecha, base, tasas, fuente").eq("base", base).order("fecha");
+      if (error) throw new Error(`Supabase (tasas guardadas): ${error.message}`);
+      return (data ?? []).map((f) => foto(f as Fila));
+    },
     async delDia(base, fecha) {
       const { data, error } = await db.from("tasas_dia").select("fecha, base, tasas, fuente").eq("base", base).eq("fecha", fecha).maybeSingle();
       if (error) throw new Error(`Supabase (tasas del día): ${error.message}`);
