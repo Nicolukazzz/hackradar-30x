@@ -23,6 +23,8 @@ export type FilaBandeja = {
   monto_usd_centavos: number | null;
   /** #86: moneda de `monto_usd_centavos` (la base con la que se decidió) */
   moneda_base: Moneda;
+  /** #129: confianza con la que se leyó el total (monto_usd null = dudoso o sin leer) */
+  monto_confianza: number | null;
   /** lo que decidió el agente */
   decision: DecisionAgente;
   /** lo que ve la persona hoy: la decisión del agente o la resolución humana */
@@ -140,6 +142,7 @@ export async function obtenerBandeja(repo: Repositorio, opciones: OpcionesBandej
       beneficiario_detalle: descripcionBeneficiario(b, null),
       monto_original: e.monto_original,
       monto_usd_centavos: e.monto_usd_centavos,
+      monto_confianza: e.extraccion?.monto_total.confianza ?? null,
       moneda_base: e.moneda_base ?? "USD",
       decision: e.decision as DecisionAgente,
       estado: estadoActual(registro, e).estado,

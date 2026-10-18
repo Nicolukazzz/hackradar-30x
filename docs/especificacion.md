@@ -610,7 +610,7 @@ El modo `golden` (§14) incluye el texto de los adjuntos en `texto_crudo`: un ex
 | `GET /api/facturas/:ref` | — | `{ entrada, documento, extraccion, evaluaciones, linea_tiempo }` | Traza |
 | `GET /api/documentos/:ref/archivo` | — | binario original | Traza |
 | `GET /api/aprobaciones?orden=vencimiento\|monto` | — | `{ pendientes: TarjetaAprobacion[], reservado_usd }` | Aprobaciones |
-| `POST /api/aprobaciones/:ref` | `{ accion: 'aprobar'\|'rechazar', comentario, agregar_a_lista? }` | `EntradaRegistro` | Aprobaciones, Traza |
+| `POST /api/aprobaciones/:ref` | `{ accion: 'aprobar'\|'rechazar', comentario, agregar_a_lista?, vincular_canal?, correcciones? }` (#129) | `EntradaRegistro` | Aprobaciones, Traza |
 | `GET /api/reglas` | — | `{ vigente: Reglas, historial: {version, editada_por, editada_en}[], beneficiarios, aprobadores, tasas }` | Reglas |
 | `POST /api/reglas` | `Reglas` sin version | `{ version }` + entrada `CAMBIO_REGLAS` | Reglas ("Guardar como v8") |
 | `POST /api/reglas/simular` | `Reglas` | `ReporteEvaluacion` (§14) | Reglas ("Simular de nuevo") |

@@ -120,17 +120,11 @@ describe("extraer() con doble lectura", () => {
 describe("LLM_PROVIDER=doble", () => {
   const nombres = (p: ProveedorLLM) => p.lectores?.map((l) => l.nombre);
 
-  it("con Gemini y Anthropic: los dos lectores; sin una de las llaves, Groq lo reemplaza", () => {
+  it("con Gemini y Anthropic: los dos lectores; Groq no entra nunca (#129)", () => {
     expect(nombres(proveedorDesdeEntorno({ LLM_PROVIDER: "doble", GEMINI_API_KEY: "g", ANTHROPIC_API_KEY: "a" }))).toEqual(["gemini", "anthropic"]);
-    expect(nombres(proveedorDesdeEntorno({ LLM_PROVIDER: "doble", GROQ_API_KEY: "q", ANTHROPIC_API_KEY: "a" }))).toEqual(["groq", "anthropic"]);
-    expect(nombres(proveedorDesdeEntorno({ LLM_PROVIDER: "doble", GEMINI_API_KEY: "g", GROQ_API_KEY: "q" }))).toEqual(["gemini", "groq"]);
-  });
-
-  it("Groq respalda solo al primer lector: nunca puede leer dos veces el mismo documento", () => {
-    const p = proveedorDesdeEntorno({ LLM_PROVIDER: "doble", GEMINI_API_KEY: "g", GROQ_API_KEY: "q", ANTHROPIC_API_KEY: "a" });
-    expect(p.lectores?.[0]?.modelo).toMatch(/^gemini:.*>groq:/);
-    expect(p.lectores?.[1]?.nombre).toBe("anthropic");
-    expect(p.lectores?.[1]?.modelo).not.toContain("groq");
+    expect(nombres(proveedorDesdeEntorno({ LLM_PROVIDER: "doble", GEMINI_API_KEY: "g", GROQ_API_KEY: "q", ANTHROPIC_API_KEY: "a" }))).toEqual(["gemini", "anthropic"]);
+    expect(proveedorDesdeEntorno({ LLM_PROVIDER: "doble", GEMINI_API_KEY: "g", GROQ_API_KEY: "q" }).lectores).toBeUndefined();
+    expect(proveedorDesdeEntorno({ LLM_PROVIDER: "doble", GROQ_API_KEY: "q", ANTHROPIC_API_KEY: "a" }).nombre).toBe("anthropic");
   });
 
   it("con un solo proveedor no hay doble lectura (cadena simple); sin llaves, ninguno", () => {

@@ -6,8 +6,7 @@ import type { ProveedorLlm } from "@/dominio/tipos";
 
 import { crearAnthropic } from "./anthropic";
 import { ErrorLLM, type ProveedorLLM } from "./contrato";
-import { crearGemini, listaDeModelos, modelosGemini } from "./gemini";
-import { crearGroq, MODELO_GROQ_POR_DEFECTO } from "./groq";
+import { crearGemini, modelosGemini } from "./gemini";
 import { ninguno } from "./ninguno";
 
 export { CONFIANZA_MAXIMA_LLM, ErrorLLM, RespuestaLlmSchema, validarRespuestaLlm, type ProveedorLLM } from "./contrato";
@@ -80,9 +79,10 @@ export function doble(a: ProveedorLLM, b: ProveedorLLM): ProveedorLLM {
 type Entorno = Record<string, string | undefined>;
 
 /**
- * LLM_PROVIDER=gemini|groq|anthropic|doble|ninguno. Solo entran los proveedores con llave; sin ninguno → `ninguno`
+ * LLM_PROVIDER=gemini|anthropic|doble|ninguno. Solo entran los proveedores con llave; sin ninguno → `ninguno`
  * (R1 escalará lo que falte). `doble` (#58): Gemini y Claude Haiku leen en paralelo y se cruzan con el parser; si
- * falta uno de los dos, Groq lo reemplaza; si solo queda un lector, se usa la cadena simple.
+ * falta uno de los dos, se usa la cadena simple con el que haya. Groq está desactivado por completo (#129): aunque
+ * esté GROQ_API_KEY, no se usa (en producción respondía 404 y dejaba toda factura sin la segunda lectura).
  */
 export function proveedorDesdeEntorno(env: Entorno = process.env, alFallar?: (e: unknown) => void): ProveedorLLM {
   const elegido = (env.LLM_PROVIDER ?? "gemini").trim().toLowerCase();
@@ -93,23 +93,10 @@ export function proveedorDesdeEntorno(env: Entorno = process.env, alFallar?: (e:
     const modelos = modelosGemini(env.GEMINI_MODEL).map((modelo) => conReintento(crearGemini({ apiKey: env.GEMINI_API_KEY ?? "", modelo })));
     disponibles.gemini = () => (modelos.length === 1 ? modelos[0]! : cadena(modelos, alFallar));
   }
-  if (env.GROQ_API_KEY) {
-    // Igual que Gemini: GROQ_MODEL admite una lista y un modelo retirado o saturado pasa al siguiente.
-    const modelos = listaDeModelos(env.GROQ_MODEL, [MODELO_GROQ_POR_DEFECTO]).map((modelo) => conReintento(crearGroq({ apiKey: env.GROQ_API_KEY ?? "", modelo })));
-    disponibles.groq = () => (modelos.length === 1 ? modelos[0]! : cadena(modelos, alFallar));
-  }
   if (env.ANTHROPIC_API_KEY) disponibles.anthropic = () => conReintento(crearAnthropic({ apiKey: env.ANTHROPIC_API_KEY ?? "", modelo: env.ANTHROPIC_MODEL }));
-  const orden: ProveedorLlm[] = ["gemini", "groq", "anthropic"];
-  if (elegido === "doble") {
-    // Dos lectores distintos: uno de cada lista, sin repetir proveedor (dos veces el mismo modelo no es independiente).
-    const primero = (["gemini", "groq"] as const).find((p) => disponibles[p]);
-    const segundo = (["anthropic", "groq"] as const).find((p) => disponibles[p] && p !== primero);
-    if (primero && segundo) {
-      // Groq respalda solo al primer lector: si respaldara a los dos y ambos cayeran, Groq "coincidiría consigo mismo".
-      const respaldo = primero !== "groq" && segundo !== "groq" && disponibles.groq ? [disponibles.groq()] : [];
-      return doble(cadena([disponibles[primero]!(), ...respaldo], alFallar), disponibles[segundo]!());
-    }
-  }
+  const orden: ProveedorLlm[] = ["gemini", "anthropic"];
+  // Dos lectores distintos (dos veces el mismo modelo no es independiente): Gemini y Claude.
+  if (elegido === "doble" && disponibles.gemini && disponibles.anthropic) return doble(disponibles.gemini(), disponibles.anthropic());
   const primero = orden.find((p) => p === elegido);
   const secuencia = primero ? [primero, ...orden.filter((p) => p !== primero)] : orden;
   return cadena(secuencia.flatMap((p) => disponibles[p]?.() ?? []), alFallar);

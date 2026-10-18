@@ -21,6 +21,8 @@ export type TarjetaAprobacion = {
   beneficiario_detalle: string;
   monto_original: Dinero | null;
   monto_usd_centavos: number | null;
+  /** #129: confianza con la que se leyó el total (monto_usd null = dudoso o sin leer) */
+  monto_confianza: number | null;
   tasa_usada: string | null;
   reglas_que_fallaron: IdRegla[];
   comparaciones: string[];
@@ -90,6 +92,7 @@ export async function obtenerAprobaciones(repo: Repositorio, orden: OrdenAprobac
         beneficiario_detalle: descripcionBeneficiario(b, null),
         monto_original: e.monto_original,
         monto_usd_centavos: e.monto_usd_centavos,
+        monto_confianza: e.extraccion?.monto_total.confianza ?? null,
         tasa_usada: e.tasa_usada,
         reglas_que_fallaron: e.reglas_que_fallaron,
         comparaciones: e.comparaciones,

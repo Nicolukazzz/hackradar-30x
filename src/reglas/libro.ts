@@ -30,12 +30,24 @@ export type FacturaVigente = {
  */
 export function facturasVigentes(historial: readonly EntradaRegistro[], tasas?: TablaTasas): FacturaVigente[] {
   const resolucion = resoluciones(historial);
+  const confirmados = montosConfirmados(historial);
   const vigentes: FacturaVigente[] = [];
   for (const e of historial) {
     const estado = estadoDe(e, resolucion);
-    if (estado) vigentes.push(aVigente(e, estado, tasas));
+    // #129: si la persona aprobó con un monto confirmado o corregido, ese es el que se pagó (y el que cuenta).
+    const humana = estado === "pagada" ? confirmados.get(e.id) : undefined;
+    if (estado) vigentes.push(aVigente(e, estado, tasas, humana));
   }
   return vigentes;
+}
+
+/** Aprobaciones finales que traen monto (#129): la persona confirmó o corrigió el total al aprobar. */
+function montosConfirmados(historial: readonly EntradaRegistro[]): Map<string, EntradaRegistro> {
+  const mapa = new Map<string, EntradaRegistro>();
+  for (const e of historial) {
+    if (e.tipo === "DECISION_HUMANA" && e.decision === "APROBADA_HUMANO" && e.entrada_origen && e.monto_usd_centavos !== null) mapa.set(e.entrada_origen, e);
+  }
+  return mapa;
 }
 
 /**
@@ -70,7 +82,7 @@ function estadoDe(e: EntradaRegistro, resolucion: Map<string, Resolucion>): Esta
   return r === "APROBADA_HUMANO" ? "pagada" : null;
 }
 
-function aVigente(e: EntradaRegistro, estado: EstadoFactura, tasas: TablaTasas | undefined): FacturaVigente {
+function aVigente(e: EntradaRegistro, estado: EstadoFactura, tasas: TablaTasas | undefined, humana?: EntradaRegistro): FacturaVigente {
   return {
     id: e.id,
     momento: e.momento,
@@ -80,7 +92,7 @@ function aVigente(e: EntradaRegistro, estado: EstadoFactura, tasas: TablaTasas |
     numero: e.factura_numero,
     numero_normalizado: e.factura_numero ? normalizarNumeroFactura(e.factura_numero) : null,
     fecha_emision: e.extraccion?.fecha_emision.valor ?? null,
-    usd_centavos: enBase(e, tasas),
+    usd_centavos: enBase(humana ?? e, tasas),
     sha256: e.sha256,
     hito: e.extraccion?.hito_numero?.valor ?? null,
     estado,

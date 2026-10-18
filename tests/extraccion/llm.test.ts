@@ -7,7 +7,6 @@ import type { DocumentoRecibido } from "@/dominio/tipos";
 import { cacheEnMemoria } from "@/extraccion/cache";
 import { extraer } from "@/extraccion/extraer";
 import { crearGemini, modelosGemini } from "@/extraccion/llm/gemini";
-import { crearGroq } from "@/extraccion/llm/groq";
 import { ninguno } from "@/extraccion/llm/ninguno";
 import { mensajeUsuario } from "@/extraccion/llm/prompt";
 import { cadena, conReintento, ErrorLLM, proveedorDesdeEntorno, validarRespuestaLlm, type ProveedorLLM } from "@/extraccion/llm/proveedor";
@@ -180,19 +179,20 @@ describe("proveedores HTTP (fetch simulado)", () => {
     expect(f).toHaveBeenCalledTimes(1);
   });
 
-  it("429 en gemini → responde groq; ambos caídos → ninguno", async () => {
+  it("429 en gemini → responde el siguiente de la cadena; todos caídos → ninguno", async () => {
     const gemini = crearGemini({ apiKey: "k", fetch: (async () => respuesta(429, {})) as typeof fetch });
-    const groq = crearGroq({
+    const otro = crearGemini({
       apiKey: "k",
-      fetch: (async () => respuesta(200, { choices: [{ message: { content: JSON.stringify({ numero: conf("G-1") }) } }] })) as typeof fetch,
+      modelo: "otro",
+      fetch: (async () => respuesta(200, { candidates: [{ content: { parts: [{ text: JSON.stringify({ numero: conf("G-1") }) }] } }] })) as typeof fetch,
     });
     const errores: unknown[] = [];
-    const r = await cadena([gemini, groq], (e) => errores.push(e)).extraer(vacio, ["numero"]);
-    expect(r.proveedor_llm).toBe("groq");
+    const r = await cadena([gemini, otro], (e) => errores.push(e)).extraer(vacio, ["numero"]);
+    expect(r.proveedor_llm).toBe("gemini");
     expect(errores[0]).toBeInstanceOf(ErrorLLM);
 
-    const caido = crearGroq({ apiKey: "k", fetch: (async () => respuesta(503, {})) as typeof fetch });
-    expect(await cadena([gemini, caido]).extraer(vacio, ["numero"])).toEqual({ proveedor_llm: "ninguno", sin_respuesta: true, fallo: "groq: HTTP 503" });
+    const caido = crearGemini({ apiKey: "k", modelo: "otro", fetch: (async () => respuesta(503, {})) as typeof fetch });
+    expect((await cadena([gemini, caido]).extraer(vacio, ["numero"])).proveedor_llm).toBe("ninguno");
   });
 
   it("#103: GEMINI_MODEL admite lista; un modelo saturado (503) o retirado (404) pasa al siguiente", async () => {
@@ -259,12 +259,10 @@ describe("proveedores HTTP (fetch simulado)", () => {
   it("selección por LLM_PROVIDER: solo proveedores con llave; sin llaves → ninguno", () => {
     expect(proveedorDesdeEntorno({ LLM_PROVIDER: "ninguno", GEMINI_API_KEY: "k" }).nombre).toBe("ninguno");
     expect(proveedorDesdeEntorno({ LLM_PROVIDER: "gemini" }).nombre).toBe("ninguno");
-    expect(proveedorDesdeEntorno({ LLM_PROVIDER: "groq", GEMINI_API_KEY: "a", GROQ_API_KEY: "b" }).nombre).toBe("groq");
-    expect(proveedorDesdeEntorno({ LLM_PROVIDER: "gemini", GROQ_API_KEY: "b" }).nombre).toBe("groq");
-    // #111: GROQ_MODEL también admite lista; en doble lectura Gemini y Groq leen en paralelo.
-    expect(proveedorDesdeEntorno({ LLM_PROVIDER: "groq", GROQ_API_KEY: "b", GROQ_MODEL: "uno, dos" }).modelo).toBe("groq:groq:uno>groq:dos");
-    const doble = proveedorDesdeEntorno({ LLM_PROVIDER: "doble", GEMINI_API_KEY: "a", GROQ_API_KEY: "b" });
-    expect(doble.lectores?.map((l) => l.nombre)).toEqual(["gemini", "groq"]);
+    // #129: Groq está desactivado: con su llave igual no se usa.
+    expect(proveedorDesdeEntorno({ LLM_PROVIDER: "groq", GEMINI_API_KEY: "a", GROQ_API_KEY: "b" }).nombre).toBe("gemini");
+    expect(proveedorDesdeEntorno({ LLM_PROVIDER: "gemini", GROQ_API_KEY: "b" }).nombre).toBe("ninguno");
+    expect(proveedorDesdeEntorno({ LLM_PROVIDER: "doble", GEMINI_API_KEY: "a", GROQ_API_KEY: "b" }).lectores).toBeUndefined();
   });
 });
 

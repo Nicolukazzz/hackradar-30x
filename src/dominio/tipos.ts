@@ -159,7 +159,8 @@ export type DocumentoRecibido = DocumentoEntrante & {
   beneficiario_remitente_id: string | null;
 };
 
-export type FuenteCampo = "parser" | "llm" | "xml";
+/** `humano` (#129): un aprobador corrigió el dato al decidir. */
+export type FuenteCampo = "parser" | "llm" | "xml" | "humano";
 export type Campo<T> = { valor: T | null; confianza: number; fuente: FuenteCampo };
 
 export type Idioma = "es" | "en" | "pt";

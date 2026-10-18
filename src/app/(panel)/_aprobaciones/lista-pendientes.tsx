@@ -1,7 +1,7 @@
 import { ArrowRightIcon, ShieldAlertIcon } from "lucide-react";
 import Link from "next/link";
 
-import { Monto, Tarjeta, hora } from "@/app/_componentes";
+import { Monto, MontoDudoso, Tarjeta, hora } from "@/app/_componentes";
 import type { TarjetaAprobacion } from "@/servicios/aprobaciones";
 import type { PorVerificar } from "@/servicios/verificar";
 
@@ -73,7 +73,8 @@ export function ListaPendientes({ pendientes, porVerificar }: Readonly<{ pendien
             <li key={t.ref_interna} className="grid grid-cols-1 items-center gap-x-4 gap-y-2 border-t border-subtle px-6 py-3.5 sm:grid-cols-[minmax(0,1fr)_auto]">
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-sm font-medium break-words">
-                  {t.factura_numero ?? t.ref_interna} · <Monto usd={t.monto_usd_centavos} moneda={t.moneda_base} />
+                  {t.factura_numero ?? t.ref_interna} ·{" "}
+                  {t.monto_usd_centavos === null ? <MontoDudoso dinero={t.monto_original} confianza={t.monto_confianza} /> : <Monto usd={t.monto_usd_centavos} moneda={t.moneda_base} />}
                   {urgente ? <span className="ml-2 rounded-full bg-frenada px-2 py-0.5 text-[11px] font-medium text-frenada-foreground">Vence hoy</span> : null}
                 </span>
                 <span className="text-[13px] break-words text-muted-foreground">
