@@ -4,8 +4,10 @@ import { z } from "zod";
 
 import { formatearMonto, formatearUsd } from "@/dominio/dinero";
 import { normalizarTexto } from "@/dominio/normalizar";
-import type { EntradaRegistro } from "@/dominio/tipos";
+import type { Dinero, EntradaRegistro } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
+
+import { montoEstimado } from "./comun";
 
 /** Filtros de GET /api/registro y de la pantalla `/registro` (una sola definición para las dos). */
 export const ConsultaRegistro = z.object({
@@ -18,13 +20,14 @@ export type FiltroDecisionRegistro = NonNullable<z.infer<typeof ConsultaRegistro
 
 export type DiaRegistro = { fecha: string; entradas: EntradaRegistro[] };
 
-export type RespuestaRegistro = { total: number; total_filtrado: number; dias: DiaRegistro[] };
+/** `estimados` (#141): por id de entrada, el total dudoso convertido a la moneda base (solo para mostrar). */
+export type RespuestaRegistro = { total: number; total_filtrado: number; dias: DiaRegistro[]; estimados: Record<string, Dinero> };
 
 export async function obtenerRegistro(
   repo: Repositorio,
   f: { decision?: FiltroDecisionRegistro; actor?: "agente" | "humano"; q?: string } = {},
 ): Promise<RespuestaRegistro> {
-  const todas = await repo.registro();
+  const [todas, datos, reglas] = await Promise.all([repo.registro(), repo.datosComunes(), repo.reglasVigentes()]);
   const q = normalizarTexto(f.q ?? "").trim();
   const pasa = (e: EntradaRegistro) => {
     if (f.actor && e.actor.tipo !== f.actor) return false;
@@ -47,7 +50,12 @@ export async function obtenerRegistro(
     if (dia?.fecha === fecha) dia.entradas.push(e);
     else dias.push({ fecha, entradas: [e] });
   }
-  return { total: todas.length, total_filtrado: filtradas.length, dias };
+  const estimados: Record<string, Dinero> = {};
+  for (const e of filtradas) {
+    const m = montoEstimado(e, datos, reglas);
+    if (m) estimados[e.id] = m;
+  }
+  return { total: todas.length, total_filtrado: filtradas.length, dias, estimados };
 }
 
 export const COLUMNAS_CSV = [

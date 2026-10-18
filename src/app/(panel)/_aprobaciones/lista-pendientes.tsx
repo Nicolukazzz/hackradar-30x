@@ -77,7 +77,13 @@ export function ListaPendientes({ pendientes, porVerificar }: Readonly<{ pendien
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-sm font-medium break-words">
                   {t.factura_numero ?? t.ref_interna} ·{" "}
-                  {t.monto_usd_centavos === null ? <MontoDudoso dinero={t.monto_original} confianza={t.monto_confianza} /> : <Monto usd={t.monto_usd_centavos} moneda={t.moneda_base} />}
+                  {t.monto_usd_centavos === null ? (
+                    <MontoDudoso dinero={t.monto_original} confianza={t.monto_confianza} estimado={t.monto_estimado} />
+                  ) : (
+                    <span className="text-pagada-foreground">
+                      <Monto usd={t.monto_usd_centavos} moneda={t.moneda_base} />
+                    </span>
+                  )}
                   {urgente ? <span className="ml-2 rounded-full bg-frenada px-2 py-0.5 text-[11px] font-medium text-frenada-foreground">Vence hoy</span> : null}
                 </span>
                 <span className="text-[13px] break-words text-muted-foreground">
