@@ -31,7 +31,7 @@ archivos están en [`facturas-de-prueba/`](facturas-de-prueba/) y cada proveedor
 
 | Canal | Dónde enviarla | Qué pasa |
 |---|---|---|
-| WhatsApp | **+1 555 195 8819** | Escribe y adjunta el archivo; aparece en la Bandeja en segundos y el bot te responde con el número de seguimiento |
+| WhatsApp | **+1 555 195 8819** | Escribe y adjunta el archivo; aparece en la Bandeja en segundos |
 | Correo | **facturas.nebula.demo@gmail.com** | Adjunta el PDF o la foto; el buzón se revisa cada minuto y la factura aparece en la Bandeja |
 | Telegram | **[@nebula_facturas_bot](https://t.me/nebula_facturas_bot)** | Envía la foto o el PDF al bot; responde con la referencia y el estado |
 
