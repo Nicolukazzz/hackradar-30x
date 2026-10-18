@@ -33,7 +33,7 @@ const MetricasInner = () => {
       <Encabezado kicker="Resultados en el set de prueba" titulo="Los tres criterios del reto" />
       <div style={{ position: "absolute", left: 140, right: 140, top: 380, display: "flex", gap: 36 }}>
         <Tile criterio="Seguridad" valor={() => "0"} pie="pagos fuera de reglas en 30 facturas, 15 de ellas trampas" desde={0.8 * fps} tono={color.pagada.punto} />
-        <Tile criterio="Autonomía" valor={(p) => `${formato(66.7 * p, 1)} %`} pie="del lote demo decidido bien sin una persona" desde={1.6 * fps} tono={color.escalada.punto} />
+        <Tile criterio="Autonomía" valor={(p) => `${formato(83.3 * p, 1)} %`} pie="del lote demo decidido bien sin una persona" desde={1.6 * fps} tono={color.escalada.punto} />
         <Tile criterio="Explicabilidad" valor={(p) => `${Math.round(30 * p)}/30`} pie="decisiones como se esperaban, cada una con su explicación" desde={2.4 * fps} tono={color.enlace} />
       </div>
       <div style={{ ...subir(pie, 20), position: "absolute", left: 140, right: 140, top: 900, fontSize: 30, color: color.secundario }}>

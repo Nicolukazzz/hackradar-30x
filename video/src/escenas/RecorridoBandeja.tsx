@@ -40,7 +40,7 @@ const RecorridoBandejaInner = () => {
       />
       <Sequence from={0} layout="none">
         <NotaTemporal desde={3.3 * fps} hasta={6.2 * fps} style={{ right: 140, bottom: 120 }}>
-          4 esperan a una persona, 5 se aprobaron solas y 3 se frenaron.
+          5 se aprobaron solas, 5 se frenaron y solo 2 esperan a una persona.
         </NotaTemporal>
         <NotaTemporal desde={7.6 * fps} hasta={9.8 * fps} style={{ right: 140, bottom: 120 }}>
           El presupuesto del mes ya descuenta lo apartado para lo que espera aprobación.

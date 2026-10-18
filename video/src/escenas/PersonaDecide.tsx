@@ -32,8 +32,8 @@ const PersonaDecideInner = () => {
           nota="Lo que no cumple espera a una persona, con el motivo, el responsable y el plazo."
           tomas={[
             { f: 0, x: 0.5, y: 0.5, zoom: 1 },
-            { f: 1.6 * fps, x: 0.55, y: 0.5, zoom: 1.45 },
-            { f: 5 * fps, x: 0.55, y: 0.52, zoom: 1.5 },
+            { f: 1.6 * fps, x: 0.55, y: 0.3, zoom: 1.55 },
+            { f: 5 * fps, x: 0.55, y: 0.32, zoom: 1.6 },
           ]}
         />
       </Sequence>

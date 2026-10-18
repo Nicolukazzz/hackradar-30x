@@ -26,9 +26,9 @@ npm run render:todo     # todo lo anterior
 | `E3-ComoFunciona` | 18 s | Canales → ingesta → lee → 11 reglas → veredicto, y el registro |
 | `E4-Veredictos` | 14 s | FAC-1041 pagada, PX-77 frenada, LF-2026-10 escalada, con su porqué |
 | `E5-Bandeja` | 14 s | Captura de la Bandeja con zoom a indicadores, presupuesto y lista |
-| `E6-Trampas` | 24 s | Inyección (OMI-3381, R10), duplicado (INV-2210, R2), cuenta cambiada (F-0101, R4) |
+| `E6-Trampas` | 24 s | Instrucciones al agente (F-0110, R10), duplicado (INV-2210, R2), cuenta cambiada (F-0101, R4) |
 | `E7-PersonaDecide` | 16 s | Pendientes → traza y decisión humana → registro |
-| `E8-Metricas` | 13 s | 0 pagos fuera de reglas · 66,7 % autonomía · 30/30 |
+| `E8-Metricas` | 13 s | 0 pagos fuera de reglas · 83,3 % autonomía · 30/30 |
 | `E9-Cierre` | 10 s | La promesa y la firma |
 | `Rotulo` | 5 s | Nombre y rol del presentador (editable en Studio) |
 
