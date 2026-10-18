@@ -1,11 +1,12 @@
 import { Monto, Tarjeta, mesAnio } from "@/app/_componentes";
 import type { RespuestaBandeja } from "@/app/_datos/bandeja";
+import type { Moneda } from "@/dominio/tipos";
 import { cn } from "@/lib/utils";
 
 const pct = (parte: number, total: number) => (total <= 0 ? 0 : Math.max(0, (parte / total) * 100));
 
 /** Tarjeta "Presupuesto de {mes}" con barra apilada (§13.1, §6). */
-export function Presupuesto({ datos, mes: mesLote }: { datos: RespuestaBandeja["presupuesto"]; mes: string }) {
+export function Presupuesto({ datos, mes: mesLote, moneda }: { datos: RespuestaBandeja["presupuesto"]; mes: string; moneda: Moneda }) {
   const { monto_usd, pagado_antes, pagado_en_lote, reservado, disponible } = datos;
   const tramos = [
     { etiqueta: "Pagado antes del lote", valor: pagado_antes, barra: "bg-punto-neutro", muestra: "bg-punto-neutro" },
@@ -32,14 +33,14 @@ export function Presupuesto({ datos, mes: mesLote }: { datos: RespuestaBandeja["
             Presupuesto de {mes}
           </h2>
           <p className="text-[13px] text-muted-foreground">
-            <Monto usd={monto_usd} /> · moneda base USD · tasas fijas del periodo
+            <Monto usd={monto_usd} moneda={moneda} /> · moneda base {moneda}
           </p>
         </div>
         <div className="flex items-baseline gap-2">
           <span className="text-[13px] text-muted-foreground">{sobregiro ? "Sobre el presupuesto" : "Disponible"}</span>
           <span className={cn("text-[22px] font-semibold", disponible <= 0 && "text-frenada-foreground")}>
             {sobregiro ? "−" : ""}
-            <Monto usd={Math.abs(disponible)} />
+            <Monto usd={Math.abs(disponible)} moneda={moneda} />
           </span>
         </div>
       </div>
@@ -55,7 +56,7 @@ export function Presupuesto({ datos, mes: mesLote }: { datos: RespuestaBandeja["
             <div className="flex flex-col gap-0.5">
               <dt className="text-[13px] text-muted-foreground">{t.etiqueta}</dt>
               <dd className="text-sm font-medium">
-                <Monto usd={t.valor} />
+                <Monto usd={t.valor} moneda={moneda} />
               </dd>
             </div>
           </div>

@@ -2,7 +2,7 @@
 // disponible = presupuesto − pagado_antes − pagado_en_lote − reservado
 
 import { normalizarNombre } from "@/dominio/normalizar";
-import type { DecisionAgente, EntradaRegistro, Reglas, TipoPeriodo } from "@/dominio/tipos";
+import type { DecisionAgente, EntradaRegistro, Reglas, TablaTasas, TipoPeriodo } from "@/dominio/tipos";
 
 import { facturasVigentes, totalEn } from "./libro";
 
@@ -25,9 +25,9 @@ function conDisponible(e: Omit<EstadoPresupuesto, "disponible">): EstadoPresupue
 }
 
 /** Estado al empezar un lote, a partir del registro previo. */
-export function estadoInicial(historial: readonly EntradaRegistro[], reglas: Reglas, periodo: string): EstadoPresupuesto {
+export function estadoInicial(historial: readonly EntradaRegistro[], reglas: Reglas, periodo: string, tasas?: TablaTasas): EstadoPresupuesto {
   const tipo = reglas.presupuesto.periodo;
-  const vigentes = facturasVigentes(historial);
+  const vigentes = facturasVigentes(historial, tasas);
   return conDisponible({
     periodo,
     tipo,
@@ -52,8 +52,9 @@ export function porBeneficiario(
   periodo: string,
   tipo: TipoPeriodo,
   nombre: string,
+  tasas?: TablaTasas,
 ): number {
-  const vigentes = facturasVigentes(historial);
+  const vigentes = facturasVigentes(historial, tasas);
   const ben = normalizarNombre(nombre);
   return totalEn(vigentes, periodo, tipo, "pagada", ben) + totalEn(vigentes, periodo, tipo, "reservada", ben);
 }

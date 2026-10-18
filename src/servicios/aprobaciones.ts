@@ -1,9 +1,9 @@
 // GET /api/aprobaciones (§12, pantalla §13.3): facturas escaladas que esperan a una persona.
 
-import { formatearUsd } from "@/dominio/dinero";
+import { formatearBase, monedaBase } from "@/dominio/dinero";
 import { normalizarNombre } from "@/dominio/normalizar";
 import { instante } from "@/dominio/reloj";
-import type { Aprobador, Canal, Dinero, EntradaRegistro, Formato, IdRegla } from "@/dominio/tipos";
+import type { Aprobador, Canal, Dinero, EntradaRegistro, Formato, IdRegla, Moneda } from "@/dominio/tipos";
 import { canalAVincular, decisionAgente, estadoHumano } from "@/aprobaciones/decidir";
 import type { Repositorio } from "@/repositorio/repositorio";
 
@@ -36,6 +36,8 @@ export type TarjetaAprobacion = {
   firmas: { aprobador_id: string; nombre: string; momento: string }[];
   /** falló R3: se puede agregar el beneficiario a la lista al aprobar */
   puede_agregar_a_lista: boolean;
+  /** #86: moneda de `monto_usd_centavos` (la base con la que se decidió) */
+  moneda_base: Moneda;
   /** #110: proveedor conocido que escribió desde un canal no vinculado: se puede vincular al aprobar */
   canal_a_vincular: { tipo: "correo" | "telegram"; valor: string } | null;
 };
@@ -45,12 +47,14 @@ export type RespuestaAprobaciones = {
   reservado_usd: number;
   aprobadores: Aprobador[];
   doble_aprobacion_desde_usd: number;
+  /** #86: moneda de reservado y doble aprobación (la de las reglas vigentes) */
+  moneda_base: Moneda;
 };
 
 export type OrdenAprobaciones = "vencimiento" | "monto";
 
-function siApruebas(usd: number | null, beneficiario: string | null, reglas: IdRegla[]): string {
-  const monto = usd === null ? "el monto de la factura" : `USD ${formatearUsd(usd)}`;
+function siApruebas(usd: number | null, beneficiario: string | null, reglas: IdRegla[], moneda: Moneda): string {
+  const monto = usd === null ? "el monto de la factura" : formatearBase(usd, moneda);
   const a = beneficiario ?? "este beneficiario";
   const extra = [
     reglas.includes("R4") ? "a una cuenta que no es la registrada" : null,
@@ -90,7 +94,8 @@ export async function obtenerAprobaciones(repo: Repositorio, orden: OrdenAprobac
         reglas_que_fallaron: e.reglas_que_fallaron,
         comparaciones: e.comparaciones,
         explicacion: e.explicacion,
-        si_apruebas: siApruebas(e.monto_usd_centavos, e.beneficiario, e.reglas_que_fallaron),
+        si_apruebas: siApruebas(e.monto_usd_centavos, e.beneficiario, e.reglas_que_fallaron, e.moneda_base ?? "USD"),
+        moneda_base: e.moneda_base ?? "USD",
         reglas_ok: ok,
         reglas_total: e.evaluaciones.length,
         asignacion: asignacionDe(e, datos.aprobadores, decididoEn(e.id, e.momento)),
@@ -120,5 +125,6 @@ export async function obtenerAprobaciones(repo: Repositorio, orden: OrdenAprobac
     reservado_usd: reglas.presupuesto.contar_escalado_como_reservado ? pendientes.reduce((s, t) => s + (t.monto_usd_centavos ?? 0), 0) : 0,
     aprobadores: datos.aprobadores,
     doble_aprobacion_desde_usd: reglas.aprobacion.doble_aprobacion_desde_usd,
+    moneda_base: monedaBase(reglas),
   };
 }

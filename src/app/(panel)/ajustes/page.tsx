@@ -8,8 +8,7 @@ import { NOMBRE_ROL, puede } from "@/lib/auth/permisos";
 
 export const metadata: Metadata = { title: "Ajustes · Agente de cuentas por pagar" };
 
-// Ajustes (#83), estilo iPhone: grupos de filas; cada una abre su pantalla por pasos. Lo que todavía no existe queda
-// marcado «Próximamente» (moneda #86) para que se vea el mapa completo.
+// Ajustes (#83), estilo iPhone: grupos de filas; cada una abre su pantalla por pasos.
 
 /** Variable de entorno sin espacios; vacía cuenta como ausente. */
 function variable(nombre: string): string | undefined {
@@ -41,7 +40,7 @@ export default async function AjustesPage() {
 
         <GrupoAjustes titulo="Empresa" pie={admin ? undefined : "Solo un administrador cambia las reglas y el equipo."}>
           <FilaAjuste icono={Building2Icon} color="azul" titulo="Datos de la empresa" valor={empresa?.nombre} href="/ajustes/empresa" />
-          <FilaAjuste icono={BanknoteIcon} color="verde" titulo="Moneda y tasas" proximamente />
+          <FilaAjuste icono={BanknoteIcon} color="verde" titulo="Moneda y tasas" valor={empresa?.moneda_base} href="/ajustes/moneda" />
           <FilaAjuste icono={SlidersHorizontalIcon} color="ambar" titulo="Reglas de pago" valor={puede(sesion, "editar_reglas") ? undefined : "Solo ver"} href="/ajustes/reglas" />
           {admin ? <FilaAjuste icono={UsersIcon} titulo="Equipo" href="/ajustes/equipo" /> : null}
         </GrupoAjustes>

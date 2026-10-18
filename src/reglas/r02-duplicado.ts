@@ -22,7 +22,7 @@ export function r02Duplicado(ctx: ContextoRegla) {
   const { ext, doc, reglas, ahora } = ctx;
   // Mismo archivo (sha256) = mismo documento, aunque no se haya podido leer quién cobra: se frena igual.
   // Sin esto, un reenvío de una factura ilegible escalaría otra vez y reservaría el monto dos veces.
-  const mismoArchivo = doc.sha256 !== "" ? facturasVigentes(ctx.historial).find((f) => f.sha256 === doc.sha256) : undefined;
+  const mismoArchivo = doc.sha256 !== "" ? facturasVigentes(ctx.historial, ctx.tasas).find((f) => f.sha256 === doc.sha256) : undefined;
   if (mismoArchivo) {
     const f = mismoArchivo;
     const datos = { criterio: "archivo", coincide_con: f.id, factura_previa: f.numero, momento_previo: f.momento, estado_previo: f.estado, hito: ext.hito_numero?.valor ?? null };
@@ -34,7 +34,7 @@ export function r02Duplicado(ctx: ContextoRegla) {
 
   const dup = reglas.duplicados;
   const ben = normalizarNombre(nombre);
-  const previas = facturasVigentes(ctx.historial).filter((f) => f.beneficiario === ben);
+  const previas = facturasVigentes(ctx.historial, ctx.tasas).filter((f) => f.beneficiario === ben);
   const numero = ext.numero.valor && !afectado(ctx, "numero") ? normalizarNumeroFactura(ext.numero.valor) : null;
   const emision =
     ext.fecha_emision.valor && !afectado(ctx, "fecha_emision") && esFechaValida(ext.fecha_emision.valor) ? ext.fecha_emision.valor : null;

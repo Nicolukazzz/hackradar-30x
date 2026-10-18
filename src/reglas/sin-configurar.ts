@@ -2,7 +2,7 @@
 // admin guarde la versión 1, el motor escala toda factura (nunca paga ni frena sola). Los valores son solo la sugerencia
 // que la pantalla de reglas muestra para empezar; nunca deciden un pago.
 
-import { ID_REGLAS, type IdRegla, type Reglas } from "@/dominio/tipos";
+import { ID_REGLAS, type IdRegla, type Moneda, type Reglas } from "@/dominio/tipos";
 
 export const VERSION_SIN_CONFIGURAR = 0;
 
@@ -26,6 +26,28 @@ export function reglasSinConfigurar(): Reglas {
     extraccion: { confianza_minima: 0.9 },
     aprobacion: { doble_aprobacion_desde_usd: usd(10_000) },
     activas: Object.fromEntries(ID_REGLAS.map((id) => [id, true])) as Record<IdRegla, boolean>,
+  };
+}
+
+/**
+ * #86: las sugeridas en la moneda base de la empresa. `desdeUsd` convierte centavos de USD a esa moneda (con la tasa del
+ * día); los valores se redondean a unidades para que se lean bien.
+ */
+export function reglasSinConfigurarEn(moneda: Moneda, desdeUsd: (centavos: number) => number): Reglas {
+  const r = reglasSinConfigurar();
+  if (moneda === "USD") return r;
+  const c = (centavos: number) => Math.round(desdeUsd(centavos) / 100) * 100;
+  return {
+    ...r,
+    moneda,
+    limites: {
+      ...r.limites,
+      pago_automatico_usd: c(r.limites.pago_automatico_usd),
+      maximo_absoluto_usd: c(r.limites.maximo_absoluto_usd),
+      mensual_por_beneficiario_default_usd: c(r.limites.mensual_por_beneficiario_default_usd),
+    },
+    presupuesto: { ...r.presupuesto, monto_usd: c(r.presupuesto.monto_usd) },
+    aprobacion: { doble_aprobacion_desde_usd: c(r.aprobacion.doble_aprobacion_desde_usd) },
   };
 }
 

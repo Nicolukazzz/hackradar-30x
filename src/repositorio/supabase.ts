@@ -15,12 +15,13 @@ import path from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { cargarDatosComunes, DIR_DATA_POR_DEFECTO } from "@/dominio/cargar";
+import { aBase } from "@/dominio/dinero";
 import { EmpresaSchema } from "@/dominio/esquemas";
 import type { Aprobador, Beneficiario, DocumentoRecibido, Empresa, EntradaRegistro, Reglas } from "@/dominio/tipos";
 import { cargarGolden, type DocGolden } from "@/evaluacion/escenario";
 import { mimeDeArchivo } from "@/lib/mime";
 import { siguienteIdRegistro } from "@/registro/registro";
-import { reglasSinConfigurar } from "@/reglas/sin-configurar";
+import { reglasSinConfigurar, reglasSinConfigurarEn } from "@/reglas/sin-configurar";
 import { crearFuenteErApi } from "@/tasas/fuente-er-api";
 import { tasasVigentes as calcularTasasVigentes } from "@/tasas/servicio";
 import { almacenTasasSupabase } from "@/tasas/supabase";
@@ -111,7 +112,15 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
   }
 
   /** Sin reglas guardadas (producción recién creada): versión 0, todo escala. */
-  const vigenteDe = (vs: readonly Reglas[]): Reglas => (vs.length > 0 ? versionVigente(vs) : reglasSinConfigurar());
+  async function sinGuardar(): Promise<Reglas> {
+    if (demo) return reglasSinConfigurar();
+    // #86: sugeridas en la moneda de la empresa, convertidas con la tasa del día (si no hay, en USD: el motor escala igual).
+    const [emp, tv] = await Promise.all([empresa(), tasasVigentes()]);
+    if (emp.moneda_base === "USD" || !tv || tv.tabla.base !== emp.moneda_base || !tv.tabla.tasas.USD) return reglasSinConfigurar();
+    const tabla = tv.tabla;
+    return reglasSinConfigurarEn(emp.moneda_base, (centavos) => aBase({ centavos, moneda: "USD" }, tabla).base_centavos);
+  }
+  const vigenteDe = async (vs: readonly Reglas[]): Promise<Reglas> => (vs.length > 0 ? versionVigente(vs) : sinGuardar());
   async function aprobadores(): Promise<Aprobador[]> {
     const equipo = config.aprobadores ? await config.aprobadores() : [];
     return [...comunes.aprobadores, ...equipo.filter((a) => !comunes.aprobadores.some((b) => b.id === a.id))];
@@ -188,7 +197,7 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
     async datosComunes() {
       const [vs, bs, emp, aps, tv] = await Promise.all([versiones(), beneficiarios(), empresa(), aprobadores(), tasasVigentes()]);
       const tasas = tv ? { [tv.tabla.periodo]: tv.tabla } : comunes.tasas;
-      return { ...comunes, empresa: emp, beneficiarios: bs, aprobadores: aps, tasas, reglas: { vigente: vigenteDe(vs), versiones: vs } };
+      return { ...comunes, empresa: emp, beneficiarios: bs, aprobadores: aps, tasas, reglas: { vigente: await vigenteDe(vs), versiones: vs } };
     },
     empresa,
     tasasVigentes,
@@ -212,7 +221,7 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
       return (await versiones()).map(({ version, editada_por, editada_en }) => ({ version, editada_por, editada_en })).sort((a, b) => b.version - a.version);
     },
     async guardarReglas(r) {
-      const version = vigenteDe(await versiones()).version + 1;
+      const version = (await vigenteDe(await versiones())).version + 1;
       // La clave primaria impide que dos guardados simultáneos tomen el mismo número.
       const { error } = await db.from("reglas_versiones").insert({ version, reglas: { ...r, version } });
       fallar("guardar reglas", error);

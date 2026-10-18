@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { MonedaBaseProvider } from "@/app/_componentes/moneda-base";
 import { contarPendientes } from "@/app/_datos/aprobaciones";
 import { AppSidebar, MarcaTesorero } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -48,7 +49,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/">) {
           tabIndex={-1}
           className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-6 px-4 pt-6 pb-12 outline-none md:px-8 md:pt-7"
         >
-          {children}
+          <MonedaBaseProvider moneda={empresa?.moneda_base ?? "USD"}>{children}</MonedaBaseProvider>
         </main>
       </div>
     </SidebarProvider>

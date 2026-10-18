@@ -12,6 +12,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input";
 import { NOMBRE_ROL, type Rol } from "@/lib/auth/permisos";
 
+import { useMonedaBase } from "@/app/_componentes/moneda-base";
 import { llamar, usdACentavos } from "./api";
 import { ElegirRol } from "./elegir-rol";
 
@@ -30,6 +31,7 @@ function vence(iso: string): string {
 }
 
 export function CrearEmpleado() {
+  const moneda = useMonedaBase();
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [paso, setPaso] = useState<Paso>("rol");
@@ -116,7 +118,7 @@ export function CrearEmpleado() {
               </Field>
               {rol === "aprobador" ? (
                 <Field data-invalid={limiteInvalido || undefined}>
-                  <FieldLabel htmlFor="limite">Límite por pago (USD)</FieldLabel>
+                  <FieldLabel htmlFor="limite">Límite por pago ({moneda})</FieldLabel>
                   <Input
                     id="limite"
                     inputMode="decimal"
@@ -145,7 +147,7 @@ export function CrearEmpleado() {
               {rol === "aprobador" ? (
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">Límite por pago</dt>
-                  <dd className="font-mono font-medium tabular-nums">{centavos === null ? "Sin límite" : `USD ${limite}`}</dd>
+                  <dd className="font-mono font-medium tabular-nums">{centavos === null ? "Sin límite" : `${moneda} ${limite}`}</dd>
                 </div>
               ) : null}
               <div className="flex justify-between gap-3">

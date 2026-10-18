@@ -41,6 +41,14 @@ export function aUsd(d: Dinero, tabla: TablaTasas): { usd_centavos: number; tasa
   return { usd_centavos: base_centavos, tasa_usada };
 }
 
+/**
+ * Cambio de moneda base (#86): centavos × tasa (1 vieja = X nueva), redondeado a unidades enteras (half-up), para que
+ * los límites queden legibles ("COP 9.548.329" y no "9.548.329,37").
+ */
+export function convertirLimite(centavos: number, tasa: string): number {
+  return new Dec(centavos).times(tasa).div(100).toDecimalPlaces(0, Dec.ROUND_HALF_UP).times(100).toNumber();
+}
+
 /** "8400000" → "8.400.000" (sin regex: recorre de a tres dígitos desde la derecha). */
 function agrupar(entero: string): string {
   const grupos: string[] = [];

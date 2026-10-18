@@ -1,5 +1,6 @@
 // Registro append-only (especificación §9). Solo se crean entradas: no hay funciones para editar ni borrar.
 
+import { monedaBase } from "@/dominio/dinero";
 import type { DocumentoRecibido, EntradaRegistro, Extraccion, Reglas, ResultadoMotor } from "@/dominio/tipos";
 
 const ID = /^REG-(\d{4})-(\d{6})$/;
@@ -62,5 +63,7 @@ export function crearEntradaAgente({ resultado, doc, ext, reglas, id, momento }:
     entrada_origen: null,
     extraccion: ext,
     sha256: doc.sha256 || null,
+    // #86: solo si no es USD, así las entradas del dataset (y las de antes) no cambian.
+    ...(monedaBase(reglas) === "USD" ? {} : { moneda_base: monedaBase(reglas) }),
   };
 }

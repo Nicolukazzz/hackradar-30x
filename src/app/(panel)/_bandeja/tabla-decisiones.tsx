@@ -45,7 +45,7 @@ export function TablaDecisiones({ datos, decision, q }: { datos: RespuestaBandej
       <TarjetaEncabezado
         id="dec"
         titulo="Decisiones del lote"
-        descripcion="En el orden en que el agente las procesó. Montos convertidos a USD con la tasa fija del periodo."
+        descripcion={`En el orden en que el agente las procesó. Montos convertidos a ${datos.moneda_base} con la tasa del periodo.`}
       >
         <nav aria-label="Filtrar por decisión" className="flex flex-wrap gap-2">
           {PESTANAS.map((p) => {
@@ -112,7 +112,7 @@ export function TablaDecisiones({ datos, decision, q }: { datos: RespuestaBandej
                   <th scope="col" className={cn(CELDA, "pl-6")}>Factura</th>
                   <th scope="col" className={CELDA}>Beneficiario</th>
                   <th scope="col" className={CELDA}>Monto original</th>
-                  <th scope="col" className={cn(CELDA, "text-right")}>USD</th>
+                  <th scope="col" className={cn(CELDA, "text-right")}>{datos.moneda_base}</th>
                   <th scope="col" className={CELDA}>Decisión</th>
                   <th scope="col" className={CELDA}>Por qué</th>
                   <th scope="col" className={cn(CELDA, "pr-6")}>Regla</th>
@@ -139,7 +139,7 @@ export function TablaDecisiones({ datos, decision, q }: { datos: RespuestaBandej
                       <Monto dinero={f.monto_original} />
                     </td>
                     <td className={cn(FILA, "text-right text-[13px] font-semibold")}>
-                      <Monto usd={f.monto_usd_centavos} sinCodigo />
+                      <Monto usd={f.monto_usd_centavos} moneda={f.moneda_base} sinCodigo />
                     </td>
                     <td className={FILA}>
                       <Decision f={f} />
@@ -176,7 +176,7 @@ export function TablaDecisiones({ datos, decision, q }: { datos: RespuestaBandej
                   <span className="flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
                     <Monto dinero={f.monto_original} className="text-texto-3" />
                     <span className="font-semibold">
-                      USD <Monto usd={f.monto_usd_centavos} sinCodigo />
+                      {f.moneda_base} <Monto usd={f.monto_usd_centavos} moneda={f.moneda_base} sinCodigo />
                     </span>
                   </span>
                   <span className="line-clamp-3 text-[13px] leading-snug text-texto-3">{f.explicacion}</span>

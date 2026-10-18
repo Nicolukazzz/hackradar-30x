@@ -61,6 +61,19 @@ function tasasPara(datos: DatosMotor, reglas: Reglas, ahora: string): TablaTasas
   return datos.tasas[periodo] ?? { periodo, base: monedaBase(reglas), tasas: {} };
 }
 
+/**
+ * Presupuesto al empezar el lote, con lo ya pagado en la moneda base de hoy (#86). Si una decisión anterior está en otra
+ * moneda y no hay tasa para convertirla, disponible 0: R7 frena antes que sumar monedas distintas.
+ */
+function presupuestoInicial(historial: readonly EntradaRegistro[], ctx: ContextoLote, periodo: string): EstadoPresupuesto {
+  try {
+    return estadoInicial(historial, ctx.reglas, periodo, tasasPara(ctx.datos, ctx.reglas, ctx.ahora));
+  } catch {
+    const sinConvertir = estadoInicial(historial, ctx.reglas, periodo);
+    return { ...sinConvertir, disponible: Math.min(0, sinConvertir.disponible) };
+  }
+}
+
 function explicacionSinDecidir(reglas: Reglas, tasas: TablaTasas): string | null {
   if (sinConfigurar(reglas)) return EXPLICACION_SIN_REGLAS;
   if (tasas.base !== monedaBase(reglas)) {
@@ -203,7 +216,7 @@ export function procesarLote(docs: readonly { doc: DocumentoRecibido; ext: Extra
   const ordenados = [...docs].sort((a, b) => instante(a.doc.recibido_en) - instante(b.doc.recibido_en));
   const periodo = ctx.periodo ?? periodoDe(ctx.ahora, ctx.reglas.presupuesto.periodo);
   const historial = [...ctx.historial];
-  let presupuesto = estadoInicial(historial, ctx.reglas, periodo);
+  let presupuesto = presupuestoInicial(historial, ctx, periodo);
   const resultados: ResultadoMotor[] = [];
   const entradas: EntradaRegistro[] = [];
 

@@ -96,7 +96,7 @@ export function ListaRegistro({ dias, inicial, hoy, ayer }: { dias: DiaRegistro[
                           <Pildora e={e} />
                           <span className="font-mono text-[13px] font-semibold">{e.factura_numero ?? e.ref_interna}</span>
                           {e.beneficiario ? <span className="text-sm font-medium">{e.beneficiario}</span> : null}
-                          {e.monto_usd_centavos !== null ? <Monto usd={e.monto_usd_centavos} className="text-[13px] text-muted-foreground" /> : null}
+                          {e.monto_usd_centavos !== null ? <Monto usd={e.monto_usd_centavos} moneda={e.moneda_base} className="text-[13px] text-muted-foreground" /> : null}
                         </span>
                         <span className="text-sm leading-relaxed text-pretty text-texto-3">{e.explicacion}</span>
                         {e.comentario && !e.explicacion.includes(e.comentario) ? <span className="text-sm leading-relaxed text-texto-3">Comentario: «{e.comentario}»</span> : null}

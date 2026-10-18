@@ -21,6 +21,12 @@ export async function evaluarSinRegistrar(repo: Repositorio, ext: Extraccion, be
     formato: "pdf",
     beneficiario_remitente_id: beneficiario_id ?? null,
   };
-  const presupuesto = estadoInicial(historial, reglas, periodoDe(ahora, reglas.presupuesto.periodo));
+  // #86: lo pagado en otra moneda base se convierte con las tasas del periodo; sin tasa, el motor escala.
+  let presupuesto;
+  try {
+    presupuesto = estadoInicial(historial, reglas, periodoDe(ahora, reglas.presupuesto.periodo), datos.tasas[ahora.slice(0, 7)]);
+  } catch {
+    presupuesto = { ...estadoInicial(historial, reglas, periodoDe(ahora, reglas.presupuesto.periodo)), disponible: 0 };
+  }
   return evaluarFactura({ doc, ext, datos, reglas, historial, presupuesto, ahora });
 }

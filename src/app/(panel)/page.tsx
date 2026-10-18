@@ -102,14 +102,14 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
           valor={porcentajeUi(kpis.autonomia)}
           detalle={`${kpis.autonomas} de ${kpis.total} decididas sin intervención humana`}
         />
-        <Kpi tono="pagada" etiqueta="Pagadas" valor={kpis.pagadas.n} detalle={<Monto usd={kpis.pagadas.usd_centavos} />} />
+        <Kpi tono="pagada" etiqueta="Pagadas" valor={kpis.pagadas.n} detalle={<Monto usd={kpis.pagadas.usd_centavos} moneda={b.moneda_base} />} />
         <Kpi
           tono="frenada"
           etiqueta="Frenadas"
           valor={kpis.frenadas.n}
           detalle={
             <>
-              <Monto usd={kpis.frenadas.usd_centavos} /> sin pagar
+              <Monto usd={kpis.frenadas.usd_centavos} moneda={b.moneda_base} /> sin pagar
             </>
           }
         />
@@ -128,7 +128,7 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
         />
       </section>
 
-      <Presupuesto datos={b.presupuesto} mes={b.mes} />
+      <Presupuesto datos={b.presupuesto} mes={b.mes} moneda={b.moneda_base} />
 
       <TablaDecisiones datos={b} decision={decision} q={q} />
     </>
