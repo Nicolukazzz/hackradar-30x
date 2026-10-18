@@ -28,7 +28,7 @@ import { asegurarFoto, tablasPorFecha, tasasVigentes as calcularTasasVigentes } 
 import { almacenTasasSupabase } from "@/tasas/supabase";
 import type { FuenteHistorica, FuenteTasas, TasasVigentes } from "@/tasas/tipos";
 
-import { coincideFiltro, conVinculosTelegram, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
+import { coincideFiltro, conVinculosTelegram, conVinculosWhatsapp, crearCola, formatoRef, leerAdjuntoDe, maxRef, versionVigente } from "./comun";
 import type { CambiosEmpresa, Repositorio, ResumenVersion } from "./repositorio";
 
 export type ConfigSupabase = {
@@ -154,9 +154,16 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
     return new Map((data ?? []).map((r) => [r.beneficiario_id as string, r.chat_id as string]));
   }
 
+  /** beneficiario_id → número (#79). */
+  async function vinculosWhatsapp(): Promise<Map<string, string>> {
+    const { data, error } = await db.from("vinculos_whatsapp").select("beneficiario_id, numero");
+    fallar("leer vínculos de WhatsApp", error);
+    return new Map((data ?? []).map((r) => [r.beneficiario_id as string, r.numero as string]));
+  }
+
   async function beneficiarios(): Promise<Beneficiario[]> {
-    const [extra, telegram] = await Promise.all([agregados(), vinculosTelegram()]);
-    return conVinculosTelegram([...comunes.beneficiarios, ...extra], telegram);
+    const [extra, telegram, whatsapp] = await Promise.all([agregados(), vinculosTelegram(), vinculosWhatsapp()]);
+    return conVinculosWhatsapp(conVinculosTelegram([...comunes.beneficiarios, ...extra], telegram), whatsapp);
   }
 
   async function registro(): Promise<EntradaRegistro[]> {
@@ -270,6 +277,12 @@ export async function crearRepositorioSupabase(config: ConfigSupabase): Promise<
       // Atómico en la base: borra el vínculo anterior del chat y del beneficiario e inserta el nuevo.
       const { error } = await db.rpc("vincular_telegram", { p_beneficiario: beneficiario_id, p_chat: chat_id });
       fallar("vincular Telegram", error);
+    },
+    async vincularWhatsapp(beneficiario_id, numero) {
+      const existe = comunes.beneficiarios.some((b) => b.id === beneficiario_id) || (await agregados()).some((b) => b.id === beneficiario_id);
+      if (!existe) throw new Error(`no existe el beneficiario ${beneficiario_id}`);
+      const { error } = await db.rpc("vincular_whatsapp", { p_beneficiario: beneficiario_id, p_numero: numero });
+      fallar("vincular WhatsApp", error);
     },
     async guardarArchivo(ref, archivo) {
       const corrida = await db.rpc("corrida_vigente");

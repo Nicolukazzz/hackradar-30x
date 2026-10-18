@@ -59,6 +59,7 @@ const DESCRIPCION_CANAL: Record<string, string> = {
   correo: "Correo a cuentas@nebula.example",
   portal: "Subida al portal de proveedores",
   telegram: "Mensaje de Telegram",
+  whatsapp: "Mensaje de WhatsApp",
   carga_manual: "Cargada a mano por el equipo de finanzas",
 };
 

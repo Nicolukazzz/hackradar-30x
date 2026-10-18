@@ -38,7 +38,7 @@ const TEXTOS: Record<Idioma, Textos> = {
       url
         ? `Para que tus facturas se procesen automáticamente, vincula este ${medio}: ${url}`
         : `Para que tus facturas se procesen automáticamente, pide a tu contacto en el equipo de finanzas el enlace para vincular este ${medio}.`,
-    medio: { correo: "correo", telegram: "chat", portal: "usuario", carga_manual: "medio" },
+    medio: { correo: "correo", telegram: "chat", whatsapp: "número de WhatsApp", portal: "usuario", carga_manual: "medio" },
   },
   en: {
     recibida: (n, ref) => `We received your invoice${n ? ` ${n}` : ""}. Ref ${ref}.`,
@@ -55,7 +55,7 @@ const TEXTOS: Record<Idioma, Textos> = {
       url
         ? `To have your invoices processed automatically, link this ${medio}: ${url}`
         : `To have your invoices processed automatically, ask your contact on the finance team for the link to connect this ${medio}.`,
-    medio: { correo: "email address", telegram: "chat", portal: "user", carga_manual: "channel" },
+    medio: { correo: "email address", telegram: "chat", whatsapp: "WhatsApp number", portal: "user", carga_manual: "channel" },
   },
   pt: {
     recibida: (n, ref) => `Recebemos sua fatura${n ? ` ${n}` : ""}. Ref ${ref}.`,
@@ -72,7 +72,7 @@ const TEXTOS: Record<Idioma, Textos> = {
       url
         ? `Para que suas faturas sejam processadas automaticamente, vincule este ${medio}: ${url}`
         : `Para que suas faturas sejam processadas automaticamente, peça ao seu contato na equipe financeira o link para vincular este ${medio}.`,
-    medio: { correo: "e-mail", telegram: "chat", portal: "usuário", carga_manual: "canal" },
+    medio: { correo: "e-mail", telegram: "chat", whatsapp: "número de WhatsApp", portal: "usuário", carga_manual: "canal" },
   },
 };
 

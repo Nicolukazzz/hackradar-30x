@@ -116,7 +116,13 @@ export type Beneficiario = {
   /** centavos USD; null = usar el default de Reglas */
   limite_mensual_usd: number | null;
   estado: "activo" | "inactivo";
-  canales: { correos: string[]; telegram_chat_id: string | null; portal_usuario: string | null };
+  canales: {
+    correos: string[];
+    telegram_chat_id: string | null;
+    portal_usuario: string | null;
+    /** número de WhatsApp (#79), solo dígitos E.164 sin "+"; ausente = sin vincular */
+    whatsapp?: string | null;
+  };
 };
 
 export type Aprobador = {
@@ -129,11 +135,11 @@ export type Aprobador = {
   iniciales: string;
 };
 
-export type Canal = "portal" | "correo" | "telegram" | "carga_manual";
+export type Canal = "portal" | "correo" | "telegram" | "whatsapp" | "carga_manual";
 export type Formato = "pdf" | "imagen" | "correo" | "chat" | "xml";
 
 /** "interno" = empleado de la empresa que reenvía una factura (R11 lo acepta solo si R3 cumple). */
-export type Remitente = { tipo: "correo" | "telegram" | "portal" | "interno"; valor: string };
+export type Remitente = { tipo: "correo" | "telegram" | "whatsapp" | "portal" | "interno"; valor: string };
 
 export type Adjunto = { nombre: string; mime: string; bytes_base64?: string; ruta?: string };
 

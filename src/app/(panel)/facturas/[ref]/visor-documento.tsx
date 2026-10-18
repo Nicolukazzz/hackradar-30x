@@ -16,6 +16,7 @@ function descripcion(f: RespuestaFactura): string {
   const esImagen = adj?.mime.startsWith("image/") ?? false;
   if (f.entrada.canal === "correo") return esPdf ? "Correo con PDF adjunto" : esImagen ? "Correo con foto adjunta" : "Correo";
   if (f.entrada.canal === "telegram") return esImagen ? "Foto por Telegram" : "Mensaje de Telegram";
+  if (f.entrada.canal === "whatsapp") return esImagen ? "Foto por WhatsApp" : esPdf ? "PDF por WhatsApp" : "Mensaje de WhatsApp";
   if (f.entrada.canal === "portal") return "PDF subido al portal";
   return "Documento cargado a mano";
 }
@@ -66,7 +67,7 @@ export function VisorDocumento({ f }: { f: RespuestaFactura }) {
       <TarjetaEncabezado id="doc" titulo="Documento original" descripcion={descripcion(f)} />
       <div className="flex flex-col gap-4 border-t border-border px-6 py-5">
         {doc?.texto_mensaje || doc?.asunto ? (
-          <div className={f.entrada.canal === "telegram" ? "max-w-[480px] self-start rounded-2xl rounded-tl-sm bg-superficie-2 px-4 py-3 ring-1 ring-border" : "rounded-xl bg-superficie-2 px-4 py-3 ring-1 ring-border"}>
+          <div className={f.entrada.canal === "telegram" || f.entrada.canal === "whatsapp" ? "max-w-[480px] self-start rounded-2xl rounded-tl-sm bg-superficie-2 px-4 py-3 ring-1 ring-border" : "rounded-xl bg-superficie-2 px-4 py-3 ring-1 ring-border"}>
             {f.entrada.canal === "correo" ? (
               <dl className="mb-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 border-b border-border pb-3 text-[13px]">
                 <dt className="text-muted-foreground">De</dt>
@@ -82,7 +83,7 @@ export function VisorDocumento({ f }: { f: RespuestaFactura }) {
               </dl>
             ) : (
               <p className="mb-1.5 text-xs text-muted-foreground">
-                {f.entrada.canal === "telegram" ? "Telegram" : "Mensaje"} · <span className="font-mono">{remitente}</span>
+                {f.entrada.canal === "telegram" ? "Telegram" : f.entrada.canal === "whatsapp" ? "WhatsApp" : "Mensaje"} · <span className="font-mono">{remitente}</span>
               </p>
             )}
             {doc.texto_mensaje ? (

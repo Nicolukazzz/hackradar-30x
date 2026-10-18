@@ -14,6 +14,7 @@ function quien(p: PorVerificar): string {
   const r = p.remitente;
   if (!r) return "remitente desconocido";
   if (r.tipo === "telegram") return `Telegram (chat ${r.valor})`;
+  if (r.tipo === "whatsapp") return `WhatsApp (+${r.valor})`;
   if (r.tipo === "portal") return "el portal";
   return r.valor;
 }

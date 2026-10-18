@@ -131,6 +131,7 @@ export const BeneficiarioSchema = z.strictObject({
     correos: z.array(z.email()),
     telegram_chat_id: texto.nullable(),
     portal_usuario: texto.nullable(),
+    whatsapp: z.string().regex(/^\d{6,20}$/).nullable().optional(),
   }),
 }) satisfies z.ZodType<Beneficiario>;
 
@@ -145,6 +146,7 @@ export const BeneficiariosSchema = z.array(BeneficiarioSchema).superRefine((list
       ...b.canales.correos.map((c) => `correo ${c.toLowerCase()}`),
       ...(b.canales.telegram_chat_id ? [`telegram ${b.canales.telegram_chat_id}`] : []),
       ...(b.canales.portal_usuario ? [`portal ${b.canales.portal_usuario}`] : []),
+      ...(b.canales.whatsapp ? [`whatsapp ${b.canales.whatsapp}`] : []),
     ];
     for (const canal of canales) {
       const dueno = duenoDeCanal.get(canal);
@@ -170,8 +172,8 @@ export const AprobadoresSchema = z
   .refine((lista) => lista.filter((a) => a.principal).length === 1, { message: "debe haber exactamente un aprobador principal" });
 
 export const DocumentoEntranteSchema = z.strictObject({
-  canal: z.enum(["portal", "correo", "telegram", "carga_manual"]),
-  remitente: z.strictObject({ tipo: z.enum(["correo", "telegram", "portal", "interno"]), valor: texto }),
+  canal: z.enum(["portal", "correo", "telegram", "whatsapp", "carga_manual"]),
+  remitente: z.strictObject({ tipo: z.enum(["correo", "telegram", "whatsapp", "portal", "interno"]), valor: texto }),
   recibido_en: momento,
   asunto: z.string().optional(),
   texto_mensaje: z.string().optional(),
@@ -243,7 +245,7 @@ export const EntradaRegistroSchema = z.strictObject({
   ref_interna: texto,
   factura_numero: z.string().nullable(),
   beneficiario: z.string().nullable(),
-  canal: z.enum(["portal", "correo", "telegram", "carga_manual"]),
+  canal: z.enum(["portal", "correo", "telegram", "whatsapp", "carga_manual"]),
   formato: z.enum(["pdf", "imagen", "correo", "chat", "xml"]),
   monto_original: DineroSchema.nullable(),
   monto_usd_centavos: centavos.nullable(),

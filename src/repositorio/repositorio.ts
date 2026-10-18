@@ -73,6 +73,8 @@ export interface Repositorio {
    * Lanza si el beneficiario no existe.
    */
   vincularTelegram(beneficiario_id: string, chat_id: string): Promise<void>;
+  /** Igual que `vincularTelegram` para un número de WhatsApp (#79): dígitos E.164 sin "+". */
+  vincularWhatsapp(beneficiario_id: string, numero: string): Promise<void>;
 
   guardarArchivo(ref: string, archivo: ArchivoGuardado): Promise<void>;
   /** Archivo original tal como llegó (PDF, PNG, .eml, chat). */

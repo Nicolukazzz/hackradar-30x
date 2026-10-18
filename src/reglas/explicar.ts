@@ -33,6 +33,7 @@ function sinPuntoDoble(frase: string): string {
 const CANAL: Record<DocumentoRecibido["canal"], string> = {
   correo: "correo",
   telegram: "mensaje de Telegram",
+  whatsapp: "mensaje de WhatsApp",
   portal: "documento del portal",
   carga_manual: "documento",
 };

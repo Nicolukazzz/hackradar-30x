@@ -13,8 +13,9 @@ export const PAGINAS_PUBLICAS = ["/entrar", "/sin-permiso", "/unirse", "/vincula
  * - `/api/vincular/<token>` (#85): portal del proveedor, sin cuenta. Entrar exige token + correo + código (con tope de
  *   intentos); subir facturas (`/facturas`), la cookie firmada que deja entrar. Mismo origen en las dos.
  * - `/api/canales/telegram/webhook` (#13): sin sesión de usuario; verifica la cabecera X-Telegram-Bot-Api-Secret-Token.
+ * - `/api/canales/whatsapp/webhook` (#79): Meta verifica con `hub.verify_token` (GET) y firma cada POST con X-Hub-Signature-256.
  */
-export const API_PUBLICAS: readonly string[] = ["/api/vincular", "/api/canales/telegram/webhook"];
+export const API_PUBLICAS: readonly string[] = ["/api/vincular", "/api/canales/telegram/webhook", "/api/canales/whatsapp/webhook"];
 
 export type DecisionRuta = "seguir" | "redirigir" | "no_autorizado";
 
