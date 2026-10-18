@@ -87,7 +87,7 @@ const LlegadaInner = () => {
       <div style={{ ...subir(marco, 30), position: "absolute", left: 140, right: 140, top: 330, height: 640, backgroundColor: color.superficie, borderRadius: 26, boxShadow: sombra, border: `1px solid ${color.borde}`, overflow: "hidden" }}>
         <div style={{ height: 70, display: "flex", alignItems: "center", gap: 14, padding: "0 36px", borderBottom: `1px solid ${color.borde}`, fontSize: 24, color: color.secundario }}>
           <span style={{ width: 12, height: 12, borderRadius: 99, backgroundColor: color.pagada.punto, opacity: 0.4 + 0.6 * pulso }} />
-          En vivo · se actualiza sola
+          <span>En vivo · se actualiza sola</span>
         </div>
         <div style={{ position: "relative", height: 570 }}>
           {visibles.map((f) => {

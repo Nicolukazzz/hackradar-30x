@@ -46,7 +46,7 @@ const Flecha: React.FC<{ x1: number; x2: number; desde: number }> = ({ x1, x2, d
   const viaje = ((frame - desde) % 45) / 45;
   const y = TOP + ALTO / 2;
   return (
-    <svg style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }} width={1920} height={1080}>
+    <svg aria-hidden style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }} width={1920} height={1080}>
       <line x1={x1} y1={y} x2={x1 + (x2 - x1) * dibujo} y2={y} stroke={color.bordeFuerte} strokeWidth={4} strokeLinecap="round" />
       {frame > desde + 14 ? <circle cx={x1 + (x2 - x1) * viaje} cy={y} r={9} fill={color.tinta} opacity={interpolate(viaje, [0, 0.15, 0.85, 1], [0, 1, 1, 0])} /> : null}
     </svg>

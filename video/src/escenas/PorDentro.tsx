@@ -8,7 +8,7 @@ import { Nota } from "../componentes/Nota";
 
 // 7 · Por dentro (18 s): la traza de una factura real del set (OMI-3381): por qué no se pagó, la instrucción escondida
 // resaltada e ignorada, y las 11 reglas con sus valores. Es lo que nos diferencia: cada decisión se puede auditar.
-const Toma3: React.FC<{ src: string; tomas: Toma[]; duracion: number; nota: string; notaArriba?: boolean }> = ({ src, tomas, duracion, nota, notaArriba }) => {
+const Toma3: React.FC<{ src: string; tomas: Toma[]; duracion: number; nota: string }> = ({ src, tomas, duracion, nota }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const visible = Math.min(tramo(frame, 0, 10), 1 - tramo(frame, duracion - 10, duracion));
@@ -16,7 +16,7 @@ const Toma3: React.FC<{ src: string; tomas: Toma[]; duracion: number; nota: stri
   return (
     <AbsoluteFill style={{ opacity: visible }}>
       <Captura src={src} style={{ position: "absolute", left: 140, top: 300 }} ancho={1260} alto={709} tomas={tomas} />
-      <Nota style={{ ...subir(n, 16), left: 1440, right: 120, maxWidth: 360, ...(notaArriba ? { top: 300 } : { top: 300 }) }}>{nota}</Nota>
+      <Nota style={{ ...subir(n, 16), left: 1440, right: 120, maxWidth: 360, top: 300 }}>{nota}</Nota>
     </AbsoluteFill>
   );
 };

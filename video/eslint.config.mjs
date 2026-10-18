@@ -1,3 +1,1 @@
-import { config } from "@remotion/eslint-config-flat";
-
-export default config;
+export { config as default } from "@remotion/eslint-config-flat";
