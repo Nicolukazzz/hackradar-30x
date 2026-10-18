@@ -43,10 +43,24 @@ export function crearClienteWhatsapp(token: string, phone_id: string, f: typeof 
   };
 }
 
-/** X-Hub-Signature-256 = "sha256=" + HMAC-SHA256(cuerpo crudo, app secret). */
+/** Cada carácter no ASCII como `\uXXXX` en hex minúscula (pares sustitutos por separado), como lo firma Meta. */
+export function escaparUnicode(texto: string): string {
+  return texto.replace(/[^\x00-\x7f]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
+}
+
+function coincide(cuerpo: string, recibida: Buffer, secreto: string): boolean {
+  const esperada = Buffer.from(createHmac("sha256", secreto).update(cuerpo, "utf8").digest("hex"));
+  return esperada.length === recibida.length && timingSafeEqual(esperada, recibida);
+}
+
+/**
+ * X-Hub-Signature-256 = "sha256=" + HMAC-SHA256(cuerpo, app secret). Meta firma la versión con los caracteres no
+ * ASCII escapados (`Nicol\u00e1s`) aunque mande el cuerpo con `Nicolás`: se acepta cualquiera de las dos.
+ */
 export function firmaValida(cuerpo: string, cabecera: string | null, secreto: string): boolean {
   if (!cabecera || !secreto || !cabecera.startsWith("sha256=")) return false;
-  const esperada = Buffer.from(createHmac("sha256", secreto).update(cuerpo, "utf8").digest("hex"));
-  const recibida = Buffer.from(cabecera.slice("sha256=".length));
-  return esperada.length === recibida.length && timingSafeEqual(esperada, recibida);
+  const recibida = Buffer.from(cabecera.slice("sha256=".length).toLowerCase());
+  if (coincide(cuerpo, recibida, secreto)) return true;
+  const escapado = escaparUnicode(cuerpo);
+  return escapado !== cuerpo && coincide(escapado, recibida, secreto);
 }
