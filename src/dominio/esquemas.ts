@@ -242,6 +242,7 @@ export const EntradaRegistroSchema = z.strictObject({
   monto_original: DineroSchema.nullable(),
   monto_usd_centavos: centavos.nullable(),
   tasa_usada: z.string().nullable(),
+  tasa_fecha: z.iso.date().optional(),
   decision: z.union([decisionAgente, decisionHumana]).nullable(),
   reglas_version: z.int().positive(),
   evaluaciones: z.array(EvaluacionReglaSchema),

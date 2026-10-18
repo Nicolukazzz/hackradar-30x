@@ -11,8 +11,16 @@ export interface FuenteTasas {
   obtener(base: Moneda): Promise<Omit<FotoTasas, "fecha">>;
 }
 
+/** Tasas de una fecha pasada (#86, fecha de emisión de la factura). */
+export interface FuenteHistorica {
+  nombre: string;
+  obtenerEn(base: Moneda, fecha: string): Promise<Omit<FotoTasas, "fecha">>;
+}
+
 /** Dónde se guardan las fotos (Supabase `tasas_dia` o memoria en tests). */
 export interface AlmacenTasas {
+  /** todas las fotos de una base (una por día: pocas), para el motor */
+  todas(base: Moneda): Promise<FotoTasas[]>;
   delDia(base: Moneda, fecha: string): Promise<FotoTasas | null>;
   /** la más reciente con fecha ≤ `hasta` */
   ultima(base: Moneda, hasta: string): Promise<FotoTasas | null>;

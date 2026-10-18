@@ -53,6 +53,7 @@ export function crearEntradaAgente({ resultado, doc, ext, reglas, id, momento }:
     monto_original: ext.monto_total.valor,
     monto_usd_centavos: resultado.monto_usd_centavos,
     tasa_usada: resultado.tasa_usada,
+    ...(resultado.tasa_fecha ? { tasa_fecha: resultado.tasa_fecha } : {}),
     decision: resultado.decision,
     reglas_version: reglas.version,
     evaluaciones: resultado.evaluaciones,

@@ -114,6 +114,9 @@ export async function crearRepositorioMemoria(
     tasasVigentes() {
       return Promise.resolve(null); // tasas fijas de data/ (set de prueba)
     },
+    prepararTasas() {
+      return Promise.resolve();
+    },
     async actualizarBeneficiario(b: Beneficiario) {
       const i = s.datos.beneficiarios.findIndex((x) => x.id === b.id);
       if (i < 0) throw new Error(`no existe el beneficiario ${b.id}`);

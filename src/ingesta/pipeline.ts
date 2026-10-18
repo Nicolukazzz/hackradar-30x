@@ -81,6 +81,8 @@ export async function procesarDocumento(ref: string, deps: DependenciasPipeline)
   // Dos envíos simultáneos del mismo archivo pueden extraer los dos (se pierde el ahorro), pero R2 frena el segundo dentro.
   const previo = await repo.registro();
   const ext = extraccionDelArchivoRepetido(doc, previo) ?? (await extraerSinFallar(deps.extractor, doc));
+  // #86: la tasa se toma de la fecha de emisión; que su foto exista antes de decidir (no lanza si la fuente falla).
+  if (ext.fecha_emision.valor) await repo.prepararTasas(ext.fecha_emision.valor);
 
   const registrada = await repo.enExclusiva(async () => {
     const [datos, reglas, historial] = await Promise.all([repo.datosComunes(), repo.reglasVigentes(), repo.registro()]);
