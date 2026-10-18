@@ -69,22 +69,38 @@ export function formatearNumero(centavos: number, decimales = true): string {
 }
 
 /**
+ * Número para mostrar que nunca lanza: negativo con "-", centavos no enteros redondeados, NaN/Infinity → "—".
+ * Lo usan los formatos de pantalla y de texto: una factura con datos raros (COP con centavos, monto negativo) nunca
+ * puede tumbar una pantalla. `formatearNumero` sigue estricto para quien quiera validar.
+ */
+function mostrarNumero(centavos: number, sinDecimales: boolean): string {
+  if (!Number.isFinite(centavos)) return "—";
+  const entero = Math.round(centavos);
+  const abs = Math.abs(entero);
+  return `${entero < 0 ? "-" : ""}${formatearNumero(abs, !sinDecimales || abs % 100 !== 0)}`;
+}
+
+/**
  * "USD 7.444,05" · "COP 8.400.000" · "MXN 38.000,00". COP/CLP sin decimales salvo que el monto los traiga: una factura
- * real puede cobrar "COP 316.577,96" y la pantalla tiene que mostrarla tal cual, no romperse ni redondear.
+ * real puede cobrar "COP 316.577,96" y la pantalla tiene que mostrarla tal cual. Nunca lanza.
  */
 export function formatear(d: Dinero): string {
-  return `${d.moneda} ${formatearNumero(d.centavos, !SIN_DECIMALES.has(d.moneda) || d.centavos % 100 !== 0)}`;
+  return `${d.moneda} ${mostrarNumero(d.centavos, SIN_DECIMALES.has(d.moneda))}`;
 }
 
-/** Monto en la moneda base con su código, también negativo: "USD 7.444,05" · "COP -1.250.000,50" (#86). */
+/** Monto en la moneda base con su código, también negativo: "USD 7.444,05" · "COP -1.250.000,50" (#86). Nunca lanza. */
 export function formatearBase(centavos: number, moneda: Moneda): string {
-  const abs = Math.abs(centavos);
-  return `${moneda} ${centavos < 0 ? "-" : ""}${formatearNumero(abs, !SIN_DECIMALES.has(moneda) || abs % 100 !== 0)}`;
+  return `${moneda} ${mostrarNumero(centavos, SIN_DECIMALES.has(moneda))}`;
 }
 
-/** Formato de la UI interna para montos en la moneda base, sin código: "7.444,05" */
+/** Monto sin código de moneda: "8.400.000" (COP) · "1.240,00" (USD) · "316.577,96" (COP con centavos). Nunca lanza. */
+export function formatearMonto(d: Dinero): string {
+  return mostrarNumero(d.centavos, SIN_DECIMALES.has(d.moneda));
+}
+
+/** Formato de la UI interna para montos en la moneda base, sin código: "7.444,05". Nunca lanza. */
 export function formatearUsd(centavos: number): string {
-  return formatearNumero(centavos);
+  return mostrarNumero(centavos, false);
 }
 
 /** "MXN 18,50" · "COP 4.200,00" · null si es la moneda base (formato de EntradaRegistro.tasa_usada). */
