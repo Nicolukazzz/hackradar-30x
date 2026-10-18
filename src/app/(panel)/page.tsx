@@ -7,7 +7,6 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/
 import { AutoActualizar } from "./_bandeja/auto-actualizar";
 import { CargarFactura } from "./_bandeja/cargar-factura";
 import { BandejaEnVivo } from "./_bandeja/en-vivo";
-import { PorVerificarCaja } from "./_bandeja/por-verificar";
 import { Presupuesto } from "./_bandeja/presupuesto";
 import { TablaDecisiones } from "./_bandeja/tabla-decisiones";
 
@@ -41,7 +40,6 @@ export default async function BandejaPage({ searchParams }: PageProps<"/">) {
       <EncabezadoPagina titulo="Bandeja" descripcion="Las facturas que llegaron y lo que decidió el agente con cada una." acciones={acciones} />
       {/* Se actualiza sola y avisa cuando el agente decide una factura nueva (#125). */}
       <BandejaEnVivo inicial={verificacion.novedades} />
-      <PorVerificarCaja filas={verificacion.filas} />
 
       {!hayFacturas ? (
         <Empty className="flex-none rounded-2xl border bg-card py-20">
