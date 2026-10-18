@@ -26,6 +26,18 @@ Cada una se envía con un clic como si la mandara su proveedor y el resultado ap
 archivos están en [`facturas-de-prueba/`](facturas-de-prueba/) y cada proveedor tiene además su portal
 ([accesos](facturas-de-prueba/ACCESOS.md)).
 
+**Envía tu propia factura por un canal real.** Manda un PDF o una foto de factura (por ejemplo, una de
+[`facturas-de-prueba/`](facturas-de-prueba/)) y mira cómo entra sola a la **Bandeja** de la demo, se lee y queda decidida:
+
+| Canal | Dónde enviarla | Qué pasa |
+|---|---|---|
+| WhatsApp | **+1 555 195 8819** | Escribe y adjunta el archivo; aparece en la Bandeja en segundos |
+| Correo | **facturas.nebula.demo@gmail.com** | Adjunta el PDF o la foto; el buzón se revisa cada minuto y la factura aparece en la Bandeja |
+| Telegram | **[@nebula_facturas_bot](https://t.me/nebula_facturas_bot)** | Envía la foto o el PDF al bot; responde con la referencia y el estado |
+
+Como tu número o tu correo no están vinculados a ningún proveedor, la factura **no se paga sola**: queda frenada o
+esperando a una persona, con la explicación en la traza. Es el agente protegiendo contra remitentes desconocidos (reglas R3 y R11).
+
 > **El modelo solo lee. Las reglas deciden en código. Lo que no cumple espera a una persona, con la explicación escrita.**
 
 ![Bandeja: facturas recibidas, en qué quedó cada una y el presupuesto del mes](docs/capturas/bandeja.png)
