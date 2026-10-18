@@ -8,7 +8,7 @@ import type { Moneda } from "@/dominio/tipos";
 import { permisoPara } from "@/lib/auth/permisos";
 import { obtenerRepositorio } from "@/repositorio";
 
-import { CambiarMoneda } from "./cambiar-moneda";
+import { MonedaBase } from "./cambiar-moneda";
 
 export const metadata: Metadata = { title: "Moneda y tasas · Ajustes" };
 
@@ -28,7 +28,8 @@ const NOMBRE: Partial<Record<Moneda, string>> = {
 };
 
 // Ajustes → Moneda y tasas (#86): la moneda base (en la que están límites y presupuesto) y las tasas del día que usa
-// el agente. Cambiar la base convierte todo con la tasa del día, con vista previa y confirmación (solo administradores).
+// el agente. La base se cambia en la misma tarjeta (#156): se elige de la lista y debajo aparecen la vista previa y la
+// confirmación; todo se convierte con la tasa del día (solo administradores).
 export default async function MonedaPage() {
   const sesion = await exigirMiembro();
   const repo = await obtenerRepositorio();
@@ -53,15 +54,11 @@ export default async function MonedaPage() {
             tasa que usó.
           </p>
         </div>
-        <CambiarMoneda actual={base} permiso={permisoPara(sesion, "administrar")} />
       </header>
 
       <Tarjeta as="section" aria-labelledby="base" className="max-w-[680px]">
         <TarjetaEncabezado id="base" titulo="Moneda base" descripcion="En esta moneda están los límites, el presupuesto y los límites de aprobación." />
-        <div className="flex items-baseline gap-3 px-6 pb-6">
-          <span className="font-mono text-3xl font-semibold tabular-nums">{base}</span>
-          <span className="text-muted-foreground">{NOMBRE[base] ?? ""}</span>
-        </div>
+        <MonedaBase actual={base} nombres={NOMBRE} permiso={permisoPara(sesion, "administrar")} />
       </Tarjeta>
 
       <Tarjeta as="section" aria-labelledby="tasas" className="max-w-[680px]">
