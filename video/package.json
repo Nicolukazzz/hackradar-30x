@@ -1,0 +1,41 @@
+{
+  "name": "hackradar-video",
+  "version": "1.0.0",
+  "description": "Video del pitch (Remotion)",
+  "repository": {},
+  "license": "UNLICENSED",
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
+  },
+  "private": true,
+  "dependencies": {
+    "@remotion/cli": "4.0.536",
+    "@remotion/google-fonts": "4.0.536",
+    "@remotion/transitions": "4.0.536",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.536"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.536",
+    "@types/react": "19.2.7",
+    "@types/web": "0.0.166",
+    "eslint": "10.12.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "studio": "remotion studio",
+    "dev": "remotion studio",
+    "render": "remotion render Pitch out/pitch.mp4",
+    "render:escenas": "for c in E1-Gancho E2-Problema E3-ComoFunciona E4-Veredictos E5-Bandeja E6-Trampas E7-PersonaDecide E8-Metricas E9-Cierre; do remotion render $c out/escenas/$c.mp4 || exit 1; done",
+    "render:rotulo": "remotion render Rotulo out/rotulo.mov --image-format=png --pixel-format=yuva444p10le --codec=prores --prores-profile=4444",
+    "render:todo": "npm run render && npm run render:escenas && npm run render:rotulo",
+    "build": "remotion bundle",
+    "upgrade": "remotion upgrade",
+    "lint": "eslint src && tsc"
+  },
+  "allowScripts": {
+    "esbuild": false
+  }
+}

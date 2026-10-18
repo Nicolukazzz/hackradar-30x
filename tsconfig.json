@@ -41,6 +41,7 @@
   "exclude": [
     "node_modules",
     ".venv",
-    "data"
+    "data",
+    "video"
   ]
 }
