@@ -21,6 +21,8 @@ import {
 import { Button } from "@/components/ui/button";
 import type { ProveedorPorConfirmar, ResultadoConfiar } from "@/aprobaciones/proveedores-nuevos";
 import type { RemitentePorConfirmar, RespuestaRemitente, ResultadoConfirmar } from "@/aprobaciones/remitentes";
+import type { Moneda } from "@/dominio/tipos";
+import { sinPuntoDoble } from "@/dominio/normalizar";
 import type { PermisoUI } from "@/lib/auth/permisos";
 
 // Por confirmar (2026-10-18). Remitentes: un proveedor de la lista escribió desde un correo, Telegram o WhatsApp que no
@@ -33,6 +35,23 @@ function canal(r: RemitentePorConfirmar["remitente"]): string {
   if (r.tipo === "correo") return r.valor;
   if (r.tipo === "telegram") return `Telegram · chat ${r.valor}`;
   return `WhatsApp · +${r.valor}`;
+}
+
+type FacturaEsperando = { monto_usd_centavos: number | null; moneda_base: Moneda };
+
+/** Total de las que esperan. Una factura sin total confiable no suma 0: se dice que su monto está por confirmar (#149). */
+function TotalEspera({ facturas, moneda }: { facturas: readonly FacturaEsperando[]; moneda: Moneda }) {
+  const seguras = facturas.filter((f) => f.monto_usd_centavos !== null && f.moneda_base === moneda);
+  const dudosas = facturas.length - seguras.length;
+  const total = seguras.reduce((s, f) => s + (f.monto_usd_centavos ?? 0), 0);
+  const porConfirmar = <span className="text-escalada-foreground">{dudosas === facturas.length ? "monto por confirmar" : `${dudosas} por confirmar`}</span>;
+  if (seguras.length === 0) return porConfirmar;
+  return (
+    <>
+      <Monto usd={total} moneda={moneda} />
+      {dudosas > 0 && <> + {porConfirmar}</>}
+    </>
+  );
 }
 
 function resumen(r: ResultadoConfirmar, proveedor: string): string {
@@ -76,7 +95,7 @@ function Pregunta({ g, confirmar }: { g: RemitentePorConfirmar; confirmar: Permi
             ¿<span className="font-mono text-[14px] break-all">{canal(g.remitente)}</span> es de <span className="font-medium">{g.beneficiario}</span>?
           </p>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            {n === 1 ? "1 factura espera" : `${n} facturas esperan`} · <Monto usd={g.total_usd_centavos} moneda={g.moneda_base} /> ·{" "}
+            {n === 1 ? "1 factura espera" : `${n} facturas esperan`} · <TotalEspera facturas={g.facturas} moneda={g.moneda_base} /> ·{" "}
             {g.facturas.map((f, i) => (
               <span key={f.ref_interna}>
                 {i > 0 && ", "}
@@ -109,7 +128,7 @@ function Pregunta({ g, confirmar }: { g: RemitentePorConfirmar; confirmar: Permi
             <AlertDialogTitle>{pidiendo === "si" ? `¿Vincular a ${g.beneficiario}?` : `¿Rechazar ${n === 1 ? "su factura" : `sus ${n} facturas`}?`}</AlertDialogTitle>
             <AlertDialogDescription>
               {pidiendo === "si"
-                ? `${canal(g.remitente)} quedará vinculado a ${g.beneficiario}. El agente vuelve a revisar ${n === 1 ? "su factura" : `sus ${n} facturas`}: lo que cumpla todas las reglas se paga solo; lo demás sigue pendiente con su motivo. Queda en el registro.`
+                ? sinPuntoDoble(`${canal(g.remitente)} quedará vinculado a ${g.beneficiario}. El agente vuelve a revisar ${n === 1 ? "su factura" : `sus ${n} facturas`}: lo que cumpla todas las reglas se paga solo; lo demás sigue pendiente con su motivo. Queda en el registro.`)
                 : `Si ${canal(g.remitente)} no es de ${g.beneficiario}, puede ser alguien haciéndose pasar por el proveedor. ${n === 1 ? "La factura se rechaza" : "Las facturas se rechazan"} y no se vincula nada. Queda en el registro.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -142,7 +161,6 @@ function PreguntaProveedor({ g, confirmar }: { g: ProveedorPorConfirmar; confirm
   const n = g.facturas.length;
   const solo = g.facturas.filter((f) => f.solo_por_ser_nuevo).length;
   const moneda = g.facturas[0]?.moneda_base ?? "USD";
-  const total = g.facturas.reduce((s, f) => s + (f.moneda_base === moneda ? (f.monto_usd_centavos ?? 0) : 0), 0);
 
   function responder(respuesta: RespuestaRemitente) {
     iniciar(async () => {
@@ -167,7 +185,7 @@ function PreguntaProveedor({ g, confirmar }: { g: ProveedorPorConfirmar; confirm
             <span className="font-medium">{g.nombre}</span> es un proveedor nuevo. ¿Confiar siempre?
           </p>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            {n === 1 ? "1 factura espera" : `${n} facturas esperan`} · <Monto usd={total} moneda={moneda} /> ·{" "}
+            {n === 1 ? "1 factura espera" : `${n} facturas esperan`} · <TotalEspera facturas={g.facturas} moneda={moneda} /> ·{" "}
             {g.facturas.map((f, i) => (
               <span key={f.ref_interna}>
                 {i > 0 && ", "}

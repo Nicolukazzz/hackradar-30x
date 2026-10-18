@@ -145,8 +145,12 @@ function hitoDecision(e: EntradaRegistro, quien: string): HitoLineaTiempo {
   if (e.decision === "PAGAR") return { momento: e.momento, titulo: "Pagada", texto: "Cumple todas las reglas: el agente la aprobó solo.", tono: "pagada" };
   if (e.decision === "FRENAR") return { momento: e.momento, titulo: "Frenada", texto: "No se paga. Para pagarla hay que corregir la factura y volver a enviarla.", tono: "frenada" };
   if (e.decision === "RECHAZADA_NO_FACTURA") return { momento: e.momento, titulo: "No es una factura", texto: "Se registró y no entra a las reglas de pago.", tono: "neutro" };
-  const usd = e.monto_usd_centavos === null ? "el monto" : formatearBase(e.monto_usd_centavos, e.moneda_base ?? "USD");
-  return { momento: e.momento, titulo: `Escalada a ${quien}`, texto: `${usd} reservados del presupuesto del periodo.`, tono: "escalada" };
+  // Sin total confiable no hay qué reservar (#149): antes decía «el monto reservados».
+  const texto =
+    e.monto_usd_centavos === null
+      ? "Sin un total confiable no se reserva presupuesto: una persona debe confirmar el monto."
+      : `${formatearBase(e.monto_usd_centavos, e.moneda_base ?? "USD")} reservados del presupuesto del periodo.`;
+  return { momento: e.momento, titulo: `Escalada a ${quien}`, texto, tono: "escalada" };
 }
 
 /** Recibida → datos extraídos → reglas → decisión del agente → decisiones humanas → (esperando). */
@@ -219,7 +223,7 @@ export async function obtenerFactura(
     asignacion,
     reservado_usd: pendiente ? e.monto_usd_centavos : null,
     resumen,
-    observaciones: e.decision === "RECHAZADA_NO_FACTURA" ? [] : observaciones(e.monto_usd_centavos, reglas),
+    observaciones: e.decision === "RECHAZADA_NO_FACTURA" ? [] : observaciones(e.monto_usd_centavos, reglas, { fecha: ext?.fecha_vencimiento.valor ?? null, ahora: e.momento }),
     instrucciones_detectadas: instrucciones,
     instrucciones_lineas: lineas,
     firmas: firmas.map((f) => {

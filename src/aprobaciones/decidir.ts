@@ -4,7 +4,7 @@
 
 import { correoDeInvitacion, esRemitenteInvitacion } from "@/dominio/remitente";
 import { aBase, formatear, formatearUsd, monedaBase } from "@/dominio/dinero";
-import { slug } from "@/dominio/normalizar";
+import { citar, sinPuntoDoble, slug } from "@/dominio/normalizar";
 import type { Aprobador, Beneficiario, DocumentoRecibido, EntradaRegistro, Extraccion, Moneda, Reglas, TablaTasas } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
 import { montoEnBase, tablaDeHoy } from "@/reglas/en-base";
@@ -154,21 +154,21 @@ function resolverAprobacion(v: Validado, usd: number, dobleDesde: number, aproba
   const limite = aprobador.limite_usd === null ? null : `${moneda} ${formatearUsd(aprobador.limite_usd)}`;
   if (usd < dobleDesde) {
     if (!cubre(aprobador, usd)) throw new ErrorDecision(403, `Supera tu límite de aprobación (${limite}). Pídele a un aprobador con límite suficiente que la apruebe.`);
-    return { parcial: false, explicacion: `Aprobada por ${aprobador.nombre}: «${comentario}».` };
+    return { parcial: false, explicacion: `Aprobada por ${aprobador.nombre}: ${citar(comentario)}.` };
   }
   // Solo cuentan las firmas de quienes hoy pueden aprobar (#51): la de una cuenta a la que le quitaron el rol se
   // ignora, y la factura vuelve a necesitar dos firmas vigentes.
   const primera = firmas.find((f) => aprobadores.some((a) => a.id === f.aprobador_id));
   if (!primera) {
     // Primera firma: puede ser de control (sin límite suficiente) si la segunda sí lo tiene (§10).
-    return { parcial: true, explicacion: `Primera aprobación (1 de 2) por ${aprobador.nombre}: «${comentario}». Falta una segunda firma.` };
+    return { parcial: true, explicacion: `Primera aprobación (1 de 2) por ${aprobador.nombre}: ${citar(comentario)}. Falta una segunda firma.` };
   }
   if (primera.aprobador_id === aprobador.id) throw new ErrorDecision(409, "La segunda aprobación debe ser de otra persona.");
   const primeraCubre = aprobadores.some((a) => a.id === primera.aprobador_id && cubre(a, usd));
   if (!cubre(aprobador, usd) && !primeraCubre) {
     throw new ErrorDecision(403, `Supera tu límite de aprobación (${limite}) y la primera firma tampoco lo cubre: al menos una de las dos debe tener límite suficiente.`);
   }
-  return { parcial: false, explicacion: `Aprobada por ${aprobador.nombre} (segunda firma; la primera fue de ${primera.nombre}): «${comentario}».` };
+  return { parcial: false, explicacion: `Aprobada por ${aprobador.nombre} (segunda firma; la primera fue de ${primera.nombre}): ${citar(comentario)}.` };
 }
 
 /** Todo lo que puede fallar al agregar a la lista se valida ANTES de registrar la aprobación. */
@@ -215,7 +215,7 @@ async function decidirEnExclusiva(input: EntradaDecision, deps: { repo: Reposito
       ...conDatos,
       id: await repo.siguienteIdRegistro(anio),
       decision: "RECHAZADA_HUMANO",
-      explicacion: `Rechazada por ${v.aprobador.nombre}: «${v.comentario}». La reserva volvió al presupuesto.${notaCambio}`,
+      explicacion: `Rechazada por ${v.aprobador.nombre}: ${citar(v.comentario)}. La reserva volvió al presupuesto.${notaCambio}`,
     };
     await repo.agregarEntrada(entrada);
     return { entrada, parcial: false, beneficiario_agregado: null };
@@ -357,7 +357,7 @@ function canalValidado(
   const b = canal ? existentes.find((x) => x.id === canal.beneficiario_id) : undefined;
   if (!canal || !b) throw new ErrorDecision(400, "Solo se vincula el correo o chat de un proveedor de la lista cuando la factura escaló por remitente no verificado (R11).");
   const dueno = existentes.find((x) => x.id !== b.id && (canal.tipo === "correo" ? x.canales.correos.includes(canal.valor) : x.canales.telegram_chat_id === canal.valor));
-  if (dueno) throw new ErrorDecision(409, `Ese ${canal.tipo === "correo" ? "correo" : "chat"} ya está vinculado a ${dueno.nombre}.`);
+  if (dueno) throw new ErrorDecision(409, sinPuntoDoble(`Ese ${canal.tipo === "correo" ? "correo" : "chat"} ya está vinculado a ${dueno.nombre}.`));
   return { ...canal, beneficiario: b };
 }
 

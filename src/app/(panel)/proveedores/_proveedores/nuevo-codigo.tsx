@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { sinPuntoDoble } from "@/dominio/normalizar";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,7 +69,7 @@ export function NuevoCodigo({ id, nombre }: { id: string; nombre: string }) {
         <DialogContent className="gap-5 p-6 sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Código nuevo</DialogTitle>
-            <DialogDescription>Pásaselo a {nombre}. Por seguridad no se vuelve a mostrar.</DialogDescription>
+            <DialogDescription>{sinPuntoDoble(`Pásaselo a ${nombre}. Por seguridad no se vuelve a mostrar.`)}</DialogDescription>
           </DialogHeader>
           {codigo ? <CodigoProveedor codigo={codigo} /> : null}
         </DialogContent>

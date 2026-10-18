@@ -3,9 +3,10 @@
 
 import { correoDeInvitacion, esRemitenteInvitacion } from "@/dominio/remitente";
 import { formatear, formatearBase, monedaBase, porcentaje } from "@/dominio/dinero";
+import { sinPuntoDoble } from "@/dominio/normalizar";
 import type { Beneficiario, DecisionAgente, DocumentoRecibido, EvaluacionRegla, Extraccion, IdRegla, Reglas } from "@/dominio/tipos";
 
-import { fechaDe, fechaLegible, horaDe } from "./fechas";
+import { diasEntre, esFechaValida, fechaDe, fechaLegible, horaDe } from "./fechas";
 import { tolerancia } from "./r05-acordado";
 
 export type EntradaExplicacion = {
@@ -24,11 +25,6 @@ const enBase = (centavos: number, reglas: Pick<Reglas, "moneda">) => formatearBa
 type Dato = EvaluacionRegla["datos"][string] | undefined;
 const texto = (v: Dato) => (v === null || v === undefined ? "" : String(v));
 const numero = (v: Dato) => (typeof v === "number" ? v : 0);
-
-/** Nombres que terminan en punto ("CloudNorte S.A.S.") no deben dejar ".." al cerrar la frase. */
-function sinPuntoDoble(frase: string): string {
-  return frase.replace(/\.\.(?=\s|$)/g, ".");
-}
 
 const CANAL: Record<DocumentoRecibido["canal"], string> = {
   correo: "correo",
@@ -72,10 +68,11 @@ const SIN_NOMBRE = "El beneficiario";
 
 /** Una frase por regla que falla (§7). */
 const FRASES: Record<IdRegla, (f: Frase) => string> = {
-  R1: ({ e, d, de }) =>
+  // Frenada, ninguna persona la decide (#149): no se pide confirmar los datos.
+  R1: ({ e, d, de, x }) =>
     d.lectura === "sin_respuesta"
-      ? `el agente no pudo leer el documento${de} porque el servicio de lectura no respondió. Una persona debe revisarlo o pedir que se reenvíe.`
-      : `el agente no está seguro de lo que leyó en la factura${de} (${e.comparacion}). Una persona debe confirmar los datos.`,
+      ? `el agente no pudo leer el documento${de} porque el servicio de lectura no respondió.${x.decision === "FRENAR" ? "" : " Una persona debe revisarlo o pedir que se reenvíe."}`
+      : `el agente no está seguro de lo que leyó en la factura${de} (${e.comparacion}).${x.decision === "FRENAR" ? "" : " Una persona debe confirmar los datos."}`,
   R2: fraseDuplicado,
   R3: ({ e, d, nombre, de, monto }) => {
     if (d.motivo === "sin_nit_factura") return `la factura${de} no trae la identificación fiscal (NIT) que la empresa exige para reconocer a quien cobra.`;
@@ -174,12 +171,20 @@ export function explicar(x: EntradaExplicacion): string {
 }
 
 /** Observaciones que no deciden (§7): monto a ≤ 1 % por debajo del límite automático. */
-export function observaciones(monto_usd_centavos: number | null, reglas: Reglas): string[] {
+export function observaciones(monto_usd_centavos: number | null, reglas: Reglas, vencimiento?: { fecha: string | null; ahora: string }): string[] {
+  const obs: string[] = [];
   const limite = reglas.limites.pago_automatico_usd;
-  if (monto_usd_centavos === null || monto_usd_centavos > limite) return [];
-  const dif = limite - monto_usd_centavos;
-  if (dif * 100 > limite) return [];
-  return [dif === 0 ? "El monto es exactamente el límite automático." : `El monto está a ${enBase(dif, reglas)} del límite automático.`];
+  if (monto_usd_centavos !== null && monto_usd_centavos <= limite) {
+    const dif = limite - monto_usd_centavos;
+    if (dif * 100 <= limite) obs.push(dif === 0 ? "El monto es exactamente el límite automático." : `El monto está a ${enBase(dif, reglas)} del límite automático.`);
+  }
+  // Una factura vencida hace tiempo puede ser legítima (pago atrasado), pero quien revisa debe verlo (#149).
+  const vence = vencimiento?.fecha;
+  if (vence && esFechaValida(vence) && vence < fechaDe(vencimiento.ahora)) {
+    const dias = diasEntre(vence, fechaDe(vencimiento.ahora));
+    obs.push(`La factura venció hace ${dias === 1 ? "1 día" : `${dias} días`} (${fechaLegible(vence)}).`);
+  }
+  return obs;
 }
 
 export const EXPLICACION_ERROR = "Error interno al evaluar: se escala por seguridad.";

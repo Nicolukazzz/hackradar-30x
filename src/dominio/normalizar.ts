@@ -61,3 +61,16 @@ export function slug(texto: string): string {
 export function normalizarIdentificacion(id: string): string {
   return id.replaceAll(/[^0-9A-Za-z]/g, "").toUpperCase();
 }
+
+/** Nombres que terminan en punto ("CloudNorte S.A.S.") no deben dejar ".." al cerrar la frase. */
+export function sinPuntoDoble(frase: string): string {
+  return frase.replace(/(?<!\.)\.\.(?=\s|$)/g, ".");
+}
+
+/**
+ * Cita un texto entre comillas angulares. Su punto final sobra: lo pone la frase que lo contiene («se rechaza».).
+ * Un punto de abreviatura («Mesa Legal S.A.S.») se conserva.
+ */
+export function citar(texto: string): string {
+  return `«${texto.trim().replace(/(?<![A-ZÁÉÍÓÚÑ])\.$/, "")}»`;
+}
