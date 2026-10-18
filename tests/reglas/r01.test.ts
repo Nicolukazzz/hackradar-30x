@@ -1,7 +1,9 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
-import type { DatosComunes } from "@/dominio/cargar";
+import { type DatosComunes, reglasVersion } from "@/dominio/cargar";
+import type { CampoRequerible } from "@/dominio/tipos";
 import { r01Extraccion } from "@/reglas/r01-extraccion";
+import { r04Cuenta } from "@/reglas/r04-cuenta";
 
 import { campo, ctx, datosComunes } from "./fixtures";
 
@@ -71,5 +73,40 @@ describe("R1 Extracción completa y confiable", () => {
   it("varias causas se unen con ·", () => {
     const e = r01Extraccion(ctx(d, { ext: { numero: campo<never>(null), concepto: campo("x", 0.3) } }));
     expect(e.comparacion).toBe("falta número de factura · confianza de concepto 30% < 90%");
+  });
+});
+
+describe("R1 con requisitos configurables (#109)", () => {
+  const con = (obligatorios: CampoRequerible[]) => ({ ...reglasVersion(d, 7), requisitos: { obligatorios } });
+
+  it("un campo no exigido puede faltar; el monto siempre se exige", () => {
+    const sinNumero = { numero: campo<never>(null), concepto: campo<never>(null) };
+    expect(r01Extraccion(ctx(d, { ext: sinNumero })).resultado).toBe("FALLA");
+    expect(r01Extraccion(ctx(d, { ext: sinNumero, reglas: con(["beneficiario_nombre", "cuenta_destino_ultimos4"]) })).resultado).toBe("CUMPLE");
+    const sinMonto = r01Extraccion(ctx(d, { ext: { monto_total: campo<never>(null) }, reglas: con([]) }));
+    expect(sinMonto.resultado).toBe("FALLA");
+    expect(sinMonto.comparacion).toBe("falta monto total");
+  });
+
+  it("exigir NIT o referencia los vuelve obligatorios", () => {
+    const e = r01Extraccion(ctx(d, { ext: { referencia_acuerdo: campo<never>(null) }, reglas: con(["identificacion_fiscal", "referencia_acuerdo"]) }));
+    expect(e.comparacion).toBe("falta referencia al acuerdo · falta identificación fiscal");
+  });
+
+  it("aunque no se exija, una cuenta leída con baja confianza sigue fallando (puede ser un desvío)", () => {
+    const e = r01Extraccion(ctx(d, { ext: { cuenta_destino_ultimos4: campo("4471", 0.5) }, reglas: con([]) }));
+    expect(e.resultado).toBe("FALLA");
+  });
+});
+
+describe("R4 cuando la empresa no exige la cuenta (#109)", () => {
+  it("sin cuenta en la factura: NO_APLICA y se paga a la registrada; con otra cuenta: falla igual", () => {
+    const reglas = { ...reglasVersion(d, 7), requisitos: { obligatorios: ["beneficiario_nombre" as const] } };
+    const sin = r04Cuenta(ctx(d, { ext: { cuenta_destino_ultimos4: campo<never>(null) }, reglas }));
+    expect(sin).toMatchObject({ resultado: "NO_APLICA", datos: { cuenta_no_exigida: true } });
+    expect(sin.comparacion).toContain("se paga a la registrada");
+    expect(r04Cuenta(ctx(d, { ext: { cuenta_destino_ultimos4: campo("0000") }, reglas })).resultado).toBe("FALLA");
+    // Con la cuenta exigida (por defecto), sin cuenta no aplica y la guarda de PAGAR escala.
+    expect(r04Cuenta(ctx(d, { ext: { cuenta_destino_ultimos4: campo<never>(null) } }))).toMatchObject({ resultado: "NO_APLICA", comparacion: "sin dato confiable (ver R1)" });
   });
 });

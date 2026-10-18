@@ -7,9 +7,19 @@ import { toast } from "sonner";
 
 import { Boton, Tarjeta, TarjetaEncabezado, TarjetaPie, fechaCorta, porcentajeUi } from "@/app/_componentes";
 import type { ReporteEvaluacion, UsoTasa } from "@/app/_datos/reglas";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { formatearTasa } from "@/dominio/dinero";
-import { REGLAS_EDITABLES, type Aprobador, type IdRegla, type ModoIdentidad, type Reglas } from "@/dominio/tipos";
+import {
+  CAMPOS_REQUERIBLES,
+  REGLAS_EDITABLES,
+  REQUERIDOS_POR_DEFECTO,
+  type Aprobador,
+  type CampoRequerible,
+  type IdRegla,
+  type ModoIdentidad,
+  type Reglas,
+} from "@/dominio/tipos";
 import type { PermisoUI } from "@/lib/auth/permisos";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +58,17 @@ const MONEDAS: Record<string, string> = {
   EUR: "euro",
 };
 
+const ETIQUETA_REQUISITO: Record<CampoRequerible, string> = {
+  beneficiario_nombre: "Nombre de quien cobra",
+  numero: "Número de factura",
+  fecha_emision: "Fecha de emisión",
+  fecha_vencimiento: "Fecha de vencimiento",
+  cuenta_destino_ultimos4: "Cuenta destino",
+  concepto: "Concepto",
+  referencia_acuerdo: "Referencia al acuerdo (OC, contrato)",
+  identificacion_fiscal: "NIT o identificación fiscal",
+};
+
 const MODOS_IDENTIDAD: { valor: ModoIdentidad; titulo: string; descripcion: string }[] = [
   { valor: "nombre", titulo: "Por nombre", descripcion: "El nombre de la factura igual al registrado (sin tildes, mayúsculas ni S.A.S.)." },
   { valor: "nombre_y_nit", titulo: "Nombre y NIT", descripcion: "Los dos deben ser del mismo proveedor. Lo más estricto." },
@@ -66,6 +87,7 @@ type Formulario = {
   doble: string;
   activas: Record<IdRegla, boolean>;
   identidad: ModoIdentidad;
+  requisitos: CampoRequerible[];
 };
 
 type Errores = Partial<Record<keyof Formulario, string>>;
@@ -83,6 +105,7 @@ function desdeReglas(r: Reglas): Formulario {
     doble: escribirUsd(r.aprobacion.doble_aprobacion_desde_usd),
     activas: { ...r.activas },
     identidad: r.identidad?.modo ?? "nombre",
+    requisitos: [...(r.requisitos?.obligatorios ?? REQUERIDOS_POR_DEFECTO)],
   };
 }
 
@@ -117,9 +140,14 @@ function aReglas(f: Formulario, base: Reglas): { reglas: Reglas | null; errores:
       activas: f.activas,
       // Sin cambio respecto a la base, se deja como estaba (las versiones sin `identidad` son "por nombre").
       ...(f.identidad === (base.identidad?.modo ?? "nombre") ? {} : { identidad: { modo: f.identidad } }),
+      ...(mismoConjunto(f.requisitos, base.requisitos?.obligatorios ?? REQUERIDOS_POR_DEFECTO)
+        ? {}
+        : { requisitos: { obligatorios: CAMPOS_REQUERIBLES.filter((c) => f.requisitos.includes(c)) } }),
     },
   };
 }
+
+const mismoConjunto = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x) => b.includes(x));
 
 /** Igualdad de valores sin importar el orden de las claves (Supabase guarda las reglas en jsonb, que lo cambia). */
 function mismoValor(a: unknown, b: unknown): boolean {
@@ -336,6 +364,36 @@ export function EditorReglas({
             </label>
           ))}
         </RadioGroup>
+      </Tarjeta>
+
+      <Tarjeta as="section" aria-labelledby="req">
+        <TarjetaEncabezado id="req" titulo="Qué debe traer la factura · R1" descripcion="Si falta un dato marcado, la factura espera a una persona. Un dato que llega pero no se lee bien siempre escala." />
+        <div className="grid gap-2 px-6 pb-6 sm:grid-cols-2 lg:grid-cols-3">
+          <label className="flex items-center gap-3 rounded-xl border border-border bg-superficie-2 p-3.5 text-sm">
+            <Checkbox checked disabled aria-describedby="req-monto" />
+            <span className="flex flex-col">
+              <span className="font-medium">Monto y moneda</span>
+              <span id="req-monto" className="text-[13px] text-muted-foreground">
+                Siempre: sin monto no hay límites que comparar.
+              </span>
+            </span>
+          </label>
+          {CAMPOS_REQUERIBLES.map((c) => (
+            <label key={c} className="flex cursor-pointer items-center gap-3 rounded-xl border border-border p-3.5 text-sm transition-colors hover:bg-superficie-2">
+              <Checkbox
+                checked={f.requisitos.includes(c)}
+                onCheckedChange={(v) => cambiar("requisitos", v ? [...f.requisitos, c] : f.requisitos.filter((x) => x !== c))}
+              />
+              <span className="font-medium">{ETIQUETA_REQUISITO[c]}</span>
+            </label>
+          ))}
+        </div>
+        {f.requisitos.includes("cuenta_destino_ultimos4") ? null : (
+          <p className="mx-6 mb-6 flex items-start gap-2 rounded-[10px] bg-escalada px-3.5 py-3 text-[13px] leading-relaxed text-escalada-foreground">
+            <AlertTriangleIcon className="mt-0.5 size-4 flex-none" aria-hidden />
+            Sin cuenta en la factura, el agente pagará a la cuenta registrada del proveedor. Si una factura trae otra cuenta, igual se escala (R4).
+          </p>
+        )}
       </Tarjeta>
 
       <div className="grid gap-5 lg:grid-cols-2">

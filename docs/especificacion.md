@@ -172,6 +172,7 @@ export type Reglas = {
   aprobacion: { doble_aprobacion_desde_usd: number }; // centavos. 1000000
   activas: Record<IdRegla, boolean>;       // solo R5 y R8 pueden ser false (§4)
   identidad?: { modo: 'nombre'|'nombre_y_nit'|'nit' }; // #108; ausente = nombre
+  requisitos?: { obligatorios: CampoRequerible[] };     // #109; ausente = §4.3. El monto siempre es obligatorio
 };
 
 export type LineaAcuerdo = {
@@ -343,7 +344,7 @@ Cada `rNN-*.ts` tiene `tests/reglas/rNN.test.ts` con: un caso CUMPLE, un caso FA
 
 Invariantes (tests de propiedades con `fast-check` en `tests/reglas/invariantes.test.ts`, 10.000 casos aleatorios):
 
-1. `decision === 'PAGAR'` ⇒ R1, R3, R4, R11 dan **CUMPLE** (nunca NO_APLICA) y ninguna regla da FALLA/INDETERMINADO.
+1. `decision === 'PAGAR'` ⇒ R1, R3, R4, R11 dan **CUMPLE** (nunca NO_APLICA) y ninguna regla da FALLA/INDETERMINADO. Única excepción (#109): R4 NO_APLICA con `cuenta_no_exigida` cuando la empresa no exige la cuenta y la factura no trae ninguna (se paga a la registrada).
 2. `decision === 'PAGAR'` ⇒ `monto_usd ≤ pago_automatico_usd` y `≤ disponible` y `≤ maximo_absoluto_usd`.
 3. Agregar texto de R10 a cualquier factura nunca produce `PAGAR`.
 4. El motor no lee reloj, red ni disco: mismo input ⇒ mismo output (se prueba corriendo dos veces).

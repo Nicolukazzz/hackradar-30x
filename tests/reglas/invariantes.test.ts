@@ -7,7 +7,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { cargarEscenario, type DatosComunes, reglasVersion } from "@/dominio/cargar";
 import { aUsd } from "@/dominio/dinero";
 import { remitenteInvitacion } from "@/dominio/remitente";
-import type { DocumentoRecibido, EntradaRegistro, Extraccion, Moneda, Reglas } from "@/dominio/tipos";
+import { CAMPOS_REQUERIBLES, type DocumentoRecibido, type EntradaRegistro, type Extraccion, type Moneda, type Reglas } from "@/dominio/tipos";
 import { CAMPOS_OBLIGATORIOS } from "@/reglas/contexto";
 import { sumarDias } from "@/reglas/fechas";
 import { evaluarFactura, type EntradaMotor } from "@/reglas/motor";
@@ -188,6 +188,36 @@ describe("invariantes de seguridad (§5)", () => {
     );
     // El generador debe producir pagos de verdad; si no, las propiedades no prueban nada.
     expect(pagos).toBeGreaterThan(CORRIDAS / 20);
+  }, 120_000);
+
+  it("#109: con cualquier combinación de requisitos, nunca paga sin monto, sin lo exigido ni a otra cuenta", () => {
+    let pagos = 0;
+    const requisitos = fc.subarray([...CAMPOS_REQUERIBLES]);
+    const faltan = fc.subarray([...CAMPOS_REQUERIBLES, "monto_total" as const], { maxLength: 3 });
+    fc.assert(
+      fc.property(entradaArbitraria(), requisitos, faltan, (base, obligatorios, quitar) => {
+        const ext = { ...base.ext };
+        for (const c of quitar) (ext as Record<string, unknown>)[c] = campo(null);
+        const input: EntradaMotor = { ...base, ext, reglas: { ...base.reglas, requisitos: { obligatorios } } };
+        const r = evaluarFactura(input);
+        if (r.decision !== "PAGAR") return;
+        pagos++;
+        const resultado = (id: string) => r.evaluaciones.find((e) => e.id === id)?.resultado;
+        for (const id of ["R1", "R3", "R11"]) expect(resultado(id)).toBe("CUMPLE");
+        expect(input.ext.monto_total.valor).not.toBeNull();
+        for (const c of obligatorios) expect((input.ext[c] as { valor: unknown } | undefined)?.valor ?? null).not.toBeNull();
+        const ben = d.beneficiarios.find((b) => b.nombre === input.ext.beneficiario_nombre.valor);
+        const cuenta = input.ext.cuenta_destino_ultimos4.valor;
+        // Cuenta: la registrada, o ninguna cuando la empresa no la exige (se paga a la registrada). Nunca otra.
+        if (cuenta === null) expect(obligatorios).not.toContain("cuenta_destino_ultimos4");
+        else expect(cuenta).toBe(ben?.cuenta.ultimos4);
+        const usd = aUsd(input.ext.monto_total.valor!, d.tasas["2026-10"]!).usd_centavos;
+        expect(usd).toBeLessThanOrEqual(input.reglas.limites.pago_automatico_usd);
+        expect(usd).toBeLessThanOrEqual(input.presupuesto.disponible);
+      }),
+      { numRuns: 3_000, seed: 20261017 },
+    );
+    expect(pagos).toBeGreaterThanOrEqual(50); // hay pagos de verdad: la propiedad prueba algo
   }, 120_000);
 
   it("una excepción dentro del motor termina en ESCALAR, nunca en PAGAR", () => {

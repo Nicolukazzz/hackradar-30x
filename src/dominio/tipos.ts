@@ -52,12 +52,37 @@ export type Reglas = {
   extraccion: { confianza_minima: number };
   aprobacion: { doble_aprobacion_desde_usd: number };
   activas: Record<IdRegla, boolean>;
+  /** Qué datos debe traer la factura para que R1 cumpla, además del monto (#109). Ausente = los de §4.3. */
+  requisitos?: { obligatorios: CampoRequerible[] };
   /** Cómo se reconoce al proveedor en la factura (#108). Ausente = por nombre (como el dataset). */
   identidad?: { modo: ModoIdentidad };
 };
 
 /** nombre: nombre normalizado · nit: solo identificación fiscal · nombre_y_nit: los dos del mismo proveedor (#108). */
 export type ModoIdentidad = "nombre" | "nombre_y_nit" | "nit";
+
+/** Campos que la empresa puede exigir o no (#109). El monto no está: siempre es obligatorio. */
+export const CAMPOS_REQUERIBLES = [
+  "beneficiario_nombre",
+  "numero",
+  "fecha_emision",
+  "fecha_vencimiento",
+  "cuenta_destino_ultimos4",
+  "concepto",
+  "referencia_acuerdo",
+  "identificacion_fiscal",
+] as const;
+export type CampoRequerible = (typeof CAMPOS_REQUERIBLES)[number];
+
+/** Sin `requisitos` en las reglas se exige lo de §4.3 (todo salvo referencia e identificación fiscal). */
+export const REQUERIDOS_POR_DEFECTO: readonly CampoRequerible[] = [
+  "beneficiario_nombre",
+  "numero",
+  "fecha_emision",
+  "fecha_vencimiento",
+  "cuenta_destino_ultimos4",
+  "concepto",
+];
 
 export type LineaAcuerdo = {
   codigo: string;
