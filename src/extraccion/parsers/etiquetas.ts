@@ -50,6 +50,13 @@ const RE_CUENTA_ENMASCARADA = new RegExp(
   "giu",
 );
 
+/** Identificación fiscal (#108): NIT, RUT, RFC, CUIT, CNPJ, CPF, RUC, EIN/TIN, Tax ID, VAT No. El valor, sin espacios. */
+const RE_IDENTIFICACION =
+  /(?<![A-Za-z])(?:N\.?I\.?T\.?|RUT|RFC|CUIT|CNPJ|CPF|RUC|EIN|TIN|Tax\s*ID|VAT\s*(?:No\.?|Number|ID))(?:\s*N\.?\s*[º°o]\.?)?\s*[:#]?\s*([A-Z0-9][A-Z0-9./-]{3,24})/gi;
+/** Rótulo del cliente: su NIT (el de quien paga) no es el de quien cobra. Se ignora ese renglón y los 3 siguientes. */
+const RE_CLIENTE = /^\s*(?:Facturar\s+a|Facturado\s+a|Cliente|Adquiriente|Se[ñn]or(?:es)?|Bill\s+to|Billed\s+to|Customer|Cobrar\s+a|Tomador)\b/i;
+const LINEAS_CLIENTE = 3;
+
 const RE_PAGAR = /^\s*(?:Pagar\s+a|Pay\s+to|Payee|Beneficiario|Benefici[aá]rio)\s*:?\s*(.*)$/i;
 const RE_CABECERA_CONCEPTO = /^\s*(?:Concepto|Description|Descripci[oó]n|Descri[cç][aã]o|Detalle)\s*\|\s*(?:Importe|Amount|Valor|Monto)\s*$/i;
 const RE_CONCEPTO_ETIQUETADO = /^\s*(?:Concepto|Description|Descripci[oó]n|Descri[cç][aã]o|Detalle)\s*:\s*(.+)$/i;
@@ -162,6 +169,21 @@ export function parsearLineas(lineas: string[], modo: ModoParser): ExtraccionPar
     }
   }
   poner("cuenta_destino_ultimos4", ultima, ultimos4.size === 1 ? CONFIANZA_ETIQUETA : 0.5);
+
+  // Identificación fiscal de quien cobra (#108): la primera con etiqueta fuera del bloque del cliente. Si quedan varias
+  // distintas, confianza baja: en modo NIT, R3 escala en vez de adivinar.
+  const identificaciones: string[] = [];
+  let cliente = -1;
+  lineas.forEach((l, i) => {
+    if (RE_CLIENTE.test(l)) cliente = i;
+    if (cliente >= 0 && i - cliente <= LINEAS_CLIENTE) return;
+    for (const m of l.matchAll(RE_IDENTIFICACION)) {
+      const valor = (m[1] ?? "").replace(/[./-]+$/, "");
+      if ((valor.match(/\d/g) ?? []).length >= 4) identificaciones.push(valor);
+    }
+  });
+  const distintas = new Set(identificaciones.map((v) => v.replaceAll(/[^0-9A-Za-z]/g, "").toUpperCase()));
+  poner("identificacion_fiscal", identificaciones[0] ?? null, distintas.size === 1 ? CONFIANZA_ETIQUETA : 0.5);
 
   // Beneficiario: "Pagar a: Nombre · Banco · Cuenta" o la línea siguiente al rótulo "PAGAR A".
   lineas.forEach((l, i) => {

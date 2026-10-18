@@ -3,7 +3,6 @@
 
 import type { DatosComunes } from "@/dominio/cargar";
 import { aUsd } from "@/dominio/dinero";
-import { normalizarNombre } from "@/dominio/normalizar";
 import { instante } from "@/dominio/reloj";
 import {
   type DocumentoRecibido,
@@ -24,6 +23,7 @@ import { afectado, type ContextoRegla, montoUsd, type Regla } from "./contexto";
 import { EXPLICACION_ERROR, EXPLICACION_SIN_REGLAS, explicar, observaciones } from "./explicar";
 import { periodoDe } from "./libro";
 import { aplicar, type EstadoPresupuesto, estadoInicial } from "./presupuesto";
+import { identificar, modoIdentidad } from "./identidad";
 import { r01Extraccion } from "./r01-extraccion";
 import { sinConfigurar } from "./sin-configurar";
 import { r02Duplicado } from "./r02-duplicado";
@@ -129,10 +129,10 @@ function evaluarSinProteccion(input: EntradaMotor): ResultadoMotor {
   }
 
   const tasas = tasasPara(datos, ahora);
-  const nombre = ext.beneficiario_nombre.valor ? normalizarNombre(ext.beneficiario_nombre.valor) : "";
-  const beneficiario = nombre ? (datos.beneficiarios.find((b) => normalizarNombre(b.nombre) === nombre) ?? null) : null;
+  const identidad = identificar(ext, datos.beneficiarios, modoIdentidad(reglas), minima);
+  const beneficiario = identidad.beneficiario;
   const ctx: ContextoRegla = {
-    doc, ext, reglas, tasas, beneficiario, ahora, presupuesto,
+    doc, ext, reglas, tasas, beneficiario, identidad, ahora, presupuesto,
     total_permitidos: datos.beneficiarios.filter((b) => b.estado === "activo").length,
     historial: input.historial,
   };

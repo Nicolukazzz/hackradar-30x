@@ -52,7 +52,12 @@ export type Reglas = {
   extraccion: { confianza_minima: number };
   aprobacion: { doble_aprobacion_desde_usd: number };
   activas: Record<IdRegla, boolean>;
+  /** Cómo se reconoce al proveedor en la factura (#108). Ausente = por nombre (como el dataset). */
+  identidad?: { modo: ModoIdentidad };
 };
+
+/** nombre: nombre normalizado · nit: solo identificación fiscal · nombre_y_nit: los dos del mismo proveedor (#108). */
+export type ModoIdentidad = "nombre" | "nombre_y_nit" | "nit";
 
 export type LineaAcuerdo = {
   codigo: string;
@@ -145,6 +150,8 @@ export type Extraccion = {
   /** "OC-121", "DH-ONCALL", "CT-JPO" */
   referencia_acuerdo?: Campo<string>;
   hito_numero?: Campo<number>;
+  /** NIT/RUT/RFC/CUIT/CNPJ/Tax ID de quien cobra (#108) */
+  identificacion_fiscal?: Campo<string>;
   idioma: Idioma;
   /** texto completo visto en el documento (para R10 y auditoría) */
   texto_crudo: string;

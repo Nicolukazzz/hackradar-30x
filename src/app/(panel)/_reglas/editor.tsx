@@ -7,8 +7,9 @@ import { toast } from "sonner";
 
 import { Boton, Tarjeta, TarjetaEncabezado, TarjetaPie, fechaCorta, porcentajeUi } from "@/app/_componentes";
 import type { ReporteEvaluacion, UsoTasa } from "@/app/_datos/reglas";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { formatearTasa } from "@/dominio/dinero";
-import { REGLAS_EDITABLES, type Aprobador, type IdRegla, type Reglas } from "@/dominio/tipos";
+import { REGLAS_EDITABLES, type Aprobador, type IdRegla, type ModoIdentidad, type Reglas } from "@/dominio/tipos";
 import type { PermisoUI } from "@/lib/auth/permisos";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +48,12 @@ const MONEDAS: Record<string, string> = {
   EUR: "euro",
 };
 
+const MODOS_IDENTIDAD: { valor: ModoIdentidad; titulo: string; descripcion: string }[] = [
+  { valor: "nombre", titulo: "Por nombre", descripcion: "El nombre de la factura igual al registrado (sin tildes, mayúsculas ni S.A.S.)." },
+  { valor: "nombre_y_nit", titulo: "Nombre y NIT", descripcion: "Los dos deben ser del mismo proveedor. Lo más estricto." },
+  { valor: "nit", titulo: "Solo NIT", descripcion: "La identificación fiscal manda, aunque el nombre esté escrito distinto." },
+];
+
 type Formulario = {
   automatico: string;
   maximo: string;
@@ -58,6 +65,7 @@ type Formulario = {
   ventana: string;
   doble: string;
   activas: Record<IdRegla, boolean>;
+  identidad: ModoIdentidad;
 };
 
 type Errores = Partial<Record<keyof Formulario, string>>;
@@ -74,6 +82,7 @@ function desdeReglas(r: Reglas): Formulario {
     ventana: String(r.duplicados.ventana_dias),
     doble: escribirUsd(r.aprobacion.doble_aprobacion_desde_usd),
     activas: { ...r.activas },
+    identidad: r.identidad?.modo ?? "nombre",
   };
 }
 
@@ -106,6 +115,8 @@ function aReglas(f: Formulario, base: Reglas): { reglas: Reglas | null; errores:
       duplicados: { ...base.duplicados, ventana_dias: ventana ?? base.duplicados.ventana_dias },
       aprobacion: { doble_aprobacion_desde_usd: doble },
       activas: f.activas,
+      // Sin cambio respecto a la base, se deja como estaba (las versiones sin `identidad` son "por nombre").
+      ...(f.identidad === (base.identidad?.modo ?? "nombre") ? {} : { identidad: { modo: f.identidad } }),
     },
   };
 }
@@ -299,6 +310,33 @@ export function EditorReglas({
       </header>
 
       <CajaSimulacion sim={sim} inseguro={inseguro} />
+
+      <Tarjeta as="section" aria-labelledby="ide">
+        <TarjetaEncabezado id="ide" titulo="Cómo se reconoce a quien cobra · R3" descripcion="Con qué dato de la factura el agente busca al proveedor en la lista. Si falta ese dato, escala." />
+        <RadioGroup
+          value={f.identidad}
+          onValueChange={(v) => cambiar("identidad", v as ModoIdentidad)}
+          name="identidad"
+          aria-label="Cómo se reconoce a quien cobra"
+          className="grid gap-2.5 px-6 pb-6 sm:grid-cols-3"
+        >
+          {MODOS_IDENTIDAD.map((m) => (
+            <label
+              key={m.valor}
+              className={cn(
+                "flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3.5 transition-colors hover:bg-superficie-2",
+                f.identidad === m.valor && "border-foreground/40 bg-superficie-2",
+              )}
+            >
+              <RadioGroupItem value={m.valor} className="mt-0.5" />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-sm font-semibold">{m.titulo}</span>
+                <span className="text-[13px] leading-snug text-muted-foreground">{m.descripcion}</span>
+              </span>
+            </label>
+          ))}
+        </RadioGroup>
+      </Tarjeta>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Tarjeta as="section" aria-labelledby="lim">

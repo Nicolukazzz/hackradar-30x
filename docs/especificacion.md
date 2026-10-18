@@ -171,6 +171,7 @@ export type Reglas = {
   extraccion: { confianza_minima: number }; // 0.90
   aprobacion: { doble_aprobacion_desde_usd: number }; // centavos. 1000000
   activas: Record<IdRegla, boolean>;       // solo R5 y R8 pueden ser false (§4)
+  identidad?: { modo: 'nombre'|'nombre_y_nit'|'nit' }; // #108; ausente = nombre
 };
 
 export type LineaAcuerdo = {
@@ -244,6 +245,7 @@ export type Extraccion = {
   concepto: Campo<string>;
   referencia_acuerdo?: Campo<string>;       // 'OC-121', 'DH-ONCALL', 'hito 2'
   hito_numero?: Campo<number>;
+  identificacion_fiscal?: Campo<string>;    // NIT/RUT/RFC… de quien cobra (#108)
   idioma: 'es'|'en'|'pt';
   texto_crudo: string;                      // todo el texto visto (para R10 y auditoría)
   senales_llm: { instrucciones_sospechosas: string[]; sin_respuesta?: boolean }; // el LLM reporta, el código decide. sin_respuesta: se necesitaba el LLM y ninguno respondió (R1 escala diciéndolo, #103)

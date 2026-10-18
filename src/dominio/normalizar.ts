@@ -56,3 +56,8 @@ export function slug(texto: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 }
+
+/** NIT, RUT, RFC…: solo letras y dígitos en mayúscula ("900.123.456-7" = "9001234567"). */
+export function normalizarIdentificacion(id: string): string {
+  return id.replaceAll(/[^0-9A-Za-z]/g, "").toUpperCase();
+}

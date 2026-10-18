@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { formatear } from "@/dominio/dinero";
 import { MonedaSchema } from "@/dominio/esquemas";
-import { normalizarNombre, slug } from "@/dominio/normalizar";
+import { normalizarIdentificacion, normalizarNombre, slug } from "@/dominio/normalizar";
 import type { Acuerdo, Aprobador, Beneficiario, EntradaRegistro } from "@/dominio/tipos";
 import type { Repositorio } from "@/repositorio/repositorio";
 
@@ -61,16 +61,14 @@ function acuerdoDe(a: NonNullable<EntradaProveedor["acuerdo"]>): Acuerdo {
   };
 }
 
-const normalizarNit = (nit: string) => nit.replace(/[^0-9A-Za-z]/g, "").toUpperCase();
-
 /** Nombre, NIT y correos no pueden repetirse con otro proveedor. */
 function validarUnicos(b: Beneficiario, otros: readonly Beneficiario[]): void {
   const nombre = normalizarNombre(b.nombre);
   const igualNombre = otros.find((o) => normalizarNombre(o.nombre) === nombre);
   if (igualNombre) throw new ErrorProveedor(409, `Ya existe un proveedor llamado ${igualNombre.nombre}.`);
   if (b.identificacion_fiscal) {
-    const nit = normalizarNit(b.identificacion_fiscal);
-    const igualNit = otros.find((o) => o.identificacion_fiscal && normalizarNit(o.identificacion_fiscal) === nit);
+    const nit = normalizarIdentificacion(b.identificacion_fiscal);
+    const igualNit = otros.find((o) => o.identificacion_fiscal && normalizarIdentificacion(o.identificacion_fiscal) === nit);
     if (igualNit) throw new ErrorProveedor(409, `La identificación ${b.identificacion_fiscal} ya es de ${igualNit.nombre}.`);
   }
   for (const correo of b.canales.correos) {
