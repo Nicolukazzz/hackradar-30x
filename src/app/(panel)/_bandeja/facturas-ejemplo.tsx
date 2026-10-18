@@ -10,16 +10,21 @@ import { Boton, PildoraDecision } from "@/app/_componentes";
 import { llamar } from "@/app/_componentes/llamar";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { DecisionAgente } from "@/dominio/tipos";
+import type { DecisionAgente, DecisionHumana } from "@/dominio/tipos";
 import { cn } from "@/lib/utils";
-import type { FacturaEjemplo } from "@/servicios/facturas-ejemplo";
+import type { FacturaEjemplo, FacturaEjemploConEstado } from "@/servicios/facturas-ejemplo";
 
 // «Probar con facturas de ejemplo» (#162): el set de facturas-de-prueba/ dentro de la app. Cada factura se envía como
 // la mandaría su proveedor por el portal y el resultado aparece al lado, junto a lo que se esperaba. Solo
-// administradores en modo demo (la Bandeja no muestra el botón a nadie más).
+// administradores en modo demo (la Bandeja no muestra el botón a nadie más). Lo que ya se envió (por otra persona o
+// antes) se muestra con su resultado: reenviarlo se frenaría por duplicado (R2), así que solo se hace a propósito.
 
-type Resultado = { ref_interna: string; estado: DecisionAgente; mensaje: string };
-type Estado = { tipo: "enviando" } | { tipo: "listo"; r: Resultado } | { tipo: "error"; mensaje: string };
+type Resultado = { ref_interna: string; estado: DecisionAgente | DecisionHumana };
+type Estado = { tipo: "enviando" } | { tipo: "listo"; r: Resultado; antes: boolean } | { tipo: "error"; mensaje: string };
+
+/** Lo esperado se cumplió: misma decisión, o una persona ya resolvió lo que el agente escaló. */
+const coincide = (esperado: DecisionAgente, obtenido: Resultado["estado"]) =>
+  esperado === obtenido || (esperado === "ESCALAR" && (obtenido === "APROBADA_HUMANO" || obtenido === "RECHAZADA_HUMANO"));
 
 const REPO = "https://github.com/Nicolukazzz/hackradar-30x/blob/main/facturas-de-prueba";
 
@@ -27,7 +32,7 @@ const TIPO: Record<FacturaEjemplo["efecto"], string> = { limpio: "", escaneo: "e
 
 export function FacturasEjemplo() {
   const router = useRouter();
-  const [facturas, setFacturas] = useState<FacturaEjemplo[] | null>(null);
+  const [facturas, setFacturas] = useState<FacturaEjemploConEstado[] | null>(null);
   const [cargando, setCargando] = useState(false);
   const [estados, setEstados] = useState<Record<string, Estado>>({});
   const [lote, setLote] = useState<{ hechas: number; total: number } | null>(null);
@@ -36,7 +41,9 @@ export function FacturasEjemplo() {
     if (!abierto || facturas || cargando) return;
     setCargando(true);
     try {
-      setFacturas((await llamar<{ facturas: FacturaEjemplo[] }>("/api/demo/facturas", "GET")).facturas);
+      const lista = (await llamar<{ facturas: FacturaEjemploConEstado[] }>("/api/demo/facturas", "GET")).facturas;
+      setFacturas(lista);
+      setEstados(Object.fromEntries(lista.flatMap((f) => (f.enviada ? [[f.archivo, { tipo: "listo", r: f.enviada, antes: true } satisfies Estado]] : []))));
     } catch (e) {
       toast.error("No se pudieron cargar las facturas de ejemplo", { description: e instanceof Error ? e.message : undefined });
     } finally {
@@ -48,7 +55,7 @@ export function FacturasEjemplo() {
     setEstados((s) => ({ ...s, [f.archivo]: { tipo: "enviando" } }));
     try {
       const r = await llamar<Resultado>("/api/demo/facturas", "POST", { archivo: f.archivo });
-      setEstados((s) => ({ ...s, [f.archivo]: { tipo: "listo", r } }));
+      setEstados((s) => ({ ...s, [f.archivo]: { tipo: "listo", r, antes: false } }));
       return true;
     } catch (e) {
       setEstados((s) => ({ ...s, [f.archivo]: { tipo: "error", mensaje: e instanceof Error ? e.message : "No se pudo enviar." } }));
@@ -71,7 +78,8 @@ export function FacturasEjemplo() {
     }
     setLote(null);
     router.refresh();
-    toast.success(`${ok} de ${pendientes.length} facturas enviadas`, { description: "El resultado de cada una está al lado. La Bandeja ya las muestra." });
+    if (pendientes.length === 0) toast.info("Ya se enviaron todas", { description: "El resultado de cada una está al lado." });
+    else toast.success(`${ok} de ${pendientes.length} facturas enviadas`, { description: "El resultado de cada una está al lado. La Bandeja ya las muestra." });
   }
 
   const pagan = facturas?.filter((f) => f.carpeta === "pagan") ?? [];
@@ -83,7 +91,7 @@ export function FacturasEjemplo() {
         <SparklesIcon aria-hidden />
         Probar con facturas de ejemplo
       </SheetTrigger>
-      <SheetContent className="w-full gap-5 overflow-y-auto p-6 sm:max-w-2xl">
+      <SheetContent className="w-full gap-5 overflow-y-auto p-6 data-[side=right]:w-full data-[side=right]:sm:max-w-2xl">
         <SheetHeader className="p-0">
           <SheetTitle className="text-lg">Facturas de ejemplo</SheetTitle>
           <SheetDescription>
@@ -107,7 +115,7 @@ export function FacturasEjemplo() {
             <TabsContent value="pagan" className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] bg-superficie-2 px-4 py-3">
                 <p className="text-sm text-muted-foreground">
-                  {lote ? `Enviando ${lote.hechas} de ${lote.total}…` : "Envía una por una o todas de una vez (las ya enviadas no se repiten)."}
+                  {lote ? `Enviando ${lote.hechas} de ${lote.total}…` : "Envía una por una o todas de una vez. Las que ya se enviaron no se repiten."}
                 </p>
                 <Boton variante="primaria" onClick={() => void enviarTodas(pagan)} disabled={lote !== null}>
                   {lote ? <Loader2Icon className="animate-spin" aria-hidden /> : <SendIcon aria-hidden />}
@@ -134,7 +142,7 @@ function Lista({
   estados,
   alEnviar,
   ocupado,
-}: Readonly<{ facturas: FacturaEjemplo[]; estados: Record<string, Estado>; alEnviar: (f: FacturaEjemplo) => Promise<void>; ocupado: boolean }>) {
+}: Readonly<{ facturas: FacturaEjemploConEstado[]; estados: Record<string, Estado>; alEnviar: (f: FacturaEjemplo) => Promise<void>; ocupado: boolean }>) {
   return (
     <ul className="flex flex-col divide-y divide-border rounded-2xl border border-border bg-card">
       {facturas.map((f) => (
@@ -189,15 +197,25 @@ function Fila({ f, estado, alEnviar, ocupado }: Readonly<{ f: FacturaEjemplo; es
         <div
           className={cn(
             "ml-11 flex animate-in flex-wrap items-center gap-2 rounded-[10px] px-3 py-2 text-[13px] duration-200 fade-in",
-            estado.r.estado === f.esperado ? "bg-pagada/60" : "bg-escalada/60",
+            coincide(f.esperado, estado.r.estado) ? "bg-pagada/60" : "bg-escalada/60",
           )}
         >
-          <span className="font-medium">{estado.r.estado === f.esperado ? "Resultado igual al esperado:" : "Resultado:"}</span>
+          <span className="font-medium">{estado.antes ? "Ya se envió:" : coincide(f.esperado, estado.r.estado) ? "Resultado igual al esperado:" : "Resultado:"}</span>
           <PildoraDecision decision={estado.r.estado} />
           <Link href={`/facturas/${estado.r.ref_interna}`} className="inline-flex items-center gap-1 font-mono text-link hover:underline">
             {estado.r.ref_interna}
             <ArrowUpRightIcon className="size-3.5" aria-hidden />
           </Link>
+          {f.carpeta === "pagan" ? (
+            <button
+              type="button"
+              onClick={() => void alEnviar(f)}
+              disabled={ocupado}
+              className="ml-auto rounded-md px-1 text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50"
+            >
+              Enviar otra vez (se frena por duplicada)
+            </button>
+          ) : null}
         </div>
       ) : null}
       {estado?.tipo === "error" ? <p className="ml-11 text-[13px] text-frenada-foreground">{estado.mensaje}</p> : null}

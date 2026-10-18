@@ -4,7 +4,7 @@ import { dependenciasCanal } from "@/canales/dependencias";
 import { crearLimitador } from "@/lib/limite";
 import { conSesion } from "@/lib/auth/ruta";
 import { obtenerRepositorio } from "@/repositorio";
-import { catalogoEjemplos, enviarEjemplo } from "@/servicios/facturas-ejemplo";
+import { catalogoConEstado, enviarEjemplo } from "@/servicios/facturas-ejemplo";
 
 import { cuerpo, error, manejar, ok } from "../../_http";
 import { demoActiva } from "../../_identidad";
@@ -17,12 +17,12 @@ const limitador = crearLimitador({ maximo: 45, ventanaMs: 60_000 });
 
 const Cuerpo = z.strictObject({ archivo: z.string().min(1).max(120) });
 
-/** GET /api/demo/facturas: catálogo de facturas de ejemplo con su resultado esperado. */
+/** GET /api/demo/facturas: catálogo con el resultado esperado y, si ya se envió, en qué quedó. */
 export const GET = conSesion(
   async () => {
     try {
       if (!demoActiva()) return error(404, "Modo demo apagado (DEMO=1 para activarlo).");
-      return ok({ facturas: await catalogoEjemplos() });
+      return ok({ facturas: await catalogoConEstado(await obtenerRepositorio()) });
     } catch (e) {
       return manejar(e);
     }
